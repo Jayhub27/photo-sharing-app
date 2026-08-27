@@ -78,3 +78,8 @@ export function parseCollectionUrl(url: string): string | null {
   const m = url.match(/\/c\/([a-z0-9]+)/i)
   return m ? m[1] : null
 }
+
+export async function deletePhoto(photoId: string): Promise<void> {
+  const res = await fetch(`${resolveBase()}/api/photos/${photoId}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Delete failed')
+}

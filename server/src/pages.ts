@@ -93,8 +93,14 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 .progress-bar{height:100%;background:var(--grad);border-radius:3px;transition:width .3s ease}
 /* Photo grid */
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
-.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:transform .25s var(--transition),box-shadow .25s;animation:scaleIn .4s var(--transition) both}
-.grid img:hover{transform:scale(1.04);box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:1}
+.photo-wrap{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--border);animation:scaleIn .4s var(--transition) both;cursor:pointer}
+.photo-wrap img{width:100%;height:100%;object-fit:cover;transition:transform .3s var(--transition)}
+.photo-wrap:hover img{transform:scale(1.08)}
+.photo-wrap:hover .photo-overlay{opacity:1}
+.photo-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%);opacity:0;transition:opacity .25s var(--transition);display:flex;align-items:flex-end;justify-content:flex-end;padding:8px;gap:6px}
+.photo-btn{width:34px;height:34px;border-radius:9px;border:none;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .15s}
+.photo-btn:hover{background:rgba(255,255,255,.3);transform:scale(1.1)}
+.photo-btn.danger:hover{background:rgba(239,68,68,.7)}
 /* QR */
 .qr-wrap{text-align:center;padding:8px 0}
 .qr-wrap img{width:260px;height:260px;border-radius:20px;border:1px solid var(--border);animation:scaleIn .4s var(--transition),glow 3s ease-in-out infinite}
@@ -299,8 +305,35 @@ function renderPhotos() {
     return;
   }
   el.innerHTML = photos.map((p, i) =>
-    '<img src="' + BASE + '/api/photos/' + p.filename + '" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\')" style="animation-delay:' + (i * 50) + 'ms" loading="lazy">'
+    '<div class="photo-wrap" style="animation-delay:' + (i * 50) + 'ms" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\')">' +
+      '<img src="' + BASE + '/api/photos/' + p.filename + '" loading="lazy">' +
+      '<div class="photo-overlay">' +
+        '<button class="photo-btn" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
+        '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' +
+      '</div>' +
+    '</div>'
   ).join('');
+}
+async function downloadPhoto(filename, name) {
+  const a = document.createElement('a');
+  a.href = BASE + '/api/photos/' + filename + '?download=1';
+  a.download = name || filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('Downloading ' + (name || filename), 'success');
+}
+async function deletePhoto(id, name) {
+  if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+  try {
+    const res = await fetch(BASE + '/api/photos/' + id, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    photos = photos.filter(p => p.id !== id);
+    renderPhotos();
+    toast('Photo deleted', 'success');
+  } catch {
+    toast('Could not delete photo', 'error');
+  }
 }
 /* Sections */
 function toggleSection(id) {

@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { mkdirSync } from 'fs'
+import { mkdirSync, unlinkSync } from 'fs'
 import { join, extname } from 'path'
 import QRCode from 'qrcode'
 import db from './db.js'
@@ -95,15 +95,21 @@ router.delete('/photos/:id', (req, res) => {
   if (!photo) return res.status(404).json({ error: 'Photo not found' })
 
   db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id)
+  try { unlinkSync(join(resolveCwd(), PHOTOS_DIR, photo.filename)) } catch {}
   res.json({ ok: true })
 })
 
 router.get('/photos/:filename', (req, res) => {
   const photo = db.prepare('SELECT * FROM photos WHERE filename = ?').get(
     req.params.filename
-  ) as { filename: string; mime_type: string } | undefined
+  ) as { filename: string; mime_type: string; original_name: string } | undefined
   if (!photo) return res.status(404).json({ error: 'Photo not found' })
-  res.type(photo.mime_type).sendFile(join(resolveCwd(), PHOTOS_DIR, photo.filename))
+
+  if (req.query.download === '1') {
+    res.download(join(resolveCwd(), PHOTOS_DIR, photo.filename), photo.original_name)
+  } else {
+    res.type(photo.mime_type).sendFile(join(resolveCwd(), PHOTOS_DIR, photo.filename))
+  }
 })
 
 function resolveCwd() {

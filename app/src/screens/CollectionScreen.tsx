@@ -3,12 +3,14 @@ import {
   Alert,
   FlatList,
   Image,
+  Pressable,
   Text,
   View,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
+  deletePhoto as deletePhotoApi,
   getCollection,
   photoUrl,
   uploadPhotos,
@@ -70,6 +72,28 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
+  const handleDelete = (photo: Photo) => {
+    Alert.alert(
+      'Delete photo',
+      `Delete "${photo.original_name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePhotoApi(photo.id)
+              setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
+            } catch {
+              Alert.alert('Error', 'Could not delete photo')
+            }
+          },
+        },
+      ]
+    )
+  }
+
   if (uploading) return <LoadingScreen />
 
   return (
@@ -120,11 +144,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
             </View>
           }
           renderItem={({ item }) => (
-            <Image
-              source={{ uri: photoUrl(item.filename) }}
-              style={[styles.photo, shadows.card]}
-              resizeMode="cover"
-            />
+            <Pressable onLongPress={() => handleDelete(item)}>
+              <Image
+                source={{ uri: photoUrl(item.filename) }}
+                style={[styles.photo, shadows.card]}
+                resizeMode="cover"
+              />
+            </Pressable>
           )}
         />
       )}
