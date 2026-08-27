@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "PhotoShare",
+    "slug": "photo-share",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "sdkVersion": "51.0.0",
+    "android": {
+      "package": "com.photoshare.app",
+      "permissions": ["CAMERA"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.photoshare.app"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PhotoShare to access your camera to scan QR codes."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PhotoShare to access your photos."
+        }
+      ]
+    ]
+  }
+}
