@@ -29,6 +29,10 @@ app.get('/c/:id', (req, res) => {
   res.type('html').send(collectionPage(req.params.id, ''))
 })
 
-app.listen(PORT, () => {
-  console.log(`PhotoShare server running on http://localhost:${PORT}`)
-})
+export default app
+
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`PhotoShare server running on http://localhost:${PORT}`)
+  })
+}
