@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import multer from 'multer'
-import { mkdirSync, unlinkSync } from 'fs'
+import { mkdirSync, unlinkSync, copyFileSync } from 'fs'
 import { join, extname } from 'path'
 import QRCode from 'qrcode'
 import db from './db.js'
 import { generateId } from './utils.js'
+import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 
 const PHOTOS_DIR = process.env.PHOTOS_DIR || 'photos'
 mkdirSync(PHOTOS_DIR, { recursive: true })
@@ -29,29 +30,33 @@ const upload = multer({
   },
 })
 
-router.get('/collections', (_req, res) => {
+router.get('/collections', authMiddleware, (req: AuthedRequest, res) => {
   const rows = db.prepare(`
     SELECT c.id, c.name, c.created_at, COUNT(p.id) AS photo_count
     FROM collections c
     LEFT JOIN photos p ON p.collection_id = c.id
+    WHERE c.user_id = ?
     GROUP BY c.id
     ORDER BY c.created_at DESC
-  `).all()
+  `).all(req.userId)
   res.json({ collections: rows })
 })
 
-router.post('/collections', (req, res) => {
+router.post('/collections', authMiddleware, (req: AuthedRequest, res) => {
   const name = String(req.body.name || 'Untitled').slice(0, 120)
   const id = generateId()
-  db.prepare('INSERT INTO collections (id, name) VALUES (?, ?)').run(id, name)
+  db.prepare('INSERT INTO collections (id, user_id, name) VALUES (?, ?, ?)').run(id, req.userId, name)
   res.json({ id, name })
 })
 
-router.get('/collections/:id', (req, res) => {
-  const col = db.prepare('SELECT * FROM collections WHERE id = ?').get(req.params.id)
+router.get('/collections/:id', (req: AuthedRequest, res) => {
+  const col = db.prepare('SELECT * FROM collections WHERE id = ?').get(req.params.id) as
+    | { id: string; user_id: string | null; name: string; created_at: string }
+    | undefined
   if (!col) return res.status(404).json({ error: 'Collection not found' })
   const photos = db.prepare('SELECT id, filename, original_name, mime_type, size, created_at FROM photos WHERE collection_id = ? ORDER BY created_at DESC').all(req.params.id)
-  res.json({ collection: col, photos })
+  const isOwner = col.user_id === req.userId
+  res.json({ collection: col, photos, isOwner })
 })
 
 router.get('/collections/:id/qr', async (req, res) => {
@@ -64,9 +69,41 @@ router.get('/collections/:id/qr', async (req, res) => {
   res.type('png').send(qrPng)
 })
 
-router.post('/collections/:id/photos', upload.array('photos', 20), (req, res) => {
-  const col = db.prepare('SELECT * FROM collections WHERE id = ?').get(req.params.id)
+router.post('/collections/:id/save', authMiddleware, (req: AuthedRequest, res) => {
+  const col = db.prepare('SELECT * FROM collections WHERE id = ?').get(req.params.id) as
+    | { id: string; user_id: string | null; name: string }
+    | undefined
   if (!col) return res.status(404).json({ error: 'Collection not found' })
+  if (col.user_id === req.userId) return res.status(400).json({ error: 'This is already your collection' })
+
+  const photos = db.prepare('SELECT filename, original_name, mime_type, size FROM photos WHERE collection_id = ?').all(req.params.id) as
+    | { filename: string; original_name: string; mime_type: string; size: number }[]
+    | undefined
+
+  const newId = generateId()
+  const name = `${col.name} (saved)`.slice(0, 120)
+  db.prepare('INSERT INTO collections (id, user_id, name) VALUES (?, ?, ?)').run(newId, req.userId, name)
+
+  const insertPhoto = db.prepare(
+    'INSERT INTO photos (id, collection_id, filename, original_name, mime_type, size) VALUES (?, ?, ?, ?, ?, ?)'
+  )
+  for (const p of photos || []) {
+    const newFilename = generateId() + (p.filename.includes('.') ? '.' + p.filename.split('.').pop() : '')
+    try {
+      copyFileSync(join(PHOTOS_DIR, p.filename), join(PHOTOS_DIR, newFilename))
+      insertPhoto.run(generateId(), newId, newFilename, p.original_name, p.mime_type, p.size)
+    } catch {}
+  }
+
+  res.json({ id: newId, name })
+})
+
+router.post('/collections/:id/photos', authMiddleware, upload.array('photos', 20), (req: AuthedRequest, res) => {
+  const col = db.prepare('SELECT * FROM collections WHERE id = ?').get(req.params.id) as
+    | { id: string; user_id: string | null }
+    | undefined
+  if (!col) return res.status(404).json({ error: 'Collection not found' })
+  if (col.user_id !== req.userId) return res.status(403).json({ error: 'Not your collection' })
 
   const files = req.files as Express.Multer.File[]
   if (!files || files.length === 0) return res.status(400).json({ error: 'No photos uploaded' })
@@ -88,11 +125,16 @@ router.post('/collections/:id/photos', upload.array('photos', 20), (req, res) =>
   res.json({ photos })
 })
 
-router.delete('/photos/:id', (req, res) => {
+router.delete('/photos/:id', authMiddleware, (req: AuthedRequest, res) => {
   const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id) as
-    | { id: string; filename: string }
+    | { id: string; filename: string; collection_id: string }
     | undefined
   if (!photo) return res.status(404).json({ error: 'Photo not found' })
+
+  const col = db.prepare('SELECT user_id FROM collections WHERE id = ?').get(photo.collection_id) as
+    | { user_id: string | null }
+    | undefined
+  if (col?.user_id !== req.userId) return res.status(403).json({ error: 'Not your photo' })
 
   db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id)
   try { unlinkSync(join(resolveCwd(), PHOTOS_DIR, photo.filename)) } catch {}

@@ -129,6 +129,31 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 .hidden{display:none!important}
 /* Responsive */
 @media(max-width:480px){h1{font-size:26px}.grid{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 16px}.create-bar{flex-direction:column}.create-bar .btn{width:100%}}
+/* Nav bar */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;animation:fadeIn .3s}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.nav-logo .logo-icon{width:36px;height:36px;border-radius:10px;font-size:18px}
+.nav-logo .logo-text{font-size:18px;font-weight:700}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-user{font-size:14px;color:var(--muted)}
+.nav-user strong{color:var(--text);font-weight:600}
+/* Auth pages */
+.auth-wrap{max-width:400px;margin:0 auto;padding:24px 20px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1}
+.auth-card{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;animation:fadeUp .5s var(--transition);box-shadow:var(--shadow)}
+.auth-logo{width:56px;height:56px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 24px;box-shadow:0 4px 24px rgba(99,102,241,.4)}
+.auth-title{font-size:24px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-.5px}
+.auth-sub{color:var(--muted);font-size:15px;text-align:center;margin-bottom:28px}
+.auth-field{margin-bottom:16px}
+.auth-field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.auth-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:16px;color:var(--text);transition:border-color .3s,box-shadow .3s}
+.auth-field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.auth-field input::placeholder{color:#64748b}
+.auth-btn{width:100%;margin-top:8px}
+.auth-footer{text-align:center;margin-top:24px;font-size:15px;color:var(--muted)}
+.auth-footer a{color:var(--accent);text-decoration:none;font-weight:600}
+.auth-footer a:hover{text-decoration:underline}
+.auth-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:14px;margin-bottom:20px;transition:color .2s}
+.auth-back:hover{color:var(--text)}
 `
 
 function TOAST_JS(): string {
@@ -158,29 +183,68 @@ export function homePage(apiBase: string): string {
 <body>
 <div id="toast-container"></div>
 <div class="wrap">
-  <div class="hero">
-    <div class="logo">
-      <div class="logo-icon">\\ud83d\\udcf7</div>
-      <div class="logo-text">PhotoShare</div>
-    </div>
-    <h1>Share photos with a <span class="grad">QR code</span></h1>
-    <p class="sub">Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery \\u2014 no app required.</p>
-    <form class="create-bar" id="createForm">
-      <input type="text" id="name" placeholder="Collection name (e.g. Iceland Trip)" autocomplete="off">
-      <button class="btn" type="submit">Create</button>
-    </form>
+  <div class="nav">
+    <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
+    <div class="nav-right" id="navRight"></div>
   </div>
-  <div class="section-label">Your Collections</div>
-  <div id="list"></div>
+  <div id="authed" class="hidden">
+    <div class="hero">
+      <h1>Share photos with a <span class="grad">QR code</span></h1>
+      <p class="sub">Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery.</p>
+      <form class="create-bar" id="createForm">
+        <input type="text" id="name" placeholder="Collection name (e.g. Iceland Trip)" autocomplete="off">
+        <button class="btn" type="submit">Create</button>
+      </form>
+    </div>
+    <div class="section-label">Your Collections</div>
+    <div id="list"></div>
+  </div>
+  <div id="guest" class="hidden">
+    <div class="hero" style="text-align:center;padding-top:80px">
+      <h1>Share photos with a <span class="grad">QR code</span></h1>
+      <p class="sub" style="margin:0 auto 32px">Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery \\u2014 no app required.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <a class="btn" href="/signup">Get Started</a>
+        <a class="btn outline" href="/login">Log in</a>
+      </div>
+    </div>
+  </div>
 </div>
 <script>
 const BASE = ${JSON.stringify(apiBase)};
 ${TOAST_JS()}
+let currentUser = null;
+async function checkAuth() {
+  try {
+    const res = await fetch(BASE + '/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const { user } = await res.json();
+      currentUser = user;
+      document.getElementById('authed').classList.remove('hidden');
+      document.getElementById('navRight').innerHTML =
+        '<span class="nav-user">Hi, <strong>' + esc(user.name) + '</strong></span>' +
+        '<button class="btn small outline" onclick="logout()">Log out</button>';
+      load();
+    } else {
+      document.getElementById('guest').classList.remove('hidden');
+      document.getElementById('navRight').innerHTML =
+        '<a class="btn small outline" href="/login">Log in</a>' +
+        '<a class="btn small" href="/signup">Sign up</a>';
+    }
+  } catch {
+    document.getElementById('guest').classList.remove('hidden');
+  }
+}
+async function logout() {
+  await fetch(BASE + '/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
 async function load() {
   const el = document.getElementById('list');
   el.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
   try {
-    const res = await fetch(BASE + '/api/collections');
+    const res = await fetch(BASE + '/api/collections', { credentials: 'include' });
+    if (res.status === 401) { window.location.href = '/login'; return; }
     const { collections } = await res.json();
     if (!collections.length) {
       el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">No collections yet.<br>Create one above to get started.</div></div>';
@@ -212,7 +276,8 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
   btn.innerHTML = '<span class="spinner"></span>';
   btn.disabled = true;
   try {
-    const res = await fetch(BASE + '/api/collections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+    const res = await fetch(BASE + '/api/collections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name }) });
+    if (res.status === 401) { window.location.href = '/login'; return; }
     const { id } = await res.json();
     toast('Collection created', 'success');
     setTimeout(() => window.location.href = '/c/' + id, 400);
@@ -221,7 +286,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     btn.innerHTML = 'Create'; btn.disabled = false;
   }
 });
-load();
+checkAuth();
 </script>
 </body>
 </html>`
@@ -243,10 +308,29 @@ export function collectionPage(id: string, apiBase: string): string {
   <img id="lightboxImg" alt="">
 </div>
 <div class="wrap">
+  <div class="nav">
+    <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
+    <div class="nav-right" id="navRight"></div>
+  </div>
   <a class="back" href="/">&larr; All collections</a>
   <div class="col-header">
     <h1 id="title"><span class="spinner dark" style="width:20px;height:20px"></span></h1>
     <div class="col-stats" id="stats"></div>
+  </div>
+  <div id="authBanner" class="section hidden">
+    <div class="section-body anim" style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="font-size:15px;color:var(--muted)">Log in or sign up to save this collection to your account.</div>
+      <div style="display:flex;gap:10px">
+        <a class="btn small outline" href="/login">Log in</a>
+        <a class="btn small" href="/signup">Sign up</a>
+      </div>
+    </div>
+  </div>
+  <div id="saveBar" class="section hidden">
+    <div class="section-body anim" style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="font-size:15px;color:var(--muted)">Like this collection? Save a copy to your own account.</div>
+      <button class="btn small" id="saveBtn" onclick="saveCollection()">\\ud83d\\udcbe Save to my account</button>
+    </div>
   </div>
   <div class="actions">
     <button class="btn" id="uploadToggle">\\ud83d\\udcf7 Add Photos</button>
@@ -281,9 +365,38 @@ const BASE = ${JSON.stringify(apiBase)};
 const CID = ${JSON.stringify(id)};
 ${TOAST_JS()}
 let photos = [];
+let isOwner = false;
+let loggedIn = false;
+async function checkAuth() {
+  try {
+    const res = await fetch(BASE + '/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const { user } = await res.json();
+      loggedIn = true;
+      document.getElementById('navRight').innerHTML =
+        '<span class="nav-user">Hi, <strong>' + esc(user.name) + '</strong></span>' +
+        '<a class="btn small outline" href="/">My collections</a>';
+    } else {
+      loggedIn = false;
+      document.getElementById('navRight').innerHTML =
+        '<a class="btn small outline" href="/login">Log in</a>' +
+        '<a class="btn small" href="/signup">Sign up</a>';
+    }
+  } catch {
+    loggedIn = false;
+    document.getElementById('navRight').innerHTML =
+      '<a class="btn small outline" href="/login">Log in</a>' +
+      '<a class="btn small" href="/signup">Sign up</a>';
+  }
+}
+function updateChrome() {
+  document.getElementById('authBanner').classList.toggle('hidden', !(isOwner === false && loggedIn === false));
+  document.getElementById('saveBar').classList.toggle('hidden', !(isOwner === false && loggedIn === true));
+  document.getElementById('actions').classList.toggle('hidden', !isOwner);
+}
 async function load() {
   try {
-    const res = await fetch(BASE + '/api/collections/' + CID);
+    const res = await fetch(BASE + '/api/collections/' + CID, { credentials: 'include' });
     if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById('title').innerHTML = '<span class="grad">' + esc(data.collection.name) + '</span>';
@@ -291,6 +404,8 @@ async function load() {
       '<div class="stat-chip"><strong>' + data.photos.length + '</strong> photo' + (data.photos.length === 1 ? '' : 's') + '</div>' +
       '<div class="stat-chip">Created ' + (data.collection.created_at || '').split(' ')[0] + '</div>';
     photos = data.photos;
+    isOwner = !!data.isOwner;
+    updateChrome();
     renderPhotos();
   } catch {
     document.getElementById('title').textContent = 'Collection not found';
@@ -298,10 +413,25 @@ async function load() {
     document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon">\\u26a0\\ufe0f</div><div class="empty-text">This collection could not be loaded.</div></div>';
   }
 }
+async function saveCollection() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '/save', { method: 'POST', credentials: 'include' });
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (!res.ok) throw new Error();
+    const { id } = await res.json();
+    toast('Collection saved to your account', 'success');
+    setTimeout(() => window.location.href = '/c/' + id, 400);
+  } catch {
+    toast('Could not save collection', 'error');
+    btn.disabled = false; btn.innerHTML = '\\ud83d\\udcbe Save to my account';
+  }
+}
 function renderPhotos() {
   const el = document.getElementById('photos');
   if (!photos.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">No photos yet.<br>Tap "Add Photos" to add some.</div></div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">No photos yet.<br>' + (isOwner ? 'Tap "Add Photos" to add some.' : 'Check back later.') + '</div></div>';
     return;
   }
   el.innerHTML = photos.map((p, i) =>
@@ -309,7 +439,7 @@ function renderPhotos() {
       '<img src="' + BASE + '/api/photos/' + p.filename + '" loading="lazy">' +
       '<div class="photo-overlay">' +
         '<button class="photo-btn" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
-        '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' +
+        (isOwner ? '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
       '</div>' +
     '</div>'
   ).join('');
@@ -326,7 +456,7 @@ async function downloadPhoto(filename, name) {
 async function deletePhoto(id, name) {
   if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
   try {
-    const res = await fetch(BASE + '/api/photos/' + id, { method: 'DELETE' });
+    const res = await fetch(BASE + '/api/photos/' + id, { method: 'DELETE', credentials: 'include' });
     if (!res.ok) throw new Error();
     photos = photos.filter(p => p.id !== id);
     renderPhotos();
@@ -363,7 +493,7 @@ async function uploadFiles(files) {
   const fd = new FormData();
   for (const f of files) fd.append('photos', f);
   try {
-    const res = await fetch(BASE + '/api/collections/' + CID + '/photos', { method: 'POST', body: fd });
+    const res = await fetch(BASE + '/api/collections/' + CID + '/photos', { method: 'POST', credentials: 'include', body: fd });
     if (!res.ok) throw new Error();
     bar.style.width = '100%';
     toast(files.length + ' photo' + (files.length === 1 ? '' : 's') + ' uploaded', 'success');
@@ -389,7 +519,120 @@ function openLightbox(src) {
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') closeLightbox(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
-load();
+(async () => { await checkAuth(); load(); })();
+</script>
+</body>
+</html>`
+}
+
+export function loginPage(_apiBase: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log in \\u00b7 PhotoShare</title>
+<style>${SHARED_CSS}</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <a class="auth-back" href="/">&larr; Back</a>
+  <div class="auth-card">
+    <div class="auth-logo">\\ud83d\\udcf7</div>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Log in to manage your photo collections</div>
+    <form id="loginForm">
+      <div class="auth-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password" autocomplete="current-password" required>
+      </div>
+      <button class="btn auth-btn" type="submit">Log in</button>
+    </form>
+    <div class="auth-footer">New here? <a href="/signup">Create an account</a></div>
+  </div>
+</div>
+<script>
+${TOAST_JS()}
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = e.target.querySelector('button');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, password }) });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Login failed'); }
+    const { user } = await res.json();
+    toast('Welcome back, ' + user.name, 'success');
+    setTimeout(() => window.location.href = '/', 400);
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false; btn.innerHTML = 'Log in';
+  }
+});
+</script>
+</body>
+</html>`
+}
+
+export function signupPage(_apiBase: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign up \\u00b7 PhotoShare</title>
+<style>${SHARED_CSS}</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <a class="auth-back" href="/">&larr; Back</a>
+  <div class="auth-card">
+    <div class="auth-logo">\\ud83d\\udcf7</div>
+    <div class="auth-title">Create your account</div>
+    <div class="auth-sub">Start sharing photos with a QR code in seconds</div>
+    <form id="signupForm">
+      <div class="auth-field">
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Your name" autocomplete="name" required>
+      </div>
+      <div class="auth-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password" required>
+      </div>
+      <button class="btn auth-btn" type="submit">Create account</button>
+    </form>
+    <div class="auth-footer">Already have an account? <a href="/login">Log in</a></div>
+  </div>
+</div>
+<script>
+${TOAST_JS()}
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = e.target.querySelector('button');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name, email, password }) });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Sign up failed'); }
+    const { user } = await res.json();
+    toast('Welcome, ' + user.name, 'success');
+    setTimeout(() => window.location.href = '/', 400);
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false; btn.innerHTML = 'Create account';
+  }
+});
 </script>
 </body>
 </html>`
