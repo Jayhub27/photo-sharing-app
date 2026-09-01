@@ -335,6 +335,7 @@ export function collectionPage(id: string, apiBase: string): string {
   <div class="actions">
     <button class="btn" id="uploadToggle">\\ud83d\\udcf7 Add Photos</button>
     <button class="btn outline" id="qrToggle">\\ud83d\\udd04 Show QR</button>
+    <a class="btn outline" id="downloadAllBtn" href="/api/collections/${id}/zip" style="display:none">\\u2b07 Download All</a>
   </div>
   <div id="uploadSection" class="section hidden">
     <div class="section-body anim" style="padding-top:24px">
@@ -392,7 +393,10 @@ async function checkAuth() {
 function updateChrome() {
   document.getElementById('authBanner').classList.toggle('hidden', !(isOwner === false && loggedIn === false));
   document.getElementById('saveBar').classList.toggle('hidden', !(isOwner === false && loggedIn === true));
-  document.getElementById('actions').classList.toggle('hidden', !isOwner);
+  document.getElementById('uploadToggle').classList.toggle('hidden', !isOwner);
+  document.getElementById('qrToggle').classList.toggle('hidden', !isOwner);
+  document.getElementById('downloadAllBtn').style.display = photos.length ? '' : 'none';
+  document.getElementById('actions').classList.toggle('hidden', !isOwner && photos.length === 0);
 }
 async function load() {
   try {

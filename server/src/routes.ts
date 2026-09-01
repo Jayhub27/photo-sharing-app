@@ -3,6 +3,7 @@ import multer from 'multer'
 import QRCode from 'qrcode'
 import { supabase, BUCKET } from './db.js'
 import { generateId } from './utils.js'
+import { createZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 
 const router = Router()
@@ -94,6 +95,40 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
     } catch {}
   }
   res.json({ id: newId, name })
+})
+
+router.get('/collections/:id/zip', async (req, res) => {
+  const { data: col } = await supabase.from('collections').select('name').eq('id', req.params.id).maybeSingle()
+  if (!col) return res.status(404).json({ error: 'Collection not found' })
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('filename, original_name')
+    .eq('collection_id', req.params.id)
+  if (!photos || photos.length === 0) return res.status(404).json({ error: 'No photos in this collection' })
+
+  const entries: { name: string; data: Buffer }[] = []
+  const used = new Set<string>()
+  for (const p of photos) {
+    const { data: blob } = await supabase.storage.from(BUCKET).download(p.filename)
+    if (!blob) continue
+    const buf = Buffer.from(await blob.arrayBuffer())
+    let name = p.original_name || p.filename
+    let i = 1
+    while (used.has(name)) {
+      const dot = name.lastIndexOf('.')
+      name = dot > 0 ? `${name.slice(0, dot)} (${i})${name.slice(dot)}` : `${name} (${i})`
+      i++
+    }
+    used.add(name)
+    entries.push({ name, data: buf })
+  }
+  if (!entries.length) return res.status(404).json({ error: 'No photos in this collection' })
+
+  const zip = createZip(entries)
+  const safeName = (col.name.replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'photos').slice(0, 80)
+  res.setHeader('Content-Type', 'application/zip')
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}.zip"`)
+  res.send(zip)
 })
 
 router.post('/collections/:id/photos', authMiddleware, upload.array('photos', 20), async (req: AuthedRequest, res) => {
