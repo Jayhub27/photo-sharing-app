@@ -79,7 +79,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
         }
         renderItem={({ item }) => (
           <Image
-            source={{ uri: photoUrl(item.filename) }}
+            source={{ uri: photoUrl(item.filename, { thumb: true }) }}
             style={[styles.photo, shadows.card]}
             resizeMode="cover"
           />

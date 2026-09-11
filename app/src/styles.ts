@@ -1,4 +1,4 @@
-import { StyleSheet, TextStyle, ViewStyle } from 'react-native'
+import { StyleSheet, TextStyle, ViewStyle, type ImageStyle } from 'react-native'
 
 export const colors = {
   bg: '#0a0a0f',
@@ -172,7 +172,7 @@ export const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 12,
     backgroundColor: colors.surface2,
-  } as ViewStyle,
+  } as ImageStyle,
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',

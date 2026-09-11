@@ -1,37 +1,80 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { FlatList, Text, View } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { listCollections, type Collection, type RootStackParamList } from '../api'
+import { useAuth } from '../auth'
 import { colors, styles } from '../styles'
 import { AnimatedButton, ButtonText, AnimatedCard, FadeIn, SkeletonCard } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>
 
+const PAGE_SIZE = 12
+
 export default function HomeScreen({ navigation }: Props) {
+  const { user, signOut } = useAuth()
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const offsetRef = useRef(0)
+  const requestId = useRef(0)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (q: string) => {
+    const id = ++requestId.current
     setLoading(true)
     setError(null)
     try {
-      const { collections } = await listCollections()
-      setCollections(collections)
-    } catch {
-      setError('Could not reach server. Is it running?')
+      const res = await listCollections({ q, limit: PAGE_SIZE, offset: 0 })
+      if (id !== requestId.current) return
+      setCollections(res.collections)
+      setHasMore(res.hasMore)
+      offsetRef.current = res.collections.length
+    } catch (err) {
+      if (id !== requestId.current) return
+      setError(err instanceof Error && err.message === 'Not authenticated' ? 'Session expired. Please log in again.' : 'Could not reach server. Is it running?')
     } finally {
-      setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', load)
+    const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
+    return () => clearTimeout(t)
+  }, [query, load])
+
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => load(query.trim()))
     return unsub
-  }, [navigation, load])
+  }, [navigation, load, query])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || loading) return
+    setLoadingMore(true)
+    try {
+      const res = await listCollections({ q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current })
+      setCollections((prev) => [...prev, ...res.collections])
+      setHasMore(res.hasMore)
+      offsetRef.current += res.collections.length
+    } catch {
+      // ignore, user can retry by scrolling
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loading, loadingMore, hasMore, query])
 
   return (
     <View style={styles.container}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 16 }}>
+        <Text style={{ color: colors.textMuted, fontSize: 15 }}>
+          Hi, <Text style={{ color: colors.text, fontWeight: '600' }}>{user?.name}</Text>
+        </Text>
+        <Pressable onPress={signOut} hitSlop={8}>
+          <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>Log out</Text>
+        </Pressable>
+      </View>
+
       <FadeIn>
         <View style={styles.hero}>
           <View style={styles.logoRow}>
@@ -48,10 +91,7 @@ export default function HomeScreen({ navigation }: Props) {
             <AnimatedButton onPress={() => navigation.navigate('CreateCollection')}>
               <ButtonText>+ New Collection</ButtonText>
             </AnimatedButton>
-            <AnimatedButton
-              outline
-              onPress={() => navigation.navigate('Scan')}
-            >
+            <AnimatedButton outline onPress={() => navigation.navigate('Scan')}>
               <ButtonText outline>Scan a QR Code</ButtonText>
             </AnimatedButton>
           </View>
@@ -59,6 +99,18 @@ export default function HomeScreen({ navigation }: Props) {
       </FadeIn>
 
       <Text style={styles.sectionLabel}>Your Collections</Text>
+
+      <View style={{ paddingHorizontal: 24, marginBottom: 14 }}>
+        <TextInput
+          style={[styles.input, { marginBottom: 0 }]}
+          placeholder="Search collections…"
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoCapitalize="none"
+          returnKeyType="search"
+        />
+      </View>
 
       {loading ? (
         <View style={{ paddingHorizontal: 24 }}>
@@ -71,7 +123,7 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.emptyIcon}>⚠️</Text>
           <Text style={styles.emptyText}>{error}</Text>
           <View style={{ marginTop: 20, alignSelf: 'stretch' }}>
-            <AnimatedButton onPress={load}>
+            <AnimatedButton onPress={() => load(query.trim())}>
               <ButtonText>Retry</ButtonText>
             </AnimatedButton>
           </View>
@@ -81,30 +133,34 @@ export default function HomeScreen({ navigation }: Props) {
           data={collections}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+          onEndReachedThreshold={0.4}
+          onEndReached={loadMore}
+          ListFooterComponent={
+            loadingMore ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 16 }} /> : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>📂</Text>
               <Text style={styles.emptyText}>
-                No collections yet.{'\n'}Create one above to get started.
+                {query ? 'No collections match your search.' : 'No collections yet.\nCreate one above to get started.'}
               </Text>
             </View>
           }
           renderItem={({ item, index }) => (
             <AnimatedCard
               index={index}
-              onPress={() =>
-                navigation.navigate('Collection', { id: item.id, name: item.name })
-              }
+              onPress={() => navigation.navigate('Collection', { id: item.id, name: item.name })}
             >
-              <View style={[styles.card, shadows.card]}>
+              <View style={[styles.card, { borderColor: colors.border }]}>
                 <View style={styles.cardLeft}>
                   <View style={styles.cardThumb}>
                     <Text style={{ fontSize: 22 }}>📁</Text>
                   </View>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{item.name}</Text>
                     <Text style={styles.cardSub}>
                       {item.photo_count ?? 0} photo{(item.photo_count ?? 0) === 1 ? '' : 's'}
+                      {item.role && item.role !== 'owner' ? `  ·  ${item.role}` : ''}
                     </Text>
                   </View>
                 </View>

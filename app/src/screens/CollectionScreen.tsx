@@ -1,12 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import {
-  Alert,
-  FlatList,
-  Image,
-  Pressable,
-  Text,
-  View,
-} from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
@@ -18,37 +11,118 @@ import {
   type RootStackParamList,
 } from '../api'
 import { colors, styles, shadows } from '../styles'
-import {
-  AnimatedButton,
-  ButtonText,
-  FadeIn,
-  SkeletonCard,
-  LoadingScreen,
-} from '../components'
+import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, LoadingScreen } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Collection'>
+
+const PAGE_SIZE = 60
 
 export default function CollectionScreen({ route, navigation }: Props) {
   const { id, name } = route.params
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [canEdit, setCanEdit] = useState(false)
+  const [role, setRole] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [total, setTotal] = useState(0)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { photos } = await getCollection(id)
-      setPhotos(photos)
-    } catch {
-      Alert.alert('Error', 'Could not load collection')
-    } finally {
-      setLoading(false)
-    }
-  }, [id])
+  const offsetRef = useRef(0)
+  const newestRef = useRef('')
+  const queryRef = useRef('')
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const activeRef = useRef(true)
+
+  queryRef.current = query
+
+  const load = useCallback(
+    async (q: string) => {
+      setLoading(true)
+      try {
+        const res = await getCollection(id, { q, limit: PAGE_SIZE, offset: 0 })
+        if (!activeRef.current) return
+        setPhotos(res.photos)
+        setTotal(res.total)
+        setHasMore(res.hasMore)
+        setCanEdit(res.canEdit)
+        setRole(res.role)
+        offsetRef.current = res.photos.length
+        newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')
+      } catch (err) {
+        Alert.alert('Error', err instanceof Error ? err.message : 'Could not load collection')
+      } finally {
+        if (activeRef.current) setLoading(false)
+      }
+    },
+    [id]
+  )
 
   useEffect(() => {
-    load()
-  }, [load])
+    activeRef.current = true
+    return () => {
+      activeRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
+    return () => clearTimeout(t)
+  }, [query, load])
+
+  const poll = useCallback(async () => {
+    if (!newestRef.current) return
+    try {
+      const res = await getCollection(id, { since: newestRef.current, limit: 200, q: queryRef.current.trim() })
+      const known = new Set(photos.map((p) => p.id))
+      const fresh = res.photos.filter((p) => !known.has(p.id))
+      if (!fresh.length) return
+      setPhotos((prev) => [...fresh, ...prev])
+      setTotal((t) => t + fresh.length)
+      newestRef.current = [...fresh, ...photos].reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), newestRef.current)
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, photos])
+
+  useEffect(() => {
+    const start = () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      pollingRef.current = setInterval(poll, 5000)
+    }
+    const stop = () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+    const unsubFocus = navigation.addListener('focus', () => {
+      activeRef.current = true
+      start()
+    })
+    const unsubBlur = navigation.addListener('blur', () => {
+      activeRef.current = false
+      stop()
+    })
+    start()
+    return () => {
+      unsubFocus()
+      unsubBlur()
+      stop()
+    }
+  }, [navigation, poll])
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || loading) return
+    setLoadingMore(true)
+    try {
+      const res = await getCollection(id, { q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current })
+      setPhotos((prev) => [...prev, ...res.photos])
+      setHasMore(res.hasMore)
+      offsetRef.current += res.photos.length
+    } catch {
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const handleAdd = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -65,6 +139,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
     try {
       const res = await uploadPhotos(id, result.assets.map((a) => a.uri))
       setPhotos((prev) => [...res.photos, ...prev])
+      setTotal((t) => t + res.photos.length)
     } catch {
       Alert.alert('Upload failed', 'Could not upload photos')
     } finally {
@@ -73,25 +148,22 @@ export default function CollectionScreen({ route, navigation }: Props) {
   }
 
   const handleDelete = (photo: Photo) => {
-    Alert.alert(
-      'Delete photo',
-      `Delete "${photo.original_name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePhotoApi(photo.id)
-              setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
-            } catch {
-              Alert.alert('Error', 'Could not delete photo')
-            }
-          },
+    Alert.alert('Delete photo', `Delete "${photo.original_name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deletePhotoApi(photo.id)
+            setPhotos((prev) => prev.filter((p) => p.id !== photo.id))
+            setTotal((t) => Math.max(0, t - 1))
+          } catch {
+            Alert.alert('Error', 'Could not delete photo')
+          }
         },
-      ]
-    )
+      },
+    ])
   }
 
   if (uploading) return <LoadingScreen />
@@ -102,14 +174,17 @@ export default function CollectionScreen({ route, navigation }: Props) {
         <View style={styles.hero}>
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.subtitle}>
-            {photos.length} photo{photos.length === 1 ? '' : 's'} in this collection
+            {total} photo{total === 1 ? '' : 's'} in this collection
+            {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <AnimatedButton onPress={handleAdd}>
-                <ButtonText>+ Add Photos</ButtonText>
-              </AnimatedButton>
-            </View>
+            {canEdit && (
+              <View style={{ flex: 1 }}>
+                <AnimatedButton onPress={handleAdd}>
+                  <ButtonText>+ Add Photos</ButtonText>
+                </AnimatedButton>
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <AnimatedButton
                 outline
@@ -119,8 +194,25 @@ export default function CollectionScreen({ route, navigation }: Props) {
               </AnimatedButton>
             </View>
           </View>
+          {role && (
+            <Pressable onPress={() => navigation.navigate('Members', { id, name })} style={{ marginTop: 12 }}>
+              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>👥 Manage members</Text>
+            </Pressable>
+          )}
         </View>
       </FadeIn>
+
+      <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
+        <TextInput
+          style={[styles.input, { marginBottom: 0 }]}
+          placeholder="Search photos by filename…"
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoCapitalize="none"
+          returnKeyType="search"
+        />
+      </View>
 
       {loading ? (
         <View style={{ paddingHorizontal: 24 }}>
@@ -135,18 +227,23 @@ export default function CollectionScreen({ route, navigation }: Props) {
           numColumns={2}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, gap: 12 }}
           columnWrapperStyle={{ gap: 12 }}
+          onEndReachedThreshold={0.4}
+          onEndReached={loadMore}
+          ListFooterComponent={
+            loadingMore ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 16 }} /> : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>🖼️</Text>
               <Text style={styles.emptyText}>
-                No photos yet.{'\n'}Tap "Add Photos" to add some.
+                {query ? 'No photos match your search.' : `No photos yet.\n${canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.'}`}
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <Pressable onLongPress={() => handleDelete(item)}>
+            <Pressable onLongPress={canEdit ? () => handleDelete(item) : undefined}>
               <Image
-                source={{ uri: photoUrl(item.filename) }}
+                source={{ uri: photoUrl(item.filename, { thumb: true }) }}
                 style={[styles.photo, shadows.card]}
                 resizeMode="cover"
               />

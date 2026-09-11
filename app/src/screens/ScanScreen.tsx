@@ -95,7 +95,7 @@ function ScanScreenMobile({
       <CameraView
         style={{ flex: 1 }}
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-        onBarCodeScanned={handleScanned}
+        onBarcodeScanned={handleScanned}
       />
       <Animated.View
         style={{
@@ -122,7 +122,6 @@ function ScanScreenMobile({
           right: 0,
           padding: 40,
           alignItems: 'center',
-          backgroundGradient: 'linear',
         }}
       >
         <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '500' }}>

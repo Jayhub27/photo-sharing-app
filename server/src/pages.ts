@@ -129,6 +129,20 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 .hidden{display:none!important}
 /* Responsive */
 @media(max-width:480px){h1{font-size:26px}.grid{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 16px}.create-bar{flex-direction:column}.create-bar .btn{width:100%}}
+/* Search + load more + members */
+.search-bar{display:flex;gap:10px;margin-bottom:20px;animation:fadeIn .3s}
+.search-bar input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-size:15px;color:var(--text);transition:border-color .3s,box-shadow .3s}
+.search-bar input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.load-wrap{text-align:center;padding:8px 0 48px}
+.badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);margin-left:8px}
+.badge.owner{color:#a5b4fc;border-color:rgba(99,102,241,.4)}
+.badge.editor{color:#86efac;border-color:rgba(34,197,94,.35)}
+.member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.member-row:last-child{border-bottom:none}
+.member-name{font-weight:600;font-size:15px}
+.member-email{font-size:13px;color:var(--muted)}
+select.copy-btn{min-width:110px;background:var(--surface2);color:var(--text)}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#22c55e;align-self:center;animation:pulse 2s infinite}
 /* Nav bar */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;animation:fadeIn .3s}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
@@ -159,7 +173,8 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 function TOAST_JS(): string {
   return `
 function toast(msg, type) {
-  const c = document.getElementById('toast-container');
+  let c = document.getElementById('toast-container');
+  if (!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
   const t = document.createElement('div');
   t.className = 'toast ' + (type||'');
   const icon = type === 'success' ? '\\u2713' : type === 'error' ? '\\u2717' : '\\u2022';
@@ -197,7 +212,9 @@ export function homePage(apiBase: string): string {
       </form>
     </div>
     <div class="section-label">Your Collections</div>
+    <div class="search-bar"><input type="search" id="search" placeholder="Search collections by name..."></div>
     <div id="list"></div>
+    <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
   </div>
   <div id="guest" class="hidden">
     <div class="hero" style="text-align:center;padding-top:80px">
@@ -239,30 +256,38 @@ async function logout() {
   await fetch(BASE + '/api/auth/logout', { method: 'POST' });
   window.location.href = '/login';
 }
-async function load() {
+let offset = 0, limit = 12, total = 0, q = '';
+async function load(append) {
   const el = document.getElementById('list');
-  el.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
+  if (!append) { offset = 0; el.className = ''; el.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>'; }
   try {
-    const res = await fetch(BASE + '/api/collections', { credentials: 'include' });
+    const res = await fetch(BASE + '/api/collections?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + offset, { credentials: 'include' });
     if (res.status === 401) { window.location.href = '/login'; return; }
-    const { collections } = await res.json();
+    const data = await res.json();
+    const collections = data.collections;
+    total = data.total;
     if (!collections.length) {
       el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">No collections yet.<br>Create one above to get started.</div></div>';
       return;
     }
     el.className = 'card-list';
-    el.innerHTML = collections.map((c, i) =>
+    const html = collections.map((c, i) =>
       '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 60) + 'ms">' +
         '<div class="card-left">' +
           '<div class="card-thumb">\\ud83d\\udcc1</div>' +
           '<div class="card-info">' +
-            '<div class="card-title">' + esc(c.name) + '</div>' +
+            '<div class="card-title">' + esc(c.name) + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
             '<div class="card-sub">' + c.photo_count + ' photo' + (c.photo_count === 1 ? '' : 's') + '</div>' +
           '</div>' +
         '</div>' +
         '<span class="card-arrow">\\u203a</span>' +
       '</a>'
     ).join('');
+    if (append) el.insertAdjacentHTML('beforeend', html); else el.innerHTML = html;
+    offset += collections.length;
+    const lm = document.getElementById('loadMore');
+    lm.classList.toggle('hidden', !data.hasMore);
+    lm.textContent = 'Load more (' + offset + '/' + total + ')';
   } catch {
     el.innerHTML = '<div class="empty"><div class="empty-icon">\\u26a0\\ufe0f</div><div class="empty-text">Could not reach server.<br><button class="btn small" style="margin-top:16px" onclick="load()">Retry</button></div></div>';
   }
@@ -286,6 +311,13 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     btn.innerHTML = 'Create'; btn.disabled = false;
   }
 });
+const searchInput = document.getElementById('search');
+let searchTimer;
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { q = searchInput.value.trim(); load(false); }, 300);
+});
+document.getElementById('loadMore').addEventListener('click', () => load(true));
 checkAuth();
 </script>
 </body>
@@ -332,9 +364,10 @@ export function collectionPage(id: string, apiBase: string): string {
       <button class="btn small" id="saveBtn" onclick="saveCollection()">\\ud83d\\udcbe Save to my account</button>
     </div>
   </div>
-  <div class="actions">
+  <div class="actions" id="actions">
     <button class="btn" id="uploadToggle">\\ud83d\\udcf7 Add Photos</button>
     <button class="btn outline" id="qrToggle">\\ud83d\\udd04 Show QR</button>
+    <button class="btn outline hidden" id="membersToggle">\\ud83d\\udc65 Members</button>
     <a class="btn outline" id="downloadAllBtn" href="/api/collections/${id}/zip" style="display:none">\\u2b07 Download All</a>
   </div>
   <div id="uploadSection" class="section hidden">
@@ -359,7 +392,20 @@ export function collectionPage(id: string, apiBase: string): string {
       </div>
     </div>
   </div>
+  <div class="search-bar"><input type="search" id="photoSearch" placeholder="Search photos by filename..."><span class="live-dot" title="Live updates on"></span></div>
+  <div id="membersSection" class="section hidden">
+    <div class="section-body anim" style="padding:24px">
+      <h2 style="font-size:17px;margin-bottom:8px">\\ud83d\\udc65 Members</h2>
+      <div id="membersList"></div>
+      <div class="share-link" id="inviteBox" style="margin-top:16px">
+        <input id="inviteEmail" placeholder="teammate@email.com">
+        <select id="inviteRole" class="copy-btn"><option value="viewer">Viewer</option><option value="editor">Editor</option></select>
+        <button class="copy-btn" id="inviteBtn">Invite</button>
+      </div>
+    </div>
+  </div>
   <div class="grid" id="photos"></div>
+  <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
 </div>
 <script>
 const BASE = ${JSON.stringify(apiBase)};
@@ -367,7 +413,11 @@ const CID = ${JSON.stringify(id)};
 ${TOAST_JS()}
 let photos = [];
 let isOwner = false;
+let canEdit = false;
+let canManage = false;
+let role = null;
 let loggedIn = false;
+let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '';
 async function checkAuth() {
   try {
     const res = await fetch(BASE + '/api/auth/me', { credentials: 'include' });
@@ -393,24 +443,36 @@ async function checkAuth() {
 function updateChrome() {
   document.getElementById('authBanner').classList.toggle('hidden', !(isOwner === false && loggedIn === false));
   document.getElementById('saveBar').classList.toggle('hidden', !(isOwner === false && loggedIn === true));
-  document.getElementById('uploadToggle').classList.toggle('hidden', !isOwner);
-  document.getElementById('qrToggle').classList.toggle('hidden', !isOwner);
+  document.getElementById('uploadToggle').classList.toggle('hidden', !canEdit);
+  document.getElementById('qrToggle').classList.toggle('hidden', !canEdit);
+  document.getElementById('membersToggle').classList.toggle('hidden', !role);
   document.getElementById('downloadAllBtn').style.display = photos.length ? '' : 'none';
-  document.getElementById('actions').classList.toggle('hidden', !isOwner && photos.length === 0);
+  const actions = document.getElementById('actions');
+  if (actions) actions.classList.toggle('hidden', !canEdit && !role && photos.length === 0);
 }
-async function load() {
+async function load(append) {
   try {
-    const res = await fetch(BASE + '/api/collections/' + CID, { credentials: 'include' });
+    const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset, { credentials: 'include' });
     if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById('title').innerHTML = '<span class="grad">' + esc(data.collection.name) + '</span>';
-    document.getElementById('stats').innerHTML =
-      '<div class="stat-chip"><strong>' + data.photos.length + '</strong> photo' + (data.photos.length === 1 ? '' : 's') + '</div>' +
-      '<div class="stat-chip">Created ' + (data.collection.created_at || '').split(' ')[0] + '</div>';
-    photos = data.photos;
+    total = data.total;
     isOwner = !!data.isOwner;
+    canEdit = !!data.canEdit;
+    canManage = !!data.canManage;
+    role = data.role || null;
+    photos = append ? photos.concat(data.photos) : data.photos;
+    offset = photos.length;
+    newestTs = photos.reduce((m, p) => (p.created_at > m ? p.created_at : m), '');
+    document.getElementById('stats').innerHTML =
+      '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
+      (role ? '<div class="stat-chip">Your role: <strong>' + role + '</strong></div>' : '') +
+      '<div class="stat-chip">Created ' + (data.collection.created_at || '').split(' ')[0] + '</div>';
     updateChrome();
     renderPhotos();
+    const lm = document.getElementById('loadMore');
+    lm.classList.toggle('hidden', !data.hasMore);
+    lm.textContent = 'Load more (' + photos.length + '/' + total + ')';
   } catch {
     document.getElementById('title').textContent = 'Collection not found';
     document.getElementById('stats').innerHTML = '';
@@ -435,15 +497,15 @@ async function saveCollection() {
 function renderPhotos() {
   const el = document.getElementById('photos');
   if (!photos.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">No photos yet.<br>' + (isOwner ? 'Tap "Add Photos" to add some.' : 'Check back later.') + '</div></div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.')) + '</div></div>';
     return;
   }
   el.innerHTML = photos.map((p, i) =>
     '<div class="photo-wrap" style="animation-delay:' + (i * 50) + 'ms" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\')">' +
-      '<img src="' + BASE + '/api/photos/' + p.filename + '" loading="lazy">' +
+      '<img src="' + BASE + '/api/photos/' + p.filename + '?thumb=1" loading="lazy" decoding="async">' +
       '<div class="photo-overlay">' +
         '<button class="photo-btn" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
-        (isOwner ? '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
+        (canEdit ? '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
       '</div>' +
     '</div>'
   ).join('');
@@ -523,7 +585,77 @@ function openLightbox(src) {
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 document.getElementById('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') closeLightbox(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
-(async () => { await checkAuth(); load(); })();
+/* Members / collaboration */
+async function toggleMembers() {
+  const sec = document.getElementById('membersSection');
+  sec.classList.toggle('hidden');
+  if (!sec.classList.contains('hidden')) loadMembers();
+}
+async function loadMembers() {
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '/members', { credentials: 'include' });
+    if (!res.ok) { document.getElementById('membersList').innerHTML = '<div class="member-email">Could not load members.</div>'; return; }
+    const data = await res.json();
+    document.getElementById('membersList').innerHTML = data.members.map(function (m) {
+      const badge = m.role === 'owner' ? '<span class="badge owner">owner</span>' : m.role === 'editor' ? '<span class="badge editor">editor</span>' : '<span class="badge">viewer</span>';
+      const remove = (data.canManage && m.role !== 'owner') ? '<button class="copy-btn" onclick="removeMember(\\'' + m.user_id + '\\')">Remove</button>' : '';
+      return '<div class="member-row"><div><div class="member-name">' + esc(m.name) + badge + '</div><div class="member-email">' + esc(m.email) + '</div></div>' + remove + '</div>';
+    }).join('');
+    document.getElementById('inviteBox').classList.toggle('hidden', !data.canManage);
+  } catch {}
+}
+async function inviteMember() {
+  const email = document.getElementById('inviteEmail').value.trim();
+  const inviteRole = document.getElementById('inviteRole').value;
+  if (!email) { toast('Enter an email', 'error'); return; }
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email: email, role: inviteRole }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not invite');
+    toast('Invited ' + email, 'success');
+    document.getElementById('inviteEmail').value = '';
+    loadMembers();
+  } catch (err) { toast(err.message, 'error'); }
+}
+async function removeMember(userId) {
+  if (!confirm('Remove this member?')) return;
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '/members/' + userId, { method: 'DELETE', credentials: 'include' });
+    if (!res.ok) throw new Error();
+    toast('Member removed', 'success');
+    loadMembers();
+  } catch { toast('Could not remove member', 'error'); }
+}
+/* Live updates */
+let polling = null;
+async function pollNew() {
+  if (document.hidden || !newestTs) return;
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '?since=' + encodeURIComponent(newestTs) + '&limit=200' + (q ? '&q=' + encodeURIComponent(q) : ''), { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const known = new Set(photos.map(function (p) { return p.id; }));
+    const fresh = (data.photos || []).filter(function (p) { return !known.has(p.id); });
+    if (!fresh.length) return;
+    photos = fresh.concat(photos);
+    total = photos.length;
+    newestTs = photos.reduce(function (m, p) { return p.created_at > m ? p.created_at : m; }, '');
+    renderPhotos();
+    toast(fresh.length + ' new photo' + (fresh.length === 1 ? '' : 's') + ' added', 'success');
+  } catch {}
+}
+/* Search + wiring */
+const photoSearch = document.getElementById('photoSearch');
+let searchTimer;
+photoSearch.addEventListener('input', function () {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function () { q = photoSearch.value.trim(); offset = 0; load(false); }, 300);
+});
+document.getElementById('membersToggle').addEventListener('click', toggleMembers);
+document.getElementById('inviteBtn').addEventListener('click', inviteMember);
+document.getElementById('inviteEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') inviteMember(); });
+document.getElementById('loadMore').addEventListener('click', function () { load(true); });
+(async () => { await checkAuth(); await load(false); polling = setInterval(pollNew, 5000); })();
 </script>
 </body>
 </html>`
@@ -539,6 +671,7 @@ export function loginPage(_apiBase: string): string {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
+<div id="toast-container"></div>
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
@@ -593,6 +726,7 @@ export function signupPage(_apiBase: string): string {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
+<div id="toast-container"></div>
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
