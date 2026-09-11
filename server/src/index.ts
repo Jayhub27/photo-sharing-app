@@ -8,6 +8,7 @@ import { homePage, collectionPage, loginPage, signupPage } from './pages.js'
 const PORT = process.env.PORT || 3000
 const app = express()
 
+app.set('trust proxy', true)
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 

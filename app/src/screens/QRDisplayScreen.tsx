@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Image, Share, Text, View, Animated, Easing } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { qrUrl, type RootStackParamList } from '../api'
+import { collectionUrl, qrUrl, type RootStackParamList } from '../api'
 import { colors, styles } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn } from '../components'
 
@@ -10,6 +10,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QRDisplay'>
 export default function QRDisplayScreen({ route }: Props) {
   const { id, name } = route.params
   const uri = qrUrl(id)
+  const shareUrl = collectionUrl(id)
 
   const scale = useRef(new Animated.Value(0.8)).current
   const opacity = useRef(new Animated.Value(0)).current
@@ -47,7 +48,7 @@ export default function QRDisplayScreen({ route }: Props) {
 
   const handleShare = async () => {
     try {
-      await Share.share({ message: `Check out my photo collection: ${uri}` })
+      await Share.share({ message: `Check out my photo collection: ${shareUrl}` })
     } catch {}
   }
 

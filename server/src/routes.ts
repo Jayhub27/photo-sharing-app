@@ -363,7 +363,8 @@ router.get('/photos/:filename', async (req, res) => {
 
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
   if (req.query.download === '1') {
-    res.setHeader('Content-Disposition', `attachment; filename="${photo.original_name}"`)
+    const safeName = String(photo.original_name || 'photo').replace(/[\r\n"\\]/g, '').slice(0, 200)
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
   }
   res.type(useThumb ? 'image/jpeg' : photo.mime_type).send(buf)
 })

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { FlatList, Image, Text, View } from 'react-native'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { ActivityIndicator, FlatList, Image, Text, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   getCollection,
@@ -8,25 +8,34 @@ import {
   type RootStackParamList,
 } from '../api'
 import { colors, styles, shadows } from '../styles'
-import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, LoadingScreen } from '../components'
+import { AnimatedButton, ButtonText, FadeIn, LoadingScreen } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Gallery'>
+
+const PAGE_SIZE = 60
 
 export default function GalleryScreen({ route, navigation }: Props) {
   const { collectionId } = route.params
   const [photos, setPhotos] = useState<Photo[]>([])
   const [name, setName] = useState('Gallery')
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const offsetRef = useRef(0)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const { collection, photos } = await getCollection(collectionId)
-      setPhotos(photos)
-      setName(collection.name)
-      navigation.setOptions({ title: collection.name })
+      const res = await getCollection(collectionId, { limit: PAGE_SIZE, offset: 0 })
+      setPhotos(res.photos)
+      setTotal(res.total)
+      setHasMore(res.hasMore)
+      offsetRef.current = res.photos.length
+      setName(res.collection.name)
+      navigation.setOptions({ title: res.collection.name })
     } catch {
       setError('Could not load this collection. The QR may be invalid.')
     } finally {
@@ -37,6 +46,20 @@ export default function GalleryScreen({ route, navigation }: Props) {
   useEffect(() => {
     load()
   }, [load])
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || loading) return
+    setLoadingMore(true)
+    try {
+      const res = await getCollection(collectionId, { limit: PAGE_SIZE, offset: offsetRef.current })
+      setPhotos((prev) => [...prev, ...res.photos])
+      setHasMore(res.hasMore)
+      offsetRef.current += res.photos.length
+    } catch {
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   if (loading) return <LoadingScreen />
 
@@ -60,7 +83,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
         <View style={styles.hero}>
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.subtitle}>
-            {photos.length} photo{photos.length === 1 ? '' : 's'} in this collection
+            {total} photo{total === 1 ? '' : 's'} in this collection
           </Text>
         </View>
       </FadeIn>
@@ -71,6 +94,11 @@ export default function GalleryScreen({ route, navigation }: Props) {
         numColumns={2}
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, gap: 12 }}
         columnWrapperStyle={{ gap: 12 }}
+        onEndReachedThreshold={0.4}
+        onEndReached={loadMore}
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 16 }} /> : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>🖼️</Text>

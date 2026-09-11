@@ -267,7 +267,8 @@ async function load(append) {
     const collections = data.collections;
     total = data.total;
     if (!collections.length) {
-      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">No collections yet.<br>Create one above to get started.</div></div>';
+      document.getElementById('loadMore').classList.add('hidden');
+      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
       return;
     }
     el.className = 'card-list';
@@ -417,7 +418,13 @@ let canEdit = false;
 let canManage = false;
 let role = null;
 let loggedIn = false;
-let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '';
+let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '';
+function renderStats() {
+  document.getElementById('stats').innerHTML =
+    '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
+    (role ? '<div class="stat-chip">Your role: <strong>' + role + '</strong></div>' : '') +
+    (createdAt ? '<div class="stat-chip">Created ' + createdAt + '</div>' : '');
+}
 async function checkAuth() {
   try {
     const res = await fetch(BASE + '/api/auth/me', { credentials: 'include' });
@@ -464,10 +471,8 @@ async function load(append) {
     photos = append ? photos.concat(data.photos) : data.photos;
     offset = photos.length;
     newestTs = photos.reduce((m, p) => (p.created_at > m ? p.created_at : m), '');
-    document.getElementById('stats').innerHTML =
-      '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
-      (role ? '<div class="stat-chip">Your role: <strong>' + role + '</strong></div>' : '') +
-      '<div class="stat-chip">Created ' + (data.collection.created_at || '').split(' ')[0] + '</div>';
+    createdAt = (data.collection.created_at || '').split(' ')[0];
+    renderStats();
     updateChrome();
     renderPhotos();
     const lm = document.getElementById('loadMore');
@@ -525,7 +530,10 @@ async function deletePhoto(id, name) {
     const res = await fetch(BASE + '/api/photos/' + id, { method: 'DELETE', credentials: 'include' });
     if (!res.ok) throw new Error();
     photos = photos.filter(p => p.id !== id);
+    total = Math.max(0, total - 1);
+    offset = Math.max(0, offset - 1);
     renderPhotos();
+    renderStats();
     toast('Photo deleted', 'success');
   } catch {
     toast('Could not delete photo', 'error');
@@ -638,9 +646,11 @@ async function pollNew() {
     const fresh = (data.photos || []).filter(function (p) { return !known.has(p.id); });
     if (!fresh.length) return;
     photos = fresh.concat(photos);
-    total = photos.length;
+    total += fresh.length;
+    offset += fresh.length;
     newestTs = photos.reduce(function (m, p) { return p.created_at > m ? p.created_at : m; }, '');
     renderPhotos();
+    renderStats();
     toast(fresh.length + ' new photo' + (fresh.length === 1 ? '' : 's') + ' added', 'success');
   } catch {}
 }

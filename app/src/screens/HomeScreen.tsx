@@ -44,8 +44,15 @@ export default function HomeScreen({ navigation }: Props) {
     return () => clearTimeout(t)
   }, [query, load])
 
+  const firstFocus = useRef(true)
   useEffect(() => {
-    const unsub = navigation.addListener('focus', () => load(query.trim()))
+    const unsub = navigation.addListener('focus', () => {
+      if (firstFocus.current) {
+        firstFocus.current = false
+        return
+      }
+      load(query.trim())
+    })
     return unsub
   }, [navigation, load, query])
 

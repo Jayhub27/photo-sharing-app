@@ -228,11 +228,24 @@ export function qrUrl(id: string): string {
   return `${resolveBase()}/api/collections/${id}/qr`
 }
 
+export function collectionUrl(id: string): string {
+  return `${resolveBase()}/c/${id}`
+}
+
+function mimeForName(name: string): string {
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  if (ext === 'png') return 'image/png'
+  if (ext === 'gif') return 'image/gif'
+  if (ext === 'webp') return 'image/webp'
+  if (ext === 'heic' || ext === 'heif') return 'image/heic'
+  return 'image/jpeg'
+}
+
 export async function uploadPhotos(collectionId: string, uris: string[]): Promise<{ photos: Photo[] }> {
   const form = new FormData()
   uris.forEach((uri) => {
     const name = uri.split('/').pop() || 'photo.jpg'
-    form.append('photos', { uri, name, type: 'image/jpeg' } as unknown as Blob)
+    form.append('photos', { uri, name, type: mimeForName(name) } as unknown as Blob)
   })
   const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/photos`, {
     method: 'POST',

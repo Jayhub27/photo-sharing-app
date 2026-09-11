@@ -32,10 +32,14 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const offsetRef = useRef(0)
   const newestRef = useRef('')
   const queryRef = useRef('')
+  const photosRef = useRef<Photo[]>([])
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const activeRef = useRef(true)
 
   queryRef.current = query
+  useEffect(() => {
+    photosRef.current = photos
+  }, [photos])
 
   const load = useCallback(
     async (q: string) => {
@@ -43,6 +47,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
       try {
         const res = await getCollection(id, { q, limit: PAGE_SIZE, offset: 0 })
         if (!activeRef.current) return
+        photosRef.current = res.photos
         setPhotos(res.photos)
         setTotal(res.total)
         setHasMore(res.hasMore)
@@ -75,15 +80,16 @@ export default function CollectionScreen({ route, navigation }: Props) {
     if (!newestRef.current) return
     try {
       const res = await getCollection(id, { since: newestRef.current, limit: 200, q: queryRef.current.trim() })
-      const known = new Set(photos.map((p) => p.id))
+      const known = new Set(photosRef.current.map((p) => p.id))
       const fresh = res.photos.filter((p) => !known.has(p.id))
       if (!fresh.length) return
-      setPhotos((prev) => [...fresh, ...prev])
+      const merged = [...fresh, ...photosRef.current]
+      photosRef.current = merged
+      setPhotos(merged)
       setTotal((t) => t + fresh.length)
-      newestRef.current = [...fresh, ...photos].reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), newestRef.current)
+      newestRef.current = merged.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), newestRef.current)
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, photos])
+  }, [id])
 
   useEffect(() => {
     const start = () => {
