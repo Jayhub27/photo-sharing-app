@@ -8,9 +8,40 @@ import { homePage, collectionPage, loginPage, signupPage } from './pages.js'
 const PORT = process.env.PORT || 3000
 const app = express()
 
+app.disable('x-powered-by')
 app.set('trust proxy', true)
-app.use(cors({ origin: true, credentials: true }))
-app.use(express.json())
+
+const extraOrigins = (process.env.APP_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(self)')
+  if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
+  next()
+})
+
+app.use((req, res, next) => {
+  cors({
+    credentials: true,
+    origin(origin, cb) {
+      if (!origin) return cb(null, true)
+      try {
+        const host = new URL(origin).host
+        const sameHost = host === req.headers.host
+        const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)
+        if (sameHost || local || extraOrigins.includes(origin)) return cb(null, true)
+      } catch {}
+      cb(null, false)
+    },
+  })(req, res, next)
+})
+
+app.use(express.json({ limit: '100kb' }))
 
 app.use('/api/auth', auth)
 app.use('/api', api)

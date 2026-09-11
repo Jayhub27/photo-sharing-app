@@ -3,6 +3,17 @@ import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
 import { supabase } from './db.js'
 import { generateId } from './utils.js'
+import { rateLimit } from './ratelimit.js'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS) || 30
+const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000
+
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: 'Too many login attempts. Please try again in a few minutes.',
+})
 
 export interface AuthedRequest extends Request {
   userId?: string
@@ -30,8 +41,18 @@ function getToken(req: AuthedRequest): string | null {
 
 async function userForToken(token: string | null): Promise<{ id: string; name: string } | null> {
   if (!token) return null
-  const { data: session } = await supabase.from('sessions').select('user_id').eq('token', token).maybeSingle()
+  const { data: session } = await supabase
+    .from('sessions')
+    .select('user_id, created_at')
+    .eq('token', token)
+    .maybeSingle()
   if (!session) return null
+
+  if (session.created_at && Date.now() - new Date(session.created_at).getTime() > SESSION_TTL_MS) {
+    await supabase.from('sessions').delete().eq('token', token)
+    return null
+  }
+
   const { data: user } = await supabase
     .from('users')
     .select('id, name')
@@ -58,13 +79,15 @@ export async function optionalAuth(req: AuthedRequest, _res: Response, next: Nex
   next()
 }
 
-router.post('/signup', async (req: AuthedRequest, res) => {
+router.post('/signup', authLimiter, async (req: AuthedRequest, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
   const name = String(req.body.name || '').trim()
   const password = String(req.body.password || '')
 
   if (!email || !name || !password) return res.status(400).json({ error: 'Email, name, and password are required' })
-  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' })
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email address' })
+  if (name.length > 80) return res.status(400).json({ error: 'Name is too long (max 80 characters)' })
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
 
   const { data: existing } = await supabase.from('users').select('id').eq('email', email).maybeSingle()
   if (existing) return res.status(409).json({ error: 'Email already registered' })
@@ -79,7 +102,7 @@ router.post('/signup', async (req: AuthedRequest, res) => {
   res.json({ token, user: { id, name, email } })
 })
 
-router.post('/login', async (req: AuthedRequest, res) => {
+router.post('/login', authLimiter, async (req: AuthedRequest, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
   const password = String(req.body.password || '')
 
@@ -117,7 +140,7 @@ function setCookie(req: AuthedRequest, res: Response, token: string) {
   const secure = req.secure || req.headers['x-forwarded-proto'] === 'https'
   res.setHeader(
     'Set-Cookie',
-    `session=${token}; Path=/; HttpOnly; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax${secure ? '; Secure' : ''}`
+    `session=${token}; Path=/; HttpOnly; Max-Age=${60 * 60 * 24 * SESSION_TTL_DAYS}; SameSite=Lax${secure ? '; Secure' : ''}`
   )
 }
 

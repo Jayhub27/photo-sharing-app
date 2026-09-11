@@ -20,8 +20,8 @@ export default function SignupScreen({ navigation }: Props) {
       Alert.alert('Missing fields', 'Fill in your name, email and password.')
       return
     }
-    if (password.length < 6) {
-      Alert.alert('Weak password', 'Password must be at least 6 characters.')
+    if (password.length < 8) {
+      Alert.alert('Weak password', 'Password must be at least 8 characters.')
       return
     }
     setBusy(true)
@@ -66,7 +66,7 @@ export default function SignupScreen({ navigation }: Props) {
         />
         <TextInput
           style={styles.input}
-          placeholder="Password (min 6 characters)"
+          placeholder="Password (min 8 characters)"
           placeholderTextColor={colors.textMuted}
           value={password}
           onChangeText={setPassword}

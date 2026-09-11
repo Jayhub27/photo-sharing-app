@@ -6,8 +6,17 @@ import { supabase, BUCKET } from './db.js'
 import { generateId } from './utils.js'
 import { createZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
+import { rateLimit } from './ratelimit.js'
 
 const router = Router()
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 120,
+  message: 'Upload limit reached. Please try again later.',
+})
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -118,7 +127,7 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
 })
 
 router.post('/collections', authMiddleware, async (req: AuthedRequest, res) => {
-  const name = String(req.body.name || 'Untitled').slice(0, 120)
+  const name = String(req.body.name || '').trim().slice(0, 120) || 'Untitled'
   const id = generateId()
   const { error } = await supabase.from('collections').insert({ id, user_id: req.userId, name })
   if (error) return res.status(500).json({ error: 'Could not create collection' })
@@ -281,6 +290,7 @@ router.get('/collections/:id/zip', async (req, res) => {
 router.post(
   '/collections/:id/photos',
   authMiddleware,
+  uploadLimiter,
   upload.array('photos', 20),
   async (req: AuthedRequest, res) => {
     const access = await getAccess(req.params.id, req.userId)
@@ -412,6 +422,7 @@ router.post('/collections/:id/members', authMiddleware, async (req: AuthedReques
   const email = String(req.body.email || '').trim().toLowerCase()
   const role = req.body.role === 'editor' ? 'editor' : 'viewer'
   if (!email) return res.status(400).json({ error: 'Email is required' })
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email address' })
 
   const { data: user } = await supabase.from('users').select('id, name, email').eq('email', email).maybeSingle()
   if (!user) return res.status(404).json({ error: 'No PhotoShare account with that email' })

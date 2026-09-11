@@ -754,7 +754,7 @@ export function signupPage(_apiBase: string): string {
       </div>
       <div class="auth-field">
         <label for="password">Password</label>
-        <input type="password" id="password" placeholder="At least 6 characters" autocomplete="new-password" required>
+        <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password" required>
       </div>
       <button class="btn auth-btn" type="submit">Create account</button>
     </form>
