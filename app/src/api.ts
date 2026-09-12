@@ -139,13 +139,17 @@ export async function me(): Promise<{ user: User }> {
 
 /* ------------------------------------------------------------ collections */
 
-export async function listCollections(opts: { q?: string; limit?: number; offset?: number } = {}): Promise<{
+export async function listCollections(
+  opts: { q?: string; limit?: number; offset?: number; sort?: 'newest' | 'name'; filter?: 'all' | 'owned' | 'shared' } = {}
+): Promise<{
   collections: Collection[]
   total: number
   hasMore: boolean
 }> {
   const params = new URLSearchParams()
   if (opts.q) params.set('q', opts.q)
+  if (opts.sort) params.set('sort', opts.sort)
+  if (opts.filter) params.set('filter', opts.filter)
   params.set('limit', String(opts.limit ?? 20))
   params.set('offset', String(opts.offset ?? 0))
   const res = await fetch(`${resolveBase()}/api/collections?${params.toString()}`, { headers: headers() })
@@ -166,11 +170,12 @@ export async function createCollection(name: string): Promise<Collection> {
 
 export async function getCollection(
   id: string,
-  opts: { q?: string; limit?: number; offset?: number; since?: string } = {}
+  opts: { q?: string; limit?: number; offset?: number; since?: string; sort?: 'newest' | 'oldest' | 'name' } = {}
 ): Promise<CollectionResponse> {
   const params = new URLSearchParams()
   if (opts.q) params.set('q', opts.q)
   if (opts.since) params.set('since', opts.since)
+  if (opts.sort) params.set('sort', opts.sort)
   params.set('limit', String(opts.limit ?? 60))
   params.set('offset', String(opts.offset ?? 0))
   const res = await fetch(`${resolveBase()}/api/collections/${id}?${params.toString()}`, { headers: headers() })

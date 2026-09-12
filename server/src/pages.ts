@@ -154,7 +154,29 @@ select.copy-btn{min-width:110px;background:var(--surface2);color:var(--text)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .skip-link{position:absolute;left:-9999px;top:0;background:var(--surface);color:var(--text);padding:10px 16px;border-radius:0 0 10px 0;z-index:400}
 .skip-link:focus{left:0}
-.card-thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.card-thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px;transition:transform .3s var(--transition)}
+/* Controls: sort, filter chips, view toggle */
+.controls{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.controls select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;cursor:pointer}
+.controls select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:flex;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:8px 14px;font-size:13px;color:var(--muted);cursor:pointer;font-weight:600;transition:background .2s,color .2s}
+.chip:hover{color:var(--text)}
+.chip.active{background:var(--grad);color:#fff;border-color:transparent}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.icon-btn:hover{background:var(--surface2)}
+.card-list.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.card-list.grid .card{flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden}
+.card-list.grid .card-left{flex-direction:column;align-items:stretch;gap:0}
+.card-list.grid .card-thumb{width:100%;height:150px;border-radius:0;border:none;border-bottom:1px solid var(--border)}
+.card-list.grid .card-info{padding:14px 16px 16px}
+.card-list.grid .card .card-arrow{display:none}
+.card-list.grid .card:hover .card-thumb img{transform:scale(1.06)}
+/* Photo list view */
+.grid.photo-list{grid-template-columns:1fr}
+.grid.photo-list .photo-wrap{aspect-ratio:auto;height:76px}
+.grid.photo-list .photo-wrap img{height:76px;width:100%;object-fit:cover}
+.grid.photo-list .photo-wrap::after{content:attr(data-name);position:absolute;left:12px;bottom:9px;font-size:13px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.65);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 /* Nav bar */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;animation:fadeIn .3s}
@@ -253,6 +275,18 @@ export function homePage(apiBase: string): string {
     </div>
     <div class="section-label">Your Collections</div>
     <div class="search-bar"><input type="search" id="search" placeholder="Search collections by name..."></div>
+    <div class="controls">
+      <select id="sortSelect" aria-label="Sort collections">
+        <option value="newest">Newest first</option>
+        <option value="name">Name (A\\u2013Z)</option>
+      </select>
+      <div class="chips" role="group" aria-label="Filter collections">
+        <button class="chip active" data-filter="all" type="button">All</button>
+        <button class="chip" data-filter="owned" type="button">Owned</button>
+        <button class="chip" data-filter="shared" type="button">Shared</button>
+      </div>
+      <button class="icon-btn" id="viewToggle" type="button" aria-label="Toggle grid or list view">\\u25a6</button>
+    </div>
     <div id="list"></div>
     <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
   </div>
@@ -296,22 +330,33 @@ async function logout() {
   await fetch(BASE + '/api/auth/logout', { method: 'POST' });
   window.location.href = '/login';
 }
-let offset = 0, limit = 12, total = 0, q = '';
+let offset = 0, limit = 12, total = 0, q = '', sort = 'newest', filter = 'all', view = 'list';
+try {
+  sort = localStorage.getItem('ps.sort') || 'newest';
+  filter = localStorage.getItem('ps.filter') || 'all';
+  view = localStorage.getItem('ps.view') || 'list';
+} catch (e) {}
+function applyView() {
+  const el = document.getElementById('list');
+  if (el) el.className = 'card-list' + (view === 'grid' ? ' grid' : '');
+  const btn = document.getElementById('viewToggle');
+  if (btn) btn.textContent = view === 'grid' ? '\\u2630' : '\\u25a6';
+}
 async function load(append) {
   const el = document.getElementById('list');
   if (!append) { offset = 0; el.className = ''; el.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>'; }
   try {
-    const res = await fetch(BASE + '/api/collections?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + offset, { credentials: 'include' });
+    const res = await fetch(BASE + '/api/collections?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + offset + '&sort=' + sort + '&filter=' + filter, { credentials: 'include' });
     if (res.status === 401) { window.location.href = '/login'; return; }
     const data = await res.json();
     const collections = data.collections;
     total = data.total;
     if (!collections.length) {
       document.getElementById('loadMore').classList.add('hidden');
-      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : filter === 'shared' ? 'No collections are shared with you yet.' : filter === 'owned' ? 'You have not created any collections yet.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
       return;
     }
-    el.className = 'card-list';
+    applyView();
     const html = collections.map((c, i) =>
       '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 60) + 'ms">' +
         '<div class="card-left">' +
@@ -359,6 +404,29 @@ searchInput.addEventListener('input', () => {
   searchTimer = setTimeout(() => { q = searchInput.value.trim(); load(false); }, 300);
 });
 document.getElementById('loadMore').addEventListener('click', () => load(true));
+const sortSelect = document.getElementById('sortSelect');
+sortSelect.value = sort;
+sortSelect.addEventListener('change', () => {
+  sort = sortSelect.value;
+  try { localStorage.setItem('ps.sort', sort); } catch (e) {}
+  load(false);
+});
+document.querySelectorAll('.chip').forEach((ch) => {
+  ch.classList.toggle('active', ch.dataset.filter === filter);
+  ch.addEventListener('click', () => {
+    filter = ch.dataset.filter;
+    document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === ch));
+    try { localStorage.setItem('ps.filter', filter); } catch (e) {}
+    load(false);
+  });
+});
+const viewToggle = document.getElementById('viewToggle');
+viewToggle.addEventListener('click', () => {
+  view = view === 'grid' ? 'list' : 'grid';
+  try { localStorage.setItem('ps.view', view); } catch (e) {}
+  applyView();
+});
+applyView();
 checkAuth();
 </script>
 </body>
@@ -450,6 +518,14 @@ ${og}<style>${SHARED_CSS}</style>
     </div>
   </div>
   <div class="search-bar"><input type="search" id="photoSearch" placeholder="Search photos by filename..."><span class="live-dot" title="Live updates on"></span></div>
+  <div class="controls">
+    <select id="photoSort" aria-label="Sort photos">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="name">Name (A\\u2013Z)</option>
+    </select>
+    <button class="icon-btn" id="photoViewToggle" type="button" aria-label="Toggle grid or list view">\\u25a6</button>
+  </div>
   <div id="membersSection" class="section hidden">
     <div class="section-body anim" style="padding:24px">
       <h2 style="font-size:17px;margin-bottom:8px">\\ud83d\\udc65 Members</h2>
@@ -474,7 +550,17 @@ let canEdit = false;
 let canManage = false;
 let role = null;
 let loggedIn = false;
-let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '', isPublic = true;
+let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '', isPublic = true, photoSort = 'newest', photoView = 'grid';
+try {
+  photoSort = localStorage.getItem('ps.photoSort') || 'newest';
+  photoView = localStorage.getItem('ps.photoView') || 'grid';
+} catch (e) {}
+function applyPhotoView() {
+  const el = document.getElementById('photos');
+  if (el) el.className = 'grid' + (photoView === 'list' ? ' photo-list' : '');
+  const btn = document.getElementById('photoViewToggle');
+  if (btn) btn.textContent = photoView === 'list' ? '\\u25a6' : '\\u2630';
+}
 function renderStats() {
   document.getElementById('stats').innerHTML =
     '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
@@ -535,7 +621,7 @@ function updateChrome() {
 }
 async function load(append) {
   try {
-    const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset, { credentials: 'include' });
+    const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset + '&sort=' + photoSort, { credentials: 'include' });
     if (res.status === 403) {
       document.getElementById('title').innerHTML = '\\ud83d\\udd12 Private collection';
       document.getElementById('stats').innerHTML = '';
@@ -588,12 +674,13 @@ async function saveCollection() {
 }
 function renderPhotos() {
   const el = document.getElementById('photos');
+  applyPhotoView();
   if (!photos.length) {
     el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.')) + '</div></div>';
     return;
   }
   el.innerHTML = photos.map((p, i) =>
-    '<div class="photo-wrap" style="animation-delay:' + (i * 40) + 'ms" role="button" tabindex="0" aria-label="View photo ' + esc(p.original_name) + '" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" onkeydown="if(event.keyCode===13||event.keyCode===32){event.preventDefault();openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\');}">' +
+    '<div class="photo-wrap" data-name="' + esc(p.original_name) + '" style="animation-delay:' + (i * 40) + 'ms" role="button" tabindex="0" aria-label="View photo ' + esc(p.original_name) + '" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" onkeydown="if(event.keyCode===13||event.keyCode===32){event.preventDefault();openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\');}">' +
       '<img src="' + BASE + '/api/photos/' + p.filename + '?thumb=1" alt="' + esc(p.original_name) + '" loading="lazy" decoding="async">' +
       '<div class="photo-overlay">' +
         '<button class="photo-btn" aria-label="Download ' + esc(p.original_name) + '" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
@@ -750,6 +837,21 @@ photoSearch.addEventListener('input', function () {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(function () { q = photoSearch.value.trim(); offset = 0; load(false); }, 300);
 });
+const photoSortSelect = document.getElementById('photoSort');
+photoSortSelect.value = photoSort;
+photoSortSelect.addEventListener('change', function () {
+  photoSort = photoSortSelect.value;
+  try { localStorage.setItem('ps.photoSort', photoSort); } catch (e) {}
+  offset = 0;
+  load(false);
+});
+const photoViewToggle = document.getElementById('photoViewToggle');
+photoViewToggle.addEventListener('click', function () {
+  photoView = photoView === 'list' ? 'grid' : 'list';
+  try { localStorage.setItem('ps.photoView', photoView); } catch (e) {}
+  applyPhotoView();
+});
+applyPhotoView();
 document.getElementById('membersToggle').addEventListener('click', toggleMembers);
 document.getElementById('inviteBtn').addEventListener('click', inviteMember);
 document.getElementById('inviteEmail').addEventListener('keydown', function (e) { if (e.key === 'Enter') inviteMember(); });

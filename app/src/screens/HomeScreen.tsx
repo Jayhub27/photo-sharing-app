@@ -18,15 +18,21 @@ export default function HomeScreen({ navigation }: Props) {
   const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<'newest' | 'name'>('newest')
+  const [filter, setFilter] = useState<'all' | 'owned' | 'shared'>('all')
   const offsetRef = useRef(0)
   const requestId = useRef(0)
+  const sortRef = useRef(sort)
+  const filterRef = useRef(filter)
+  sortRef.current = sort
+  filterRef.current = filter
 
   const load = useCallback(async (q: string) => {
     const id = ++requestId.current
     setLoading(true)
     setError(null)
     try {
-      const res = await listCollections({ q, limit: PAGE_SIZE, offset: 0 })
+      const res = await listCollections({ q, limit: PAGE_SIZE, offset: 0, sort: sortRef.current, filter: filterRef.current })
       if (id !== requestId.current) return
       setCollections(res.collections)
       setHasMore(res.hasMore)
@@ -42,7 +48,7 @@ export default function HomeScreen({ navigation }: Props) {
   useEffect(() => {
     const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
     return () => clearTimeout(t)
-  }, [query, load])
+  }, [query, load, sort, filter])
 
   const firstFocus = useRef(true)
   useEffect(() => {
@@ -60,7 +66,7 @@ export default function HomeScreen({ navigation }: Props) {
     if (loadingMore || !hasMore || loading) return
     setLoadingMore(true)
     try {
-      const res = await listCollections({ q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current })
+      const res = await listCollections({ q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current, sort: sortRef.current, filter: filterRef.current })
       setCollections((prev) => [...prev, ...res.collections])
       setHasMore(res.hasMore)
       offsetRef.current += res.collections.length
@@ -117,6 +123,39 @@ export default function HomeScreen({ navigation }: Props) {
           autoCapitalize="none"
           returnKeyType="search"
         />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 24, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        {(['all', 'owned', 'shared'] as const).map((f) => (
+          <Pressable
+            key={f}
+            onPress={() => setFilter(f)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: filter === f }}
+            style={{
+              paddingVertical: 6,
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: filter === f ? colors.accent : colors.border,
+              backgroundColor: filter === f ? 'rgba(99,102,241,0.15)' : 'transparent',
+            }}
+          >
+            <Text style={{ color: filter === f ? colors.text : colors.textMuted, fontSize: 13, fontWeight: '600' }}>
+              {f[0].toUpperCase() + f.slice(1)}
+            </Text>
+          </Pressable>
+        ))}
+        <Pressable
+          onPress={() => setSort((s) => (s === 'newest' ? 'name' : 'newest'))}
+          accessibilityRole="button"
+          accessibilityLabel="Toggle sort order"
+          style={{ paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '600' }}>
+            {sort === 'newest' ? '↓ Newest' : 'A–Z'}
+          </Text>
+        </Pressable>
       </View>
 
       {loading ? (

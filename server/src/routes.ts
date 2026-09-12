@@ -104,6 +104,8 @@ async function makeThumb(buffer: Buffer): Promise<{ thumb: Buffer; width?: numbe
 
 router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
   const q = String(req.query.q || '').trim()
+  const sort = String(req.query.sort || 'newest') === 'name' ? 'name' : 'newest'
+  const filter = ['owned', 'shared'].includes(String(req.query.filter)) ? String(req.query.filter) : 'all'
   const limit = clampInt(req.query.limit, 30, 1, 100)
   const offset = clampInt(req.query.offset, 0, 0, 100000)
 
@@ -117,9 +119,14 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
   let query = supabase
     .from('collections')
     .select('id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename', { count: 'exact' })
-    .order('created_at', { ascending: false })
+    .order(sort === 'name' ? 'name' : 'created_at', { ascending: sort === 'name' })
 
-  if (memberIds.length) {
+  if (filter === 'owned') {
+    query = query.eq('user_id', req.userId)
+  } else if (filter === 'shared') {
+    if (!memberIds.length) return res.json({ collections: [], total: 0, hasMore: false })
+    query = query.in('id', memberIds)
+  } else if (memberIds.length) {
     query = query.or(`user_id.eq.${req.userId},id.in.(${memberIds.join(',')})`)
   } else {
     query = query.eq('user_id', req.userId)
@@ -163,14 +170,21 @@ router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => 
 
   const q = String(req.query.q || '').trim()
   const since = String(req.query.since || '').trim()
+  const sort = String(req.query.sort || 'newest')
   const limit = clampInt(req.query.limit, 60, 1, 200)
   const offset = clampInt(req.query.offset, 0, 0, 100000)
+
+  const orderBy = since || sort === 'oldest'
+    ? { column: 'created_at', ascending: true }
+    : sort === 'name'
+      ? { column: 'original_name', ascending: true }
+      : { column: 'created_at', ascending: false }
 
   let query = supabase
     .from('photos')
     .select(PHOTO_FIELDS, { count: 'exact' })
     .eq('collection_id', req.params.id)
-    .order('created_at', since ? { ascending: true } : { ascending: false })
+    .order(orderBy.column, { ascending: orderBy.ascending })
   if (q) query = query.ilike('original_name', `%${q}%`)
   if (since) query = query.gt('created_at', since)
 

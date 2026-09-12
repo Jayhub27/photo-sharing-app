@@ -30,6 +30,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [role, setRole] = useState<string | null>(null)
   const [isPublic, setIsPublic] = useState(true)
   const [query, setQuery] = useState('')
+  const [photoSort, setPhotoSort] = useState<'newest' | 'oldest' | 'name'>('newest')
   const [total, setTotal] = useState(0)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
@@ -40,8 +41,10 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const photosRef = useRef<Photo[]>([])
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const activeRef = useRef(true)
+  const sortRef = useRef(photoSort)
 
   queryRef.current = query
+  sortRef.current = photoSort
   useEffect(() => {
     photosRef.current = photos
   }, [photos])
@@ -50,7 +53,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
     async (q: string) => {
       setLoading(true)
       try {
-        const res = await getCollection(id, { q, limit: PAGE_SIZE, offset: 0 })
+        const res = await getCollection(id, { q, limit: PAGE_SIZE, offset: 0, sort: sortRef.current })
         if (!activeRef.current) return
         photosRef.current = res.photos
         setPhotos(res.photos)
@@ -80,7 +83,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   useEffect(() => {
     const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
     return () => clearTimeout(t)
-  }, [query, load])
+  }, [query, load, photoSort])
 
   const poll = useCallback(async () => {
     if (!newestRef.current) return
@@ -126,7 +129,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
     if (loadingMore || !hasMore || loading) return
     setLoadingMore(true)
     try {
-      const res = await getCollection(id, { q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current })
+      const res = await getCollection(id, { q: query.trim(), limit: PAGE_SIZE, offset: offsetRef.current, sort: sortRef.current })
       setPhotos((prev) => [...prev, ...res.photos])
       setHasMore(res.hasMore)
       offsetRef.current += res.photos.length
@@ -267,6 +270,29 @@ export default function CollectionScreen({ route, navigation }: Props) {
           autoCapitalize="none"
           returnKeyType="search"
         />
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 24, marginBottom: 12, alignItems: 'center' }}>
+        {(['newest', 'oldest', 'name'] as const).map((s) => (
+          <Pressable
+            key={s}
+            onPress={() => setPhotoSort(s)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: photoSort === s }}
+            style={{
+              paddingVertical: 6,
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: photoSort === s ? colors.accent : colors.border,
+              backgroundColor: photoSort === s ? 'rgba(99,102,241,0.15)' : 'transparent',
+            }}
+          >
+            <Text style={{ color: photoSort === s ? colors.text : colors.textMuted, fontSize: 13, fontWeight: '600' }}>
+              {s === 'newest' ? 'Newest' : s === 'oldest' ? 'Oldest' : 'A–Z'}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {loading ? (
