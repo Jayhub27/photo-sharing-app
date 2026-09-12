@@ -212,7 +212,7 @@ function toast(msg, type) {
   if (!c) { c = document.createElement('div'); c.id = 'toast-container'; document.body.appendChild(c); }
   const t = document.createElement('div');
   t.className = 'toast ' + (type||'');
-  const icon = type === 'success' ? '\\u2713' : type === 'error' ? '\\u2717' : '\\u2022';
+  const icon = type === 'success' ? '\u2713' : type === 'error' ? '\u2717' : '\u2022';
   t.innerHTML = '<span class="dot">' + icon + '</span><span>' + esc(msg) + '</span>';
   c.appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; t.style.transition = 'all .3s'; setTimeout(() => t.remove(), 300); }, 3000);
@@ -233,7 +233,7 @@ function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'l
   btn.className = 'theme-toggle';
   btn.type = 'button';
   btn.setAttribute('aria-label', 'Toggle light and dark theme');
-  var sync = function(){ btn.textContent = document.documentElement.dataset.theme === 'light' ? '\\u2600\\ufe0f' : '\\ud83c\\udf19'; };
+  var sync = function(){ btn.textContent = document.documentElement.dataset.theme === 'light' ? '\u2600\ufe0f' : '\ud83c\udf19'; };
   btn.addEventListener('click', function(){ toggleTheme(); sync(); });
   sync();
   document.body.appendChild(btn);
@@ -261,7 +261,7 @@ export function homePage(apiBase: string): string {
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="wrap" id="main">
   <div class="nav">
-    <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
+    <a class="nav-logo" href="/"><div class="logo-icon">\ud83d\udcf7</div><div class="logo-text">PhotoShare</div></a>
     <div class="nav-right" id="navRight"></div>
   </div>
   <div id="authed" class="hidden">
@@ -278,14 +278,14 @@ export function homePage(apiBase: string): string {
     <div class="controls">
       <select id="sortSelect" aria-label="Sort collections">
         <option value="newest">Newest first</option>
-        <option value="name">Name (A\\u2013Z)</option>
+        <option value="name">Name (A\u2013Z)</option>
       </select>
       <div class="chips" role="group" aria-label="Filter collections">
         <button class="chip active" data-filter="all" type="button">All</button>
         <button class="chip" data-filter="owned" type="button">Owned</button>
         <button class="chip" data-filter="shared" type="button">Shared</button>
       </div>
-      <button class="icon-btn" id="viewToggle" type="button" aria-label="Toggle grid or list view">\\u25a6</button>
+      <button class="icon-btn" id="viewToggle" type="button" aria-label="Toggle grid or list view">\u25a6</button>
     </div>
     <div id="list"></div>
     <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
@@ -293,7 +293,7 @@ export function homePage(apiBase: string): string {
   <div id="guest" class="hidden">
     <div class="hero" style="text-align:center;padding-top:80px">
       <h1>Share photos with a <span class="grad">QR code</span></h1>
-      <p class="sub" style="margin:0 auto 32px">Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery \\u2014 no app required.</p>
+      <p class="sub" style="margin:0 auto 32px">Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery \u2014 no app required.</p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a class="btn" href="/signup">Get Started</a>
         <a class="btn outline" href="/login">Log in</a>
@@ -340,7 +340,7 @@ function applyView() {
   const el = document.getElementById('list');
   if (el) el.className = 'card-list' + (view === 'grid' ? ' grid' : '');
   const btn = document.getElementById('viewToggle');
-  if (btn) btn.textContent = view === 'grid' ? '\\u2630' : '\\u25a6';
+  if (btn) btn.textContent = view === 'grid' ? '\u2630' : '\u25a6';
 }
 async function load(append) {
   const el = document.getElementById('list');
@@ -353,20 +353,20 @@ async function load(append) {
     total = data.total;
     if (!collections.length) {
       document.getElementById('loadMore').classList.add('hidden');
-      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : filter === 'shared' ? 'No collections are shared with you yet.' : filter === 'owned' ? 'You have not created any collections yet.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
+      el.innerHTML = '<div class="empty"><div class="empty-icon">\ud83d\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : filter === 'shared' ? 'No collections are shared with you yet.' : filter === 'owned' ? 'You have not created any collections yet.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
       return;
     }
     applyView();
     const html = collections.map((c, i) =>
       '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 60) + 'ms">' +
         '<div class="card-left">' +
-          '<div class="card-thumb">' + (c.cover_thumb_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_thumb_filename + '?thumb=1" alt="" loading="lazy">' : '\\ud83d\\udcc1') + '</div>' +
+          '<div class="card-thumb">' + (c.cover_thumb_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_thumb_filename + '?thumb=1" alt="" loading="lazy">' : '\ud83d\udcc1') + '</div>' +
           '<div class="card-info">' +
-            '<div class="card-title">' + esc(c.name) + (c.is_public === false ? '<span class="badge">\\ud83d\\udd12 private</span>' : '') + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
+            '<div class="card-title">' + esc(c.name) + (c.is_public === false ? '<span class="badge">\ud83d\udd12 private</span>' : '') + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
             '<div class="card-sub">' + c.photo_count + ' photo' + (c.photo_count === 1 ? '' : 's') + '</div>' +
           '</div>' +
         '</div>' +
-        '<span class="card-arrow">\\u203a</span>' +
+        '<span class="card-arrow">\u203a</span>' +
       '</a>'
     ).join('');
     if (append) el.insertAdjacentHTML('beforeend', html); else el.innerHTML = html;
@@ -375,7 +375,7 @@ async function load(append) {
     lm.classList.toggle('hidden', !data.hasMore);
     lm.textContent = 'Load more (' + offset + '/' + total + ')';
   } catch {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">\\u26a0\\ufe0f</div><div class="empty-text">Could not reach server.<br><button class="btn small" style="margin-top:16px" onclick="load()">Retry</button></div></div>';
+    el.innerHTML = '<div class="empty"><div class="empty-icon">\u26a0\ufe0f</div><div class="empty-text">Could not reach server.<br><button class="btn small" style="margin-top:16px" onclick="load()">Retry</button></div></div>';
   }
 }
 document.getElementById('createForm').addEventListener('submit', async (e) => {
@@ -460,12 +460,12 @@ ${og}<style>${SHARED_CSS}</style>
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="lightbox" id="lightbox">
-  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image">\\u2715</button>
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image">\u2715</button>
   <img id="lightboxImg" alt="Photo preview">
 </div>
 <div class="wrap" id="main">
   <div class="nav">
-    <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
+    <a class="nav-logo" href="/"><div class="logo-icon">\ud83d\udcf7</div><div class="logo-text">PhotoShare</div></a>
     <div class="nav-right" id="navRight"></div>
   </div>
   <a class="back" href="/">&larr; All collections</a>
@@ -485,20 +485,20 @@ ${og}<style>${SHARED_CSS}</style>
   <div id="saveBar" class="section hidden">
     <div class="section-body anim" style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
       <div style="font-size:15px;color:var(--muted)">Like this collection? Save a copy to your own account.</div>
-      <button class="btn small" id="saveBtn" onclick="saveCollection()">\\ud83d\\udcbe Save to my account</button>
+      <button class="btn small" id="saveBtn" onclick="saveCollection()">\ud83d\udcbe Save to my account</button>
     </div>
   </div>
   <div class="actions" id="actions">
-    <button class="btn" id="uploadToggle">\\ud83d\\udcf7 Add Photos</button>
-    <button class="btn outline" id="qrToggle">\\ud83d\\udd04 Show QR</button>
-    <button class="btn outline hidden" id="membersToggle">\\ud83d\\udc65 Members</button>
-    <button class="btn outline hidden" id="visibilityToggle" onclick="toggleVisibility()">\\ud83d\\udd12 Make private</button>
-    <a class="btn outline" id="downloadAllBtn" href="/api/collections/${id}/zip" style="display:none">\\u2b07 Download All</a>
+    <button class="btn" id="uploadToggle">\ud83d\udcf7 Add Photos</button>
+    <button class="btn outline" id="qrToggle">\ud83d\udd04 Show QR</button>
+    <button class="btn outline hidden" id="membersToggle">\ud83d\udc65 Members</button>
+    <button class="btn outline hidden" id="visibilityToggle" onclick="toggleVisibility()">\ud83d\udd12 Make private</button>
+    <a class="btn outline" id="downloadAllBtn" href="/api/collections/${id}/zip" style="display:none">\u2b07 Download All</a>
   </div>
   <div id="uploadSection" class="section hidden">
     <div class="section-body anim" style="padding-top:24px">
       <div class="dropzone" id="dropzone">
-        <div class="dropzone-icon">\\ud83d\\udce4</div>
+        <div class="dropzone-icon">\ud83d\udce4</div>
         <div class="dropzone-text"><strong>Click to browse</strong> or drag photos here</div>
         <input type="file" id="files" accept="image/*" multiple>
       </div>
@@ -522,13 +522,13 @@ ${og}<style>${SHARED_CSS}</style>
     <select id="photoSort" aria-label="Sort photos">
       <option value="newest">Newest first</option>
       <option value="oldest">Oldest first</option>
-      <option value="name">Name (A\\u2013Z)</option>
+      <option value="name">Name (A\u2013Z)</option>
     </select>
-    <button class="icon-btn" id="photoViewToggle" type="button" aria-label="Toggle grid or list view">\\u25a6</button>
+    <button class="icon-btn" id="photoViewToggle" type="button" aria-label="Toggle grid or list view">\u25a6</button>
   </div>
   <div id="membersSection" class="section hidden">
     <div class="section-body anim" style="padding:24px">
-      <h2 style="font-size:17px;margin-bottom:8px">\\ud83d\\udc65 Members</h2>
+      <h2 style="font-size:17px;margin-bottom:8px">\ud83d\udc65 Members</h2>
       <div id="membersList"></div>
       <div class="share-link" id="inviteBox" style="margin-top:16px">
         <input id="inviteEmail" placeholder="teammate@email.com">
@@ -559,18 +559,18 @@ function applyPhotoView() {
   const el = document.getElementById('photos');
   if (el) el.className = 'grid' + (photoView === 'list' ? ' photo-list' : '');
   const btn = document.getElementById('photoViewToggle');
-  if (btn) btn.textContent = photoView === 'list' ? '\\u25a6' : '\\u2630';
+  if (btn) btn.textContent = photoView === 'list' ? '\u25a6' : '\u2630';
 }
 function renderStats() {
   document.getElementById('stats').innerHTML =
     '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
-    (isPublic ? '' : '<div class="stat-chip">\\ud83d\\udd12 Private</div>') +
+    (isPublic ? '' : '<div class="stat-chip">\ud83d\udd12 Private</div>') +
     (role ? '<div class="stat-chip">Your role: <strong>' + role + '</strong></div>' : '') +
     (createdAt ? '<div class="stat-chip">Created ' + createdAt + '</div>' : '');
 }
 function updateVisibilityButton() {
   const btn = document.getElementById('visibilityToggle');
-  if (btn) btn.textContent = isPublic ? '\\ud83d\\udd12 Make private' : '\\ud83d\\udd13 Make public';
+  if (btn) btn.textContent = isPublic ? '\ud83d\udd12 Make private' : '\ud83d\udd13 Make public';
   if (typeof renderStats === 'function') renderStats();
 }
 async function toggleVisibility() {
@@ -623,13 +623,13 @@ async function load(append) {
   try {
     const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset + '&sort=' + photoSort, { credentials: 'include' });
     if (res.status === 403) {
-      document.getElementById('title').innerHTML = '\\ud83d\\udd12 Private collection';
+      document.getElementById('title').innerHTML = '\ud83d\udd12 Private collection';
       document.getElementById('stats').innerHTML = '';
       document.getElementById('actions').classList.add('hidden');
       const sb = document.querySelector('.search-bar'); if (sb) sb.classList.add('hidden');
       document.getElementById('membersSection').classList.add('hidden');
       document.getElementById('loadMore').classList.add('hidden');
-      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd12</div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
+      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\ud83d\udd12</div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
       return;
     }
     if (!res.ok) throw new Error();
@@ -654,7 +654,7 @@ async function load(append) {
   } catch {
     document.getElementById('title').textContent = 'Collection not found';
     document.getElementById('stats').innerHTML = '';
-    document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon">\\u26a0\\ufe0f</div><div class="empty-text">This collection could not be loaded.</div></div>';
+    document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon">\u26a0\ufe0f</div><div class="empty-text">This collection could not be loaded.</div></div>';
   }
 }
 async function saveCollection() {
@@ -669,22 +669,22 @@ async function saveCollection() {
     setTimeout(() => window.location.href = '/c/' + id, 400);
   } catch {
     toast('Could not save collection', 'error');
-    btn.disabled = false; btn.innerHTML = '\\ud83d\\udcbe Save to my account';
+    btn.disabled = false; btn.innerHTML = '\ud83d\udcbe Save to my account';
   }
 }
 function renderPhotos() {
   const el = document.getElementById('photos');
   applyPhotoView();
   if (!photos.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd0c</div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.')) + '</div></div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\ud83d\udd0c</div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.')) + '</div></div>';
     return;
   }
   el.innerHTML = photos.map((p, i) =>
     '<div class="photo-wrap" data-name="' + esc(p.original_name) + '" style="animation-delay:' + (i * 40) + 'ms" role="button" tabindex="0" aria-label="View photo ' + esc(p.original_name) + '" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" onkeydown="if(event.keyCode===13||event.keyCode===32){event.preventDefault();openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\');}">' +
       '<img src="' + BASE + '/api/photos/' + p.filename + '?thumb=1" alt="' + esc(p.original_name) + '" loading="lazy" decoding="async">' +
       '<div class="photo-overlay">' +
-        '<button class="photo-btn" aria-label="Download ' + esc(p.original_name) + '" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
-        (canEdit ? '<button class="photo-btn danger" aria-label="Delete ' + esc(p.original_name) + '" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
+        '<button class="photo-btn" aria-label="Download ' + esc(p.original_name) + '" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\u2b07</button>' +
+        (canEdit ? '<button class="photo-btn danger" aria-label="Delete ' + esc(p.original_name) + '" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\u2715</button>' : '') +
       '</div>' +
     '</div>'
   ).join('');
@@ -868,7 +868,7 @@ export function loginPage(_apiBase: string): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Log in \\u00b7 PhotoShare</title>
+<title>Log in \u00b7 PhotoShare</title>
 <style>${SHARED_CSS}</style>
 </head>
 <body>
@@ -876,7 +876,7 @@ export function loginPage(_apiBase: string): string {
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
-    <div class="auth-logo">\\ud83d\\udcf7</div>
+    <div class="auth-logo">\ud83d\udcf7</div>
     <div class="auth-title">Welcome back</div>
     <div class="auth-sub">Log in to manage your photo collections</div>
     <form id="loginForm">
@@ -923,7 +923,7 @@ export function signupPage(_apiBase: string): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sign up \\u00b7 PhotoShare</title>
+<title>Sign up \u00b7 PhotoShare</title>
 <style>${SHARED_CSS}</style>
 </head>
 <body>
@@ -931,7 +931,7 @@ export function signupPage(_apiBase: string): string {
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
-    <div class="auth-logo">\\ud83d\\udcf7</div>
+    <div class="auth-logo">\ud83d\udcf7</div>
     <div class="auth-title">Create your account</div>
     <div class="auth-sub">Start sharing photos with a QR code in seconds</div>
     <form id="signupForm">
