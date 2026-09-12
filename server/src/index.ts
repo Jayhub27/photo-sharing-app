@@ -4,6 +4,7 @@ import cors from 'cors'
 import api from './routes.js'
 import auth from './auth.js'
 import { supabase } from './db.js'
+import { publicBaseUrl } from './utils.js'
 import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
 
 const PORT = process.env.PORT || 3000
@@ -69,7 +70,7 @@ app.get('/c/:id', async (req, res) => {
       .maybeSingle()
     if (col && col.is_public !== false) {
       const image = col.cover_filename
-        ? `${req.protocol}://${req.get('host')}/api/photos/${col.cover_filename}`
+        ? `${publicBaseUrl(req)}/api/photos/${col.cover_filename}`
         : undefined
       meta = { title: col.name, description: `View "${col.name}" on PhotoShare.`, image }
     }

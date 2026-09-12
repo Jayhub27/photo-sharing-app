@@ -3,7 +3,7 @@ import multer from 'multer'
 import QRCode from 'qrcode'
 import sharp from 'sharp'
 import { supabase, BUCKET } from './db.js'
-import { generateId } from './utils.js'
+import { generateId, publicBaseUrl } from './utils.js'
 import { createZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 import { rateLimit } from './ratelimit.js'
@@ -241,8 +241,7 @@ router.delete('/collections/:id', authMiddleware, async (req: AuthedRequest, res
 router.get('/collections/:id/qr', async (req, res) => {
   const { data: col } = await supabase.from('collections').select('id').eq('id', req.params.id).maybeSingle()
   if (!col) return res.status(404).json({ error: 'Collection not found' })
-  const host = `${req.protocol}://${req.get('host')}`
-  const url = `${host}/c/${req.params.id}`
+  const url = `${publicBaseUrl(req)}/c/${req.params.id}`
   const qrPng = await QRCode.toBuffer(url, { width: 600 })
   res.type('png').send(qrPng)
 })
