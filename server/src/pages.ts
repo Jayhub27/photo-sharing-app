@@ -8,6 +8,11 @@ const SHARED_CSS = `
   --radius:16px;--shadow:0 8px 32px rgba(0,0,0,.4);--shadow-lg:0 24px 64px rgba(0,0,0,.5);
   --transition:cubic-bezier(.22,1,.36,1);
 }
+html[data-theme="light"]{
+  --bg:#f4f5fb;--surface:#ffffff;--surface2:#eef0f7;--card:#ffffff;
+  --border:rgba(15,23,42,.1);--text:#0f172a;--muted:#5b6478;
+  --shadow:0 8px 32px rgba(15,23,42,.08);--shadow-lg:0 24px 64px rgba(15,23,42,.12);
+}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at top left,rgba(99,102,241,.12),transparent 50%),radial-gradient(ellipse at bottom right,rgba(236,72,153,.08),transparent 50%);pointer-events:none;z-index:0}
 .wrap{max-width:720px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
@@ -143,6 +148,14 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 .member-email{font-size:13px;color:var(--muted)}
 select.copy-btn{min-width:110px;background:var(--surface2);color:var(--text)}
 .live-dot{width:9px;height:9px;border-radius:50%;background:#22c55e;align-self:center;animation:pulse 2s infinite}
+/* Theme toggle + a11y */
+.theme-toggle{position:fixed;bottom:20px;right:20px;z-index:300;width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .2s var(--transition),background .2s;box-shadow:var(--shadow)}
+.theme-toggle:hover{transform:translateY(-2px)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--surface);color:var(--text);padding:10px 16px;border-radius:0 0 10px 0;z-index:400}
+.skip-link:focus{left:0}
+.card-thumb img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
 /* Nav bar */
 .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;animation:fadeIn .3s}
 .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
@@ -186,6 +199,32 @@ function esc(s) { return String(s).replace(/[<>&"']/g, c => ({ '<':'&lt;','>':'&
 `
 }
 
+function THEME_JS(): string {
+  return `
+function applyTheme(theme){ document.documentElement.dataset.theme = theme; try { localStorage.setItem('photoshare.theme', theme); } catch(e){} }
+function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'); }
+(function(){
+  var saved = null; try { saved = localStorage.getItem('photoshare.theme'); } catch(e){}
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  document.documentElement.dataset.theme = saved || (prefersLight ? 'light' : 'dark');
+  var btn = document.createElement('button');
+  btn.className = 'theme-toggle';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Toggle light and dark theme');
+  var sync = function(){ btn.textContent = document.documentElement.dataset.theme === 'light' ? '\\u2600\\ufe0f' : '\\ud83c\\udf19'; };
+  btn.addEventListener('click', function(){ toggleTheme(); sync(); });
+  sync();
+  document.body.appendChild(btn);
+})();
+`
+}
+
+function htmlEscape(value: string): string {
+  return String(value).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
+  ))
+}
+
 export function homePage(apiBase: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -196,8 +235,9 @@ export function homePage(apiBase: string): string {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-<div id="toast-container"></div>
-<div class="wrap">
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="toast-container" aria-live="polite" role="status"></div>
+<div class="wrap" id="main">
   <div class="nav">
     <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
     <div class="nav-right" id="navRight"></div>
@@ -229,7 +269,7 @@ export function homePage(apiBase: string): string {
 </div>
 <script>
 const BASE = ${JSON.stringify(apiBase)};
-${TOAST_JS()}
+${TOAST_JS()}${THEME_JS()}
 let currentUser = null;
 async function checkAuth() {
   try {
@@ -275,7 +315,7 @@ async function load(append) {
     const html = collections.map((c, i) =>
       '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 60) + 'ms">' +
         '<div class="card-left">' +
-          '<div class="card-thumb">\\ud83d\\udcc1</div>' +
+          '<div class="card-thumb">' + (c.cover_thumb_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_thumb_filename + '?thumb=1" alt="" loading="lazy">' : '\\ud83d\\udcc1') + '</div>' +
           '<div class="card-info">' +
             '<div class="card-title">' + esc(c.name) + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
             '<div class="card-sub">' + c.photo_count + ' photo' + (c.photo_count === 1 ? '' : 's') + '</div>' +
@@ -325,22 +365,37 @@ checkAuth();
 </html>`
 }
 
-export function collectionPage(id: string, apiBase: string): string {
+export interface PageMeta {
+  title: string
+  description?: string
+  image?: string
+}
+
+export function collectionPage(id: string, apiBase: string, meta?: PageMeta): string {
+  const og = meta
+    ? `<meta property="og:type" content="website">
+<meta property="og:title" content="${htmlEscape(meta.title)}">
+<meta property="og:description" content="${htmlEscape(meta.description || 'View this shared photo collection.')}">
+${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` : ''}
+<meta name="twitter:card" content="summary_large_image">
+`
+    : ''
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PhotoShare</title>
-<style>${SHARED_CSS}</style>
+<title>${meta ? htmlEscape(meta.title) + ' \u00b7 PhotoShare' : 'PhotoShare'}</title>
+${og}<style>${SHARED_CSS}</style>
 </head>
 <body>
-<div id="toast-container"></div>
+<a class="skip-link" href="#main">Skip to content</a>
+<div id="toast-container" aria-live="polite" role="status"></div>
 <div class="lightbox" id="lightbox">
-  <button class="lightbox-close" onclick="closeLightbox()">\\u2715</button>
-  <img id="lightboxImg" alt="">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close image">\\u2715</button>
+  <img id="lightboxImg" alt="Photo preview">
 </div>
-<div class="wrap">
+<div class="wrap" id="main">
   <div class="nav">
     <a class="nav-logo" href="/"><div class="logo-icon">\\ud83d\\udcf7</div><div class="logo-text">PhotoShare</div></a>
     <div class="nav-right" id="navRight"></div>
@@ -389,7 +444,7 @@ export function collectionPage(id: string, apiBase: string): string {
       <div class="qr-wrap"><img id="qrImg" alt="QR code"></div>
       <div class="share-link">
         <input id="shareUrl" readonly>
-        <button class="copy-btn" onclick="copyLink()">Copy</button>
+        <button class="copy-btn" onclick="copyLink()" aria-label="Copy share link">Copy</button>
       </div>
     </div>
   </div>
@@ -411,7 +466,7 @@ export function collectionPage(id: string, apiBase: string): string {
 <script>
 const BASE = ${JSON.stringify(apiBase)};
 const CID = ${JSON.stringify(id)};
-${TOAST_JS()}
+${TOAST_JS()}${THEME_JS()}
 let photos = [];
 let isOwner = false;
 let canEdit = false;
@@ -506,11 +561,11 @@ function renderPhotos() {
     return;
   }
   el.innerHTML = photos.map((p, i) =>
-    '<div class="photo-wrap" style="animation-delay:' + (i * 50) + 'ms" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\')">' +
-      '<img src="' + BASE + '/api/photos/' + p.filename + '?thumb=1" loading="lazy" decoding="async">' +
+    '<div class="photo-wrap" style="animation-delay:' + (i * 40) + 'ms" role="button" tabindex="0" aria-label="View photo ' + esc(p.original_name) + '" onclick="openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" onkeydown="if(event.keyCode===13||event.keyCode===32){event.preventDefault();openLightbox(\\'' + BASE + '/api/photos/' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\');}">' +
+      '<img src="' + BASE + '/api/photos/' + p.filename + '?thumb=1" alt="' + esc(p.original_name) + '" loading="lazy" decoding="async">' +
       '<div class="photo-overlay">' +
-        '<button class="photo-btn" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
-        (canEdit ? '<button class="photo-btn danger" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
+        '<button class="photo-btn" aria-label="Download ' + esc(p.original_name) + '" onclick="event.stopPropagation();downloadPhoto(\\'' + p.filename + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Download">\\u2b07</button>' +
+        (canEdit ? '<button class="photo-btn danger" aria-label="Delete ' + esc(p.original_name) + '" onclick="event.stopPropagation();deletePhoto(\\'' + p.id + '\\',\\'' + esc(p.original_name).replace(/'/g,"\\\\'") + '\\')" title="Delete">\\u2715</button>' : '') +
       '</div>' +
     '</div>'
   ).join('');
@@ -586,8 +641,10 @@ function copyLink() {
   navigator.clipboard.writeText(input.value).then(() => toast('Link copied', 'success')).catch(() => toast('Copy failed', 'error'));
 }
 /* Lightbox */
-function openLightbox(src) {
-  document.getElementById('lightboxImg').src = src;
+function openLightbox(src, alt) {
+  const img = document.getElementById('lightboxImg');
+  img.src = src;
+  img.alt = alt ? 'Photo: ' + alt : 'Photo';
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
@@ -681,7 +738,7 @@ export function loginPage(_apiBase: string): string {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-<div id="toast-container"></div>
+<div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
@@ -703,7 +760,7 @@ export function loginPage(_apiBase: string): string {
   </div>
 </div>
 <script>
-${TOAST_JS()}
+${TOAST_JS()}${THEME_JS()}
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = document.getElementById('email').value.trim();
@@ -736,7 +793,7 @@ export function signupPage(_apiBase: string): string {
 <style>${SHARED_CSS}</style>
 </head>
 <body>
-<div id="toast-container"></div>
+<div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
   <a class="auth-back" href="/">&larr; Back</a>
   <div class="auth-card">
@@ -762,7 +819,7 @@ export function signupPage(_apiBase: string): string {
   </div>
 </div>
 <script>
-${TOAST_JS()}
+${TOAST_JS()}${THEME_JS()}
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = document.getElementById('name').value.trim();

@@ -6,12 +6,12 @@ import {
   deletePhoto as deletePhotoApi,
   getCollection,
   photoUrl,
-  uploadPhotos,
+  uploadPhoto,
   type Photo,
   type RootStackParamList,
 } from '../api'
 import { colors, styles, shadows } from '../styles'
-import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, LoadingScreen } from '../components'
+import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, PhotoViewer } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Collection'>
 
@@ -28,6 +28,8 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [role, setRole] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [total, setTotal] = useState(0)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
 
   const offsetRef = useRef(0)
   const newestRef = useRef('')
@@ -141,15 +143,28 @@ export default function CollectionScreen({ route, navigation }: Props) {
     })
     if (result.canceled || !result.assets?.length) return
 
+    const assets = result.assets
+    const uploaded: Photo[] = []
     setUploading(true)
+    setUploadProgress({ done: 0, total: assets.length })
     try {
-      const res = await uploadPhotos(id, result.assets.map((a) => a.uri))
-      setPhotos((prev) => [...res.photos, ...prev])
-      setTotal((t) => t + res.photos.length)
+      for (let i = 0; i < assets.length; i++) {
+        const res = await uploadPhoto(id, assets[i].uri)
+        uploaded.push(...res.photos)
+        setUploadProgress({ done: i + 1, total: assets.length })
+      }
+      setPhotos((prev) => [...uploaded, ...prev])
+      setTotal((t) => t + uploaded.length)
     } catch {
-      Alert.alert('Upload failed', 'Could not upload photos')
+      if (uploaded.length) {
+        setPhotos((prev) => [...uploaded, ...prev])
+        Alert.alert('Upload interrupted', `Uploaded ${uploaded.length} of ${assets.length} photos.`)
+      } else {
+        Alert.alert('Upload failed', 'Could not upload photos')
+      }
     } finally {
       setUploading(false)
+      setUploadProgress(null)
     }
   }
 
@@ -172,8 +187,6 @@ export default function CollectionScreen({ route, navigation }: Props) {
     ])
   }
 
-  if (uploading) return <LoadingScreen />
-
   return (
     <View style={styles.container}>
       <FadeIn>
@@ -186,7 +199,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
           <View style={{ flexDirection: 'row', gap: 10 }}>
             {canEdit && (
               <View style={{ flex: 1 }}>
-                <AnimatedButton onPress={handleAdd}>
+                <AnimatedButton onPress={handleAdd} disabled={uploading}>
                   <ButtonText>+ Add Photos</ButtonText>
                 </AnimatedButton>
               </View>
@@ -246,17 +259,59 @@ export default function CollectionScreen({ route, navigation }: Props) {
               </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <Pressable onLongPress={canEdit ? () => handleDelete(item) : undefined}>
+          renderItem={({ item, index }) => (
+            <Pressable
+              onPress={() => setViewerIndex(index)}
+              onLongPress={canEdit ? () => handleDelete(item) : undefined}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
+            >
               <Image
                 source={{ uri: photoUrl(item.filename, { thumb: true }) }}
                 style={[styles.photo, shadows.card]}
                 resizeMode="cover"
+                accessibilityIgnoresInvertColors
               />
             </Pressable>
           )}
         />
       )}
+
+      {uploadProgress && (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: 24,
+            backgroundColor: 'rgba(10,10,15,0.96)',
+          }}
+        >
+          <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+            Uploading {uploadProgress.done}/{uploadProgress.total}…
+          </Text>
+          <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' }}>
+            <View
+              style={{
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: colors.accent,
+                width: `${Math.round((uploadProgress.done / uploadProgress.total) * 100)}%`,
+              }}
+            />
+          </View>
+        </View>
+      )}
+
+      <PhotoViewer
+        visible={viewerIndex !== null}
+        photos={photos}
+        initialIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+        urlFor={(filename) => photoUrl(filename)}
+      />
     </View>
   )
 }

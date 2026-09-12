@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { listCollections, type Collection, type RootStackParamList } from '../api'
+import { listCollections, photoUrl, type Collection, type RootStackParamList } from '../api'
 import { useAuth } from '../auth'
 import { colors, styles } from '../styles'
 import { AnimatedButton, ButtonText, AnimatedCard, FadeIn, SkeletonCard } from '../components'
@@ -161,7 +161,16 @@ export default function HomeScreen({ navigation }: Props) {
               <View style={[styles.card, { borderColor: colors.border }]}>
                 <View style={styles.cardLeft}>
                   <View style={styles.cardThumb}>
-                    <Text style={{ fontSize: 22 }}>📁</Text>
+                    {item.cover_thumb_filename ? (
+                      <Image
+                        source={{ uri: photoUrl(item.cover_thumb_filename, { thumb: true }) }}
+                        style={{ width: 48, height: 48, borderRadius: 12 }}
+                        resizeMode="cover"
+                        accessibilityLabel={`Cover for ${item.name}`}
+                      />
+                    ) : (
+                      <Text style={{ fontSize: 22 }}>📁</Text>
+                    )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{item.name}</Text>

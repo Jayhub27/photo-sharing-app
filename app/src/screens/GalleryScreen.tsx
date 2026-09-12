@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   getCollection,
@@ -8,7 +8,7 @@ import {
   type RootStackParamList,
 } from '../api'
 import { colors, styles, shadows } from '../styles'
-import { AnimatedButton, ButtonText, FadeIn, LoadingScreen } from '../components'
+import { AnimatedButton, ButtonText, FadeIn, LoadingScreen, PhotoViewer } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Gallery'>
 
@@ -23,6 +23,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const offsetRef = useRef(0)
 
   const load = useCallback(async () => {
@@ -105,13 +106,28 @@ export default function GalleryScreen({ route, navigation }: Props) {
             <Text style={styles.emptyText}>This collection has no photos yet.</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Image
-            source={{ uri: photoUrl(item.filename, { thumb: true }) }}
-            style={[styles.photo, shadows.card]}
-            resizeMode="cover"
-          />
+        renderItem={({ item, index }) => (
+          <Pressable
+            onPress={() => setViewerIndex(index)}
+            accessibilityRole="imagebutton"
+            accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
+          >
+            <Image
+              source={{ uri: photoUrl(item.filename, { thumb: true }) }}
+              style={[styles.photo, shadows.card]}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
+          </Pressable>
         )}
+      />
+
+      <PhotoViewer
+        visible={viewerIndex !== null}
+        photos={photos}
+        initialIndex={viewerIndex ?? 0}
+        onClose={() => setViewerIndex(null)}
+        urlFor={(filename) => photoUrl(filename)}
       />
     </View>
   )

@@ -61,6 +61,23 @@ function clampInt(value: unknown, fallback: number, min: number, max: number): n
   return Math.min(max, Math.max(min, Math.floor(n)))
 }
 
+async function refreshCover(collectionId: string) {
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('filename, thumb_filename')
+    .eq('collection_id', collectionId)
+    .order('created_at', { ascending: true })
+    .limit(1)
+  const cover = (photos || [])[0]
+  await supabase
+    .from('collections')
+    .update({
+      cover_filename: cover ? cover.filename : null,
+      cover_thumb_filename: cover ? cover.thumb_filename : null,
+    })
+    .eq('id', collectionId)
+}
+
 async function countsFor(ids: string[]): Promise<Record<string, number>> {
   if (!ids.length) return {}
   const { data } = await supabase.rpc('collection_photo_counts', { ids })
@@ -99,7 +116,7 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
 
   let query = supabase
     .from('collections')
-    .select('id, name, created_at, user_id', { count: 'exact' })
+    .select('id, name, created_at, user_id, cover_filename, cover_thumb_filename', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (memberIds.length) {
@@ -118,6 +135,8 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
     id: c.id,
     name: c.name,
     created_at: c.created_at,
+    cover_filename: c.cover_filename,
+    cover_thumb_filename: c.cover_thumb_filename,
     photo_count: counts[c.id] || 0,
     role: ownIds.has(c.id) ? 'owner' : memberRoles.get(c.id) || 'viewer',
     is_owner: ownIds.has(c.id),
@@ -248,6 +267,7 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
       })
     } catch {}
   }
+  await refreshCover(newId)
   res.json({ id: newId, name })
 })
 
@@ -341,6 +361,7 @@ router.post(
         .single()
       if (row) photos.push(row)
     }
+    if (photos.length) await refreshCover(req.params.id)
     res.json({ photos })
   }
 )
@@ -354,6 +375,7 @@ router.delete('/photos/:id', authMiddleware, async (req: AuthedRequest, res) => 
   const keys = [photo.filename, photo.thumb_filename].filter(Boolean) as string[]
   await supabase.storage.from(BUCKET).remove(keys)
   await supabase.from('photos').delete().eq('id', req.params.id)
+  await refreshCover(photo.collection_id)
   res.json({ ok: true })
 })
 

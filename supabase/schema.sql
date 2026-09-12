@@ -17,10 +17,12 @@ create table if not exists sessions (
 );
 
 create table if not exists collections (
-  id          text primary key,
-  user_id     text,
-  name        text not null,
-  created_at  timestamptz not null default now()
+  id                  text primary key,
+  user_id             text,
+  name                text not null,
+  cover_filename      text,
+  cover_thumb_filename text,
+  created_at          timestamptz not null default now()
 );
 
 create table if not exists photos (

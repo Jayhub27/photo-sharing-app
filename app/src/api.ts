@@ -23,6 +23,8 @@ export interface Collection {
   name: string
   created_at?: string
   photo_count?: number
+  cover_filename?: string | null
+  cover_thumb_filename?: string | null
   role?: MemberRole | null
   is_owner?: boolean
 }
@@ -247,6 +249,19 @@ export async function uploadPhotos(collectionId: string, uris: string[]): Promis
     const name = uri.split('/').pop() || 'photo.jpg'
     form.append('photos', { uri, name, type: mimeForName(name) } as unknown as Blob)
   })
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/photos`, {
+    method: 'POST',
+    headers: headers(),
+    body: form,
+  })
+  if (!res.ok) throw await errorFrom(res, 'Upload failed')
+  return res.json()
+}
+
+export async function uploadPhoto(collectionId: string, uri: string): Promise<{ photos: Photo[] }> {
+  const form = new FormData()
+  const name = uri.split('/').pop() || 'photo.jpg'
+  form.append('photos', { uri, name, type: mimeForName(name) } as unknown as Blob)
   const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/photos`, {
     method: 'POST',
     headers: headers(),

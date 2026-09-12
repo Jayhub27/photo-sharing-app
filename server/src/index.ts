@@ -3,7 +3,8 @@ import express from 'express'
 import cors from 'cors'
 import api from './routes.js'
 import auth from './auth.js'
-import { homePage, collectionPage, loginPage, signupPage } from './pages.js'
+import { supabase } from './db.js'
+import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
 
 const PORT = process.env.PORT || 3000
 const app = express()
@@ -58,8 +59,22 @@ app.get('/', (_req, res) => {
   res.type('html').send(homePage(''))
 })
 
-app.get('/c/:id', (req, res) => {
-  res.type('html').send(collectionPage(req.params.id, ''))
+app.get('/c/:id', async (req, res) => {
+  let meta: PageMeta | undefined
+  try {
+    const { data: col } = await supabase
+      .from('collections')
+      .select('name, cover_filename')
+      .eq('id', req.params.id)
+      .maybeSingle()
+    if (col) {
+      const image = col.cover_filename
+        ? `${req.protocol}://${req.get('host')}/api/photos/${col.cover_filename}`
+        : undefined
+      meta = { title: col.name, description: `View "${col.name}" on PhotoShare.`, image }
+    }
+  } catch {}
+  res.type('html').send(collectionPage(req.params.id, '', meta))
 })
 
 export default app
