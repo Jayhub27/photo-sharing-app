@@ -5,7 +5,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   deletePhoto as deletePhotoApi,
   getCollection,
+  imageHeaders,
   photoUrl,
+  setCollectionVisibility,
   uploadPhoto,
   type Photo,
   type RootStackParamList,
@@ -26,6 +28,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [hasMore, setHasMore] = useState(false)
   const [canEdit, setCanEdit] = useState(false)
   const [role, setRole] = useState<string | null>(null)
+  const [isPublic, setIsPublic] = useState(true)
   const [query, setQuery] = useState('')
   const [total, setTotal] = useState(0)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
@@ -55,6 +58,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         setHasMore(res.hasMore)
         setCanEdit(res.canEdit)
         setRole(res.role)
+        setIsPublic(res.collection.is_public !== false)
         offsetRef.current = res.photos.length
         newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')
       } catch (err) {
@@ -187,6 +191,20 @@ export default function CollectionScreen({ route, navigation }: Props) {
     ])
   }
 
+  const toggleVisibility = async () => {
+    const next = !isPublic
+    try {
+      await setCollectionVisibility(id, next)
+      setIsPublic(next)
+      Alert.alert(
+        'Visibility updated',
+        next ? 'This collection is now public.' : 'This collection is now private. Only members can view it.'
+      )
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not update visibility')
+    }
+  }
+
   return (
     <View style={styles.container}>
       <FadeIn>
@@ -194,6 +212,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.subtitle}>
             {total} photo{total === 1 ? '' : 's'} in this collection
+            {!isPublic ? '  ·  🔒 private' : ''}
             {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -214,8 +233,25 @@ export default function CollectionScreen({ route, navigation }: Props) {
             </View>
           </View>
           {role && (
-            <Pressable onPress={() => navigation.navigate('Members', { id, name })} style={{ marginTop: 12 }}>
+            <Pressable
+              onPress={() => navigation.navigate('Members', { id, name })}
+              style={{ marginTop: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Manage members"
+            >
               <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>👥 Manage members</Text>
+            </Pressable>
+          )}
+          {role === 'owner' && (
+            <Pressable
+              onPress={toggleVisibility}
+              style={{ marginTop: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={isPublic ? 'Make collection private' : 'Make collection public'}
+            >
+              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
+                {isPublic ? '🔒 Make private' : '🔓 Make public'}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -267,7 +303,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
             >
               <Image
-                source={{ uri: photoUrl(item.filename, { thumb: true }) }}
+                source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
                 style={[styles.photo, shadows.card]}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
@@ -311,6 +347,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
         urlFor={(filename) => photoUrl(filename)}
+        headers={imageHeaders()}
       />
     </View>
   )

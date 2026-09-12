@@ -116,7 +116,7 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
 
   let query = supabase
     .from('collections')
-    .select('id, name, created_at, user_id, cover_filename, cover_thumb_filename', { count: 'exact' })
+    .select('id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (memberIds.length) {
@@ -135,6 +135,7 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
     id: c.id,
     name: c.name,
     created_at: c.created_at,
+    is_public: c.is_public !== false,
     cover_filename: c.cover_filename,
     cover_thumb_filename: c.cover_thumb_filename,
     photo_count: counts[c.id] || 0,
@@ -156,6 +157,9 @@ router.post('/collections', authMiddleware, async (req: AuthedRequest, res) => {
 router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => {
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (access.col.is_public === false && !access.role) {
+    return res.status(403).json({ error: 'This collection is private', private: true })
+  }
 
   const q = String(req.query.q || '').trim()
   const since = String(req.query.since || '').trim()
@@ -188,11 +192,19 @@ router.patch('/collections/:id', authMiddleware, async (req: AuthedRequest, res)
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
   if (!access.canManage) return res.status(403).json({ error: 'Not your collection' })
-  const name = String(req.body.name || '').trim().slice(0, 120)
-  if (!name) return res.status(400).json({ error: 'Name is required' })
-  const { error } = await supabase.from('collections').update({ name }).eq('id', req.params.id)
-  if (error) return res.status(500).json({ error: 'Could not rename collection' })
-  res.json({ id: req.params.id, name })
+
+  const patch: { name?: string; is_public?: boolean } = {}
+  if (typeof req.body.name === 'string') {
+    const name = req.body.name.trim().slice(0, 120)
+    if (!name) return res.status(400).json({ error: 'Name is required' })
+    patch.name = name
+  }
+  if (typeof req.body.is_public === 'boolean') patch.is_public = req.body.is_public
+  if (!Object.keys(patch).length) return res.status(400).json({ error: 'Nothing to update' })
+
+  const { error } = await supabase.from('collections').update(patch).eq('id', req.params.id)
+  if (error) return res.status(500).json({ error: 'Could not update collection' })
+  res.json({ id: req.params.id, ...patch })
 })
 
 router.delete('/collections/:id', authMiddleware, async (req: AuthedRequest, res) => {
@@ -225,6 +237,10 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
   const { data: col } = await supabase.from('collections').select('*').eq('id', req.params.id).maybeSingle()
   if (!col) return res.status(404).json({ error: 'Collection not found' })
   if (col.user_id === req.userId) return res.status(400).json({ error: 'This is already your collection' })
+  if (col.is_public === false) {
+    const access = await getAccess(req.params.id, req.userId)
+    if (!access.role) return res.status(403).json({ error: 'This collection is private' })
+  }
 
   const { data: photos } = await supabase
     .from('photos')
@@ -271,9 +287,13 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
   res.json({ id: newId, name })
 })
 
-router.get('/collections/:id/zip', async (req, res) => {
-  const { data: col } = await supabase.from('collections').select('name').eq('id', req.params.id).maybeSingle()
-  if (!col) return res.status(404).json({ error: 'Collection not found' })
+router.get('/collections/:id/zip', optionalAuth, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (access.col.is_public === false && !access.role) {
+    return res.status(403).json({ error: 'This collection is private' })
+  }
+  const col = access.col
   const { data: photos } = await supabase
     .from('photos')
     .select('filename, original_name')
@@ -379,13 +399,17 @@ router.delete('/photos/:id', authMiddleware, async (req: AuthedRequest, res) => 
   res.json({ ok: true })
 })
 
-router.get('/photos/:filename', async (req, res) => {
+router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) => {
   const { data: photo } = await supabase
     .from('photos')
-    .select('filename, thumb_filename, original_name, mime_type')
+    .select('filename, thumb_filename, original_name, mime_type, collection_id')
     .eq('filename', req.params.filename)
     .maybeSingle()
   if (!photo) return res.status(404).json({ error: 'Photo not found' })
+
+  const access = await getAccess(photo.collection_id, req.userId)
+  const isPrivate = access.col ? access.col.is_public === false : false
+  if (isPrivate && !access.role) return res.status(403).json({ error: 'This photo is private' })
 
   const useThumb = req.query.thumb === '1' && !!photo.thumb_filename
   const key = useThumb ? photo.thumb_filename : photo.filename
@@ -393,7 +417,7 @@ router.get('/photos/:filename', async (req, res) => {
   if (error || !blob) return res.status(404).json({ error: 'Photo not found' })
   const buf = Buffer.from(await blob.arrayBuffer())
 
-  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+  res.setHeader('Cache-Control', isPrivate ? 'private, max-age=3600' : 'public, max-age=31536000, immutable')
   if (req.query.download === '1') {
     const safeName = String(photo.original_name || 'photo').replace(/[\r\n"\\]/g, '').slice(0, 200)
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)

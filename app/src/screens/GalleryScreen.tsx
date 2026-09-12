@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   getCollection,
+  imageHeaders,
   photoUrl,
   type Photo,
   type RootStackParamList,
@@ -113,7 +114,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
             accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
           >
             <Image
-              source={{ uri: photoUrl(item.filename, { thumb: true }) }}
+              source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
               style={[styles.photo, shadows.card]}
               resizeMode="cover"
               accessibilityIgnoresInvertColors
@@ -128,6 +129,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
         urlFor={(filename) => photoUrl(filename)}
+        headers={imageHeaders()}
       />
     </View>
   )

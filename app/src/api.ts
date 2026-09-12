@@ -6,6 +6,10 @@ export function setAuthToken(token: string | null) {
   authToken = token
 }
 
+export function imageHeaders(): Record<string, string> | undefined {
+  return authToken ? { Authorization: `Bearer ${authToken}` } : undefined
+}
+
 export interface Photo {
   id: string
   filename: string
@@ -23,6 +27,7 @@ export interface Collection {
   name: string
   created_at?: string
   photo_count?: number
+  is_public?: boolean
   cover_filename?: string | null
   cover_thumb_filename?: string | null
   role?: MemberRole | null
@@ -180,6 +185,15 @@ export async function renameCollection(id: string, name: string): Promise<void> 
     body: JSON.stringify({ name }),
   })
   if (!res.ok) throw await errorFrom(res, 'Could not rename collection')
+}
+
+export async function setCollectionVisibility(id: string, isPublic: boolean): Promise<void> {
+  const res = await fetch(`${resolveBase()}/api/collections/${id}`, {
+    method: 'PATCH',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ is_public: isPublic }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not update visibility')
 }
 
 export async function deleteCollection(id: string): Promise<void> {

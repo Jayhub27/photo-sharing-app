@@ -317,7 +317,7 @@ async function load(append) {
         '<div class="card-left">' +
           '<div class="card-thumb">' + (c.cover_thumb_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_thumb_filename + '?thumb=1" alt="" loading="lazy">' : '\\ud83d\\udcc1') + '</div>' +
           '<div class="card-info">' +
-            '<div class="card-title">' + esc(c.name) + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
+            '<div class="card-title">' + esc(c.name) + (c.is_public === false ? '<span class="badge">\\ud83d\\udd12 private</span>' : '') + (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') + '</div>' +
             '<div class="card-sub">' + c.photo_count + ' photo' + (c.photo_count === 1 ? '' : 's') + '</div>' +
           '</div>' +
         '</div>' +
@@ -424,6 +424,7 @@ ${og}<style>${SHARED_CSS}</style>
     <button class="btn" id="uploadToggle">\\ud83d\\udcf7 Add Photos</button>
     <button class="btn outline" id="qrToggle">\\ud83d\\udd04 Show QR</button>
     <button class="btn outline hidden" id="membersToggle">\\ud83d\\udc65 Members</button>
+    <button class="btn outline hidden" id="visibilityToggle" onclick="toggleVisibility()">\\ud83d\\udd12 Make private</button>
     <a class="btn outline" id="downloadAllBtn" href="/api/collections/${id}/zip" style="display:none">\\u2b07 Download All</a>
   </div>
   <div id="uploadSection" class="section hidden">
@@ -473,12 +474,30 @@ let canEdit = false;
 let canManage = false;
 let role = null;
 let loggedIn = false;
-let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '';
+let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '', isPublic = true;
 function renderStats() {
   document.getElementById('stats').innerHTML =
     '<div class="stat-chip"><strong>' + total + '</strong> photo' + (total === 1 ? '' : 's') + '</div>' +
+    (isPublic ? '' : '<div class="stat-chip">\\ud83d\\udd12 Private</div>') +
     (role ? '<div class="stat-chip">Your role: <strong>' + role + '</strong></div>' : '') +
     (createdAt ? '<div class="stat-chip">Created ' + createdAt + '</div>' : '');
+}
+function updateVisibilityButton() {
+  const btn = document.getElementById('visibilityToggle');
+  if (btn) btn.textContent = isPublic ? '\\ud83d\\udd12 Make private' : '\\ud83d\\udd13 Make public';
+  if (typeof renderStats === 'function') renderStats();
+}
+async function toggleVisibility() {
+  const next = !isPublic;
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ is_public: next }) });
+    if (!res.ok) throw new Error();
+    isPublic = next;
+    updateVisibilityButton();
+    toast(next ? 'Collection is now public' : 'Collection is now private', 'success');
+  } catch {
+    toast('Could not update visibility', 'error');
+  }
 }
 async function checkAuth() {
   try {
@@ -509,12 +528,24 @@ function updateChrome() {
   document.getElementById('qrToggle').classList.toggle('hidden', !canEdit);
   document.getElementById('membersToggle').classList.toggle('hidden', !role);
   document.getElementById('downloadAllBtn').style.display = photos.length ? '' : 'none';
+  const vis = document.getElementById('visibilityToggle');
+  if (vis) { vis.classList.toggle('hidden', !canManage); updateVisibilityButton(); }
   const actions = document.getElementById('actions');
   if (actions) actions.classList.toggle('hidden', !canEdit && !role && photos.length === 0);
 }
 async function load(append) {
   try {
     const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset, { credentials: 'include' });
+    if (res.status === 403) {
+      document.getElementById('title').innerHTML = '\\ud83d\\udd12 Private collection';
+      document.getElementById('stats').innerHTML = '';
+      document.getElementById('actions').classList.add('hidden');
+      const sb = document.querySelector('.search-bar'); if (sb) sb.classList.add('hidden');
+      document.getElementById('membersSection').classList.add('hidden');
+      document.getElementById('loadMore').classList.add('hidden');
+      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\\ud83d\\udd12</div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
+      return;
+    }
     if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById('title').innerHTML = '<span class="grad">' + esc(data.collection.name) + '</span>';
@@ -523,6 +554,7 @@ async function load(append) {
     canEdit = !!data.canEdit;
     canManage = !!data.canManage;
     role = data.role || null;
+    isPublic = data.collection.is_public !== false;
     photos = append ? photos.concat(data.photos) : data.photos;
     offset = photos.length;
     newestTs = photos.reduce((m, p) => (p.created_at > m ? p.created_at : m), '');

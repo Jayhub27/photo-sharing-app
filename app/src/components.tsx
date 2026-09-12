@@ -253,12 +253,14 @@ export function PhotoViewer({
   initialIndex,
   onClose,
   urlFor,
+  headers,
 }: {
   visible: boolean
   photos: ViewerPhoto[]
   initialIndex: number
   onClose: () => void
   urlFor: (filename: string) => string
+  headers?: Record<string, string>
 }) {
   const { width, height } = Dimensions.get('window')
   const listRef = useRef<FlatList<ViewerPhoto>>(null)
@@ -306,7 +308,7 @@ export function PhotoViewer({
           renderItem={({ item }) => (
             <View style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Image
-                source={{ uri: urlFor(item.filename) }}
+                source={{ uri: urlFor(item.filename), headers }}
                 style={{ width, height: height * 0.8 }}
                 resizeMode="contain"
                 accessibilityLabel={item.original_name ? `Photo: ${item.original_name}` : 'Photo'}

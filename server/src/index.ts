@@ -64,10 +64,10 @@ app.get('/c/:id', async (req, res) => {
   try {
     const { data: col } = await supabase
       .from('collections')
-      .select('name, cover_filename')
+      .select('name, is_public, cover_filename')
       .eq('id', req.params.id)
       .maybeSingle()
-    if (col) {
+    if (col && col.is_public !== false) {
       const image = col.cover_filename
         ? `${req.protocol}://${req.get('host')}/api/photos/${col.cover_filename}`
         : undefined

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { listCollections, photoUrl, type Collection, type RootStackParamList } from '../api'
+import { imageHeaders, listCollections, photoUrl, type Collection, type RootStackParamList } from '../api'
 import { useAuth } from '../auth'
 import { colors, styles } from '../styles'
 import { AnimatedButton, ButtonText, AnimatedCard, FadeIn, SkeletonCard } from '../components'
@@ -163,7 +163,7 @@ export default function HomeScreen({ navigation }: Props) {
                   <View style={styles.cardThumb}>
                     {item.cover_thumb_filename ? (
                       <Image
-                        source={{ uri: photoUrl(item.cover_thumb_filename, { thumb: true }) }}
+                        source={{ uri: photoUrl(item.cover_thumb_filename, { thumb: true }), headers: imageHeaders() }}
                         style={{ width: 48, height: 48, borderRadius: 12 }}
                         resizeMode="cover"
                         accessibilityLabel={`Cover for ${item.name}`}
@@ -176,6 +176,7 @@ export default function HomeScreen({ navigation }: Props) {
                     <Text style={styles.cardTitle}>{item.name}</Text>
                     <Text style={styles.cardSub}>
                       {item.photo_count ?? 0} photo{(item.photo_count ?? 0) === 1 ? '' : 's'}
+                      {item.is_public === false ? '  ·  🔒 private' : ''}
                       {item.role && item.role !== 'owner' ? `  ·  ${item.role}` : ''}
                     </Text>
                   </View>
