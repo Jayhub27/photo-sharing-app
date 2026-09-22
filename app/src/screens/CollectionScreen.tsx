@@ -1,15 +1,32 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Linking,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   deletePhoto as deletePhotoApi,
   getCollection,
   imageHeaders,
+  importFromLinks,
   photoUrl,
+  setCollectionPrice,
   setCollectionVisibility,
+  startCheckout,
   uploadPhoto,
   type Photo,
+  type Pricing,
   type RootStackParamList,
 } from '../api'
 import { colors, styles, shadows } from '../styles'
@@ -18,6 +35,14 @@ import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, PhotoViewer } from '.
 type Props = NativeStackScreenProps<RootStackParamList, 'Collection'>
 
 const PAGE_SIZE = 60
+
+function formatCents(cents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
+  } catch {
+    return `$${(cents / 100).toFixed(2)}`
+  }
+}
 
 export default function CollectionScreen({ route, navigation }: Props) {
   const { id, name } = route.params
@@ -34,6 +59,19 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [total, setTotal] = useState(0)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
+  const [pricing, setPricing] = useState<Pricing | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [sellOpen, setSellOpen] = useState(false)
+  const [priceText, setPriceText] = useState('')
+  const [savingPrice, setSavingPrice] = useState(false)
+
+  const { width } = useWindowDimensions()
+  const columns = width >= 1000 ? 4 : width >= 700 ? 3 : 2
+  const gutter = width >= 700 ? 16 : 12
+  const hPadding = width >= 700 ? 32 : 24
+  const itemWidth = Math.floor((width - hPadding * 2 - gutter * (columns - 1)) / columns)
 
   const offsetRef = useRef(0)
   const newestRef = useRef('')
@@ -62,6 +100,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         setCanEdit(res.canEdit)
         setRole(res.role)
         setIsPublic(res.collection.is_public !== false)
+        if (res.pricing) setPricing(res.pricing)
         offsetRef.current = res.photos.length
         newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')
       } catch (err) {
@@ -208,6 +247,59 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
+  const handleImport = async () => {
+    const urls = importText
+      .split(/\n+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (!urls.length) return Alert.alert('Import', 'Paste at least one link')
+    setImporting(true)
+    try {
+      const res = await importFromLinks(id, urls)
+      await load(query.trim())
+      setImportOpen(false)
+      setImportText('')
+      const failed = res.results.filter((r) => r.error)
+      Alert.alert('Import finished', `${res.imported} imported${failed.length ? `, ${failed.length} failed` : ''}.`)
+    } catch (err) {
+      Alert.alert('Import failed', err instanceof Error ? err.message : 'Could not import those links')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const handleSavePrice = async () => {
+    const raw = priceText.trim()
+    const cents = raw === '' ? null : Math.round(Number(raw) * 100)
+    if (cents !== null && (!Number.isFinite(cents) || cents < 0)) return Alert.alert('Pricing', 'Enter a valid price')
+    setSavingPrice(true)
+    try {
+      await setCollectionPrice(id, cents, pricing?.currency || 'usd')
+      await load(query.trim())
+      setSellOpen(false)
+      Alert.alert('Pricing saved', cents ? 'Buyers can now purchase this collection.' : 'This collection is free again.')
+    } catch (err) {
+      Alert.alert('Could not save pricing', err instanceof Error ? err.message : 'Try again later')
+    } finally {
+      setSavingPrice(false)
+    }
+  }
+
+  const handleBuy = async () => {
+    try {
+      const res = await startCheckout(id)
+      if (res.url) Linking.openURL(res.url)
+      else if (res.alreadyPurchased) {
+        await load(query.trim())
+        Alert.alert('Purchased', 'You already own this collection.')
+      } else {
+        Alert.alert('Checkout unavailable', res.error || 'Payments are not configured yet')
+      }
+    } catch {
+      Alert.alert('Checkout unavailable', 'Could not start checkout')
+    }
+  }
+
   return (
     <View style={styles.container}>
       <FadeIn>
@@ -217,16 +309,28 @@ export default function CollectionScreen({ route, navigation }: Props) {
             {total} photo{total === 1 ? '' : 's'} in this collection
             {!isPublic ? '  ·  🔒 private' : ''}
             {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
+            {pricing?.price_cents
+              ? pricing.purchased
+                ? `  ·  ✓ purchased`
+                : `  ·  ${formatCents(pricing.price_cents, pricing.currency)}`
+              : ''}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
             {canEdit && (
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, minWidth: 140 }}>
                 <AnimatedButton onPress={handleAdd} disabled={uploading}>
                   <ButtonText>+ Add Photos</ButtonText>
                 </AnimatedButton>
               </View>
             )}
-            <View style={{ flex: 1 }}>
+            {canEdit && (
+              <View style={{ flex: 1, minWidth: 140 }}>
+                <AnimatedButton outline onPress={() => setImportOpen(true)}>
+                  <ButtonText outline>🔗 Import</ButtonText>
+                </AnimatedButton>
+              </View>
+            )}
+            <View style={{ flex: 1, minWidth: 140 }}>
               <AnimatedButton
                 outline
                 onPress={() => navigation.navigate('QRDisplay', { id, name })}
@@ -235,6 +339,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
               </AnimatedButton>
             </View>
           </View>
+          {pricing?.locked && (
+            <View style={{ marginTop: 12 }}>
+              <AnimatedButton onPress={handleBuy}>
+                <ButtonText>Buy {formatCents(pricing.price_cents || 0, pricing.currency)}</ButtonText>
+              </AnimatedButton>
+            </View>
+          )}
           {role && (
             <Pressable
               onPress={() => navigation.navigate('Members', { id, name })}
@@ -243,6 +354,21 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityLabel="Manage members"
             >
               <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>👥 Manage members</Text>
+            </Pressable>
+          )}
+          {role === 'owner' && (
+            <Pressable
+              onPress={() => {
+                setPriceText(pricing?.price_cents ? String(pricing.price_cents / 100) : '')
+                setSellOpen(true)
+              }}
+              style={{ marginTop: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Set a price for this collection"
+            >
+              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
+                {pricing?.price_cents ? '🏷️ Edit price & sales' : '🏷️ Sell this collection'}
+              </Text>
             </Pressable>
           )}
           {role === 'owner' && (
@@ -304,10 +430,11 @@ export default function CollectionScreen({ route, navigation }: Props) {
       ) : (
         <FlatList
           data={photos}
+          key={`grid-${columns}`}
           keyExtractor={(item) => item.id}
-          numColumns={2}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, gap: 12 }}
-          columnWrapperStyle={{ gap: 12 }}
+          numColumns={columns}
+          contentContainerStyle={{ paddingHorizontal: hPadding, paddingBottom: 40, gap: gutter }}
+          columnWrapperStyle={{ gap: gutter }}
           onEndReachedThreshold={0.4}
           onEndReached={loadMore}
           ListFooterComponent={
@@ -330,7 +457,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
             >
               <Image
                 source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
-                style={[styles.photo, shadows.card]}
+                style={[styles.photo, shadows.card, { width: itemWidth, height: itemWidth }]}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
               />
@@ -367,6 +494,69 @@ export default function CollectionScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      <Modal visible={importOpen} transparent animationType="fade" onRequestClose={() => setImportOpen(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={modalStyles.card}>
+            <Text style={modalStyles.title}>Import from link</Text>
+            <Text style={modalStyles.hint}>
+              One link per line: direct image URLs, Google Drive file links, or any page with an og:image tag.
+            </Text>
+            <TextInput
+              multiline
+              value={importText}
+              onChangeText={setImportText}
+              placeholder={'https://drive.google.com/file/d/…/view'}
+              placeholderTextColor={colors.textMuted}
+              style={[styles.input, { minHeight: 110, textAlignVertical: 'top' }]}
+              autoCapitalize="none"
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton outline onPress={() => setImportOpen(false)}>
+                  <ButtonText outline>Cancel</ButtonText>
+                </AnimatedButton>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton onPress={handleImport} disabled={importing}>
+                  <ButtonText>{importing ? 'Importing…' : 'Import'}</ButtonText>
+                </AnimatedButton>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={sellOpen} transparent animationType="fade" onRequestClose={() => setSellOpen(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={modalStyles.card}>
+            <Text style={modalStyles.title}>Pricing &amp; sales</Text>
+            <Text style={modalStyles.hint}>
+              Set a price to sell the original files with Stripe Checkout. Leave empty to share for free.
+            </Text>
+            <TextInput
+              keyboardType="decimal-pad"
+              value={priceText}
+              onChangeText={setPriceText}
+              placeholder="12.00"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton outline onPress={() => setSellOpen(false)}>
+                  <ButtonText outline>Cancel</ButtonText>
+                </AnimatedButton>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton onPress={handleSavePrice} disabled={savingPrice}>
+                  <ButtonText>{savingPrice ? 'Saving…' : 'Save'}</ButtonText>
+                </AnimatedButton>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <PhotoViewer
         visible={viewerIndex !== null}
         photos={photos}
@@ -378,3 +568,24 @@ export default function CollectionScreen({ route, navigation }: Props) {
     </View>
   )
 }
+
+const modalStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(3,3,8,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 22,
+  },
+  title: { color: colors.text, fontSize: 19, fontWeight: '700', marginBottom: 8 },
+  hint: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginBottom: 12 },
+})

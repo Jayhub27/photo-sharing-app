@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { Image, Share, Text, View, Animated, Easing } from 'react-native'
+import { Image, Share, Text, useWindowDimensions, View, Animated, Easing } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { collectionUrl, qrUrl, type RootStackParamList } from '../api'
 import { colors, styles } from '../styles'
@@ -9,6 +9,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QRDisplay'>
 
 export default function QRDisplayScreen({ route }: Props) {
   const { id, name } = route.params
+  const { width } = useWindowDimensions()
+  const qrSize = Math.min(Math.max(width - 96, 180), 320)
   const uri = qrUrl(id)
   const shareUrl = collectionUrl(id)
 
@@ -86,14 +88,14 @@ export default function QRDisplayScreen({ route }: Props) {
         >
           <Image
             source={{ uri }}
-            style={{ width: 260, height: 260, borderRadius: 20 }}
+            style={{ width: qrSize, height: qrSize, borderRadius: 20 }}
             resizeMode="contain"
           />
         </Animated.View>
       </Animated.View>
 
       <FadeIn delay={300}>
-        <View style={{ width: 280 }}>
+        <View style={{ width: qrSize + 20 }}>
           <AnimatedButton onPress={handleShare}>
             <ButtonText>Share link</ButtonText>
           </AnimatedButton>

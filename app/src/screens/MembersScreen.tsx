@@ -80,7 +80,7 @@ export default function MembersScreen({ route }: Props) {
         <View style={styles.hero}>
           <Text style={styles.title}>{name ? `Share ${name}` : 'Members'}</Text>
           <Text style={styles.subtitle}>
-            Invite people by the email of their PhotoShare account. Editors can add photos, viewers can only look.
+            Invite people by the email of their Take the shot account. Editors can add photos, viewers can only look.
           </Text>
           {canManage && (
             <View style={{ gap: 10 }}>

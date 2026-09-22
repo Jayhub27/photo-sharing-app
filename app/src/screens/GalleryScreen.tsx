@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   getCollection,
@@ -26,6 +26,11 @@ export default function GalleryScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const offsetRef = useRef(0)
+  const { width } = useWindowDimensions()
+  const columns = width >= 1000 ? 4 : width >= 700 ? 3 : 2
+  const gutter = width >= 700 ? 16 : 12
+  const hPadding = width >= 700 ? 32 : 24
+  const itemWidth = Math.floor((width - hPadding * 2 - gutter * (columns - 1)) / columns)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -93,9 +98,10 @@ export default function GalleryScreen({ route, navigation }: Props) {
       <FlatList
         data={photos}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, gap: 12 }}
-        columnWrapperStyle={{ gap: 12 }}
+        key={`grid-${columns}`}
+        numColumns={columns}
+        contentContainerStyle={{ paddingHorizontal: hPadding, paddingBottom: 40, gap: gutter }}
+        columnWrapperStyle={{ gap: gutter }}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         ListFooterComponent={
@@ -115,7 +121,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
           >
             <Image
               source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
-              style={[styles.photo, shadows.card]}
+              style={[styles.photo, shadows.card, { width: itemWidth, height: itemWidth }]}
               resizeMode="cover"
               accessibilityIgnoresInvertColors
             />

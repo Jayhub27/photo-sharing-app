@@ -1,123 +1,202 @@
-# PhotoShare
+# Take the shot
 
-A mobile photo sharing app. Create a collection of photos, share a QR code, and
-anyone who scans it with the app sees your photos.
+A **paid photo-sharing service**. Create a collection of photos, share it with a
+QR code or link, and — if you want — put a price on it so people can buy the
+original files with a card. Stripe handles checkout; downloads unlock
+automatically after payment.
 
+- **Web app** — server-rendered, responsive, mobile-first (works from any phone browser)
 - **Mobile app** — Expo / React Native (iOS + Android)
-- **Backend** — Express + TypeScript, SQLite for metadata, photos on disk, QR code generation
+- **Backend** — Express + TypeScript, Postgres + Storage on Supabase, Stripe for payments
+
+## What it does
+
+| Feature | Notes |
+| --- | --- |
+| Collections + QR sharing | Scan the QR and the gallery opens, no app install needed |
+| **Sell your shots** | Set a price per collection; buyers pay with Stripe Checkout |
+| Free or paid | `price_cents` empty = free; thumbnails stay visible either way |
+| Locked originals | Paid collections stream low-res thumbnails until purchased |
+| Sales dashboard | Owners see sales count, revenue and buyer emails per collection |
+| Thumbnails | `sharp` generates 640px JPEG thumbs and reads width/height |
+| Search, sort, filter, grid/list | Persistent per-browser preferences |
+| Multi-select | Click-drag marquee, right-click drag, shift-click ranges, context menu |
+| Batch actions | Download selected as ZIP, delete selected in one request |
+| Import from links | Google Drive file links, direct image URLs, any page with `og:image` |
+| Collaboration | Invite viewers/editors by email; private collections stay member-only |
+| Live sync | New photos appear for everyone within ~5s |
+| ZIP download | Whole collection or a selection |
+| Save a shared collection | Copies photos into your own account |
+| Accounts | Sessions, bcrypt hashes, rate limits, session TTL |
+| Responsive + mobile UI | Bottom action bar, bottom-sheet modals, safe-area padding, dark/light theme |
 
 ## Architecture
 
 ```
-┌──────────────┐   HTTP   ┌──────────────┐
-│  Expo app    │ ───────▶ │  Express API │
-│  (RN screens)│ ◀────────│  + photos/   │
-└──────────────┘  photos  │  + SQLite     │
-                          └──────────────┘
+┌─────────────────┐  HTTP   ┌──────────────────┐          ┌──────────────────┐
+│  Web (server    │ ──────▶ │  Express API     │ ───────▶ │  Supabase        │
+│  rendered pages)│ ◀────── │  + sharp + Stripe│ ◀─────── │  Postgres/Storage│
+└─────────────────┘         └────────┬─────────┘          └──────────────────┘
+┌─────────────────┐                  │ Stripe Checkout / webhooks
+│  Expo mobile app│ ─────────────────┘
+└─────────────────┘
 ```
 
 ```
 photo-sharing-app/
-├─ server/            Express backend (TypeScript)
+├─ server/                 Express + TypeScript API and web pages
 │  ├─ src/
-│  │  ├─ db.ts        SQLite setup + schema
-│  │  ├─ routes.ts    collections, photos, QR endpoints
-│  │  ├─ utils.ts     ID generation
-│  │  └─ index.ts     Express app entry
-│  └─ package.json
-├─ app/               Expo mobile app (React Native)
-│  ├─ src/
-│  │  ├─ api.ts       REST client + URL helpers
-│  │  ├─ App.tsx      React Navigation stack
-│  │  ├─ styles.ts    shared theme
-│  │  └─ screens/
-│  │     ├─ HomeScreen.tsx
-│  │     ├─ CreateCollectionScreen.tsx
-│  │     ├─ CollectionScreen.tsx
-│  │     ├─ QRDisplayScreen.tsx
-│  │     ├─ ScanScreen.tsx
-│  │     └─ GalleryScreen.tsx
-│  ├─ app.json        Expo config + permissions
-│  └─ package.json
-└─ package.json       npm workspaces root
+│  │  ├─ index.ts          App entry, security headers, CORS, Stripe webhook mount
+│  │  ├─ routes.ts         Collections, photos, QR, members, import, selling
+│  │  ├─ stripe.ts         Stripe client + schema/feature detection
+│  │  ├─ auth.ts           Signup/login/sessions
+│  │  ├─ ui.ts             Shared CSS + page helpers
+│  │  ├─ page-home.ts      Collection list page
+│  │  ├─ page-collection.ts Collection page (selection, selling, import, upload)
+│  │  ├─ page-auth.ts      Login/signup pages
+│  │  ├─ ratelimit.ts      Fixed-window limiter
+│  │  └─ zip.ts            ZIP writer
+├─ app/                    Expo / React Native mobile app
+├─ supabase/schema.sql     Full database schema (run in the Supabase SQL editor)
+└─ supabase/migrations/    Incremental migrations (selling)
 ```
-
-## Prerequisites
-
-- Node.js 18+
-- npm 9+ (workspaces)
-- For running on a device: the **Expo Go** app installed on your iOS/Android device
 
 ## Setup
 
-Install dependencies for both packages from the repo root:
+### 1. Database
+
+Create a Supabase project, then run **all of `supabase/schema.sql`** in the SQL
+editor. It creates the tables, indexes, RLS hardening and the storage setup.
+
+> Selling needs the `selling` section at the bottom of that file
+> (`price_cents`, `currency`, `purchases`, `stripe_account_id`). Migrations live
+> in `supabase/migrations/` if you prefer `supabase db push`.
+
+Create a **private** storage bucket named `photos` (the server streams images
+through `/api/photos`, so it never needs to be public).
+
+### 2. Environment
+
+`server/.env`:
+
+```bash
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...        # service role key, server-side only
+SUPABASE_STORAGE_BUCKET=photos
+
+# Optional
+PORT=3000
+PUBLIC_BASE_URL=https://your-domain.com   # absolute links for QR codes / OG tags
+SESSION_TTL_DAYS=30
+APP_ORIGINS=https://app.example.com       # extra CORS origins
+
+# Stripe (required to sell)
+STRIPE_SECRET_KEY=sk_...                  # Stripe secret key (test or live)
+STRIPE_WEBHOOK_SECRET=whsec_...           # endpoint: /api/stripe/webhook
+STRIPE_APPLICATION_FEE_PERCENT=10         # optional platform fee (with Connect)
+```
+
+### 3. Run
 
 ```bash
 npm install
+npm run server        # API + web app on http://localhost:3000
+npm run app           # Expo app (set EXPO_PUBLIC_API_BASE first)
 ```
 
-## Run the backend
-
-From the repo root:
+The mobile app talks to the API over your LAN or a tunnel:
 
 ```bash
-npm run server
-# -> PhotoShare server running on http://localhost:3000
+export EXPO_PUBLIC_API_BASE="https://your-domain.com"
+npm run app
 ```
 
-The server stores the SQLite database in `server/data/photos.db` and uploaded
-photos in `server/photos/`.
+## Selling photos
 
-### Environment variables
+1. Open a collection you own and tap **Sell**.
+2. Enter a price (for example `12.00`) and pick a currency.
+3. Share the collection link or QR code.
 
-| Variable     | Default             | Description                                  |
-| ------------ | ------------------- | -------------------------------------------- |
-| `PORT`       | `3000`              | Server port                                   |
-| `PHOTOS_DIR` | `photos`            | Folder for stored image files                 |
-| `DB_PATH`    | `data/photos.db`    | SQLite database file path                     |
+Visitors see the thumbnails and a **Buy** button. Stripe Checkout collects the
+card; on success the buyer returns to the collection and every original file
+unlocks (including ZIP downloads).
 
-## Run the mobile app
+**How access is enforced**
 
-The phone and the computer running the server must be on the **same Wi-Fi
-network**, because the app talks to the server over your LAN IP.
+- `price_cents` empty or `0` → free for everyone (private collections still need an invite).
+- Priced collection + no purchase → thumbnails and page only; originals, single
+  downloads and ZIP return `402 purchase_required`.
+- Owner, editors and invited members always have full access.
+- Purchases are recorded by the Stripe webhook, with a checkout-return fallback
+  (`/api/collections/:id/access?session_id=...`) so it also works locally without
+  `stripe listen`.
 
-1. Find your computer's LAN IP (e.g. `192.168.1.100`).
-2. Point the app at the server. Set the API base URL before starting Expo:
+### Payouts (Stripe Connect)
 
-   ```bash
-   export EXPO_PUBLIC_API_BASE="http://192.168.1.100:3000"
-   ```
-   (or edit `API_BASE` in `app/src/api.ts`)
+By default payments land in the platform's Stripe account. To pay owners
+directly, set the owner's `users.stripe_account_id` to a Stripe Connect account
+and optionally `STRIPE_APPLICATION_FEE_PERCENT` to keep a platform cut. Checkout
+then uses `transfer_data.destination` and `application_fee_amount`.
 
-3. Start the app from the repo root:
+## Importing photos
 
-   ```bash
-   npm run app
-   ```
+**From a device:** tap **Add photos** on the web or the mobile app and pick files
+(the phone picker sees Google Photos, iCloud, Drive and local storage as sources).
 
-   This runs `expo start`. Open the QR it prints in the Expo Go app on your
-   phone (or press `i` / `a` for an iOS / Android simulator).
+**From a link:** in a collection, open **More → Import from link** and paste one
+link per line. The server downloads the image and stores it like an upload.
 
-## How to use
+Supported:
 
-1. Open PhotoShare on your phone.
-2. Tap **+ New Collection** and give it a name.
-3. In the collection, tap **+ Add Photos** and pick photos from your library.
-4. Tap **Show QR** to display a QR code for the collection.
-5. On another phone (or the same one), open PhotoShare and tap **Scan a QR Code**.
-6. Point the camera at the QR — the gallery of photos from that collection opens.
+- Direct image URLs (`https://…/photo.jpg`)
+- Google Drive file links (`drive.google.com/file/d/<ID>/view`)
+- Any HTML page with an `og:image` tag
+- Google Photos **single photo** share links
+
+Limitations:
+
+- Google Photos **album** links only expose the album cover, not every photo
+  (Google removed the old album API). Save each photo's share link instead.
+- Links must be publicly reachable; localhost and private IP ranges are blocked.
+- Max 10 links per request, 25 MB per image.
+
+## Multi-select
+
+- Tap **☑** to enter select mode, then tap photos.
+- **Click-drag** anywhere on the grid (or **right-click drag**) to marquee-select.
+- **Shift-click** selects a range, **Ctrl/Cmd-click** toggles one photo.
+- **Right-click a photo** for Open / Download / Select / Select all / Delete.
+- The floating bar handles ZIP download, delete, select-all and cancel.
 
 ## API reference
 
-| Method | Endpoint                              | Description                         |
-| ------ | ------------------------------------- | ----------------------------------- |
-| GET    | `/api/collections`                    | List all collections                |
-| POST   | `/api/collections`                    | Create a collection (JSON `name`)   |
-| GET    | `/api/collections/:id`                 | Get a collection + its photos       |
-| GET    | `/api/collections/:id/qr`             | PNG QR code linking to the collection |
-| POST   | `/api/collections/:id/photos`         | Upload photos (multipart `photos`) |
-| GET    | `/api/photos/:filename`               | Serve a stored photo                |
-| DELETE | `/api/photos/:id`                     | Delete a photo                      |
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/api/auth/signup` · `/api/auth/login` · `/api/auth/logout` | Auth + session cookie |
+| GET | `/api/auth/me` | Current user |
+| GET | `/api/collections` | List (search `q`, `sort`, `filter`, paging) |
+| POST | `/api/collections` | Create collection |
+| GET | `/api/collections/:id` | Collection + photos + pricing/access state |
+| PATCH | `/api/collections/:id` | Rename, visibility, `price_cents`, `currency` |
+| DELETE | `/api/collections/:id` | Delete collection and its photos |
+| GET | `/api/collections/:id/qr` | PNG QR code for the share link |
+| POST | `/api/collections/:id/photos` | Upload images (multipart `photos`) |
+| POST | `/api/collections/:id/photos/delete` | Batch delete `{ ids: [] }` |
+| POST | `/api/collections/:id/import` | Import from links `{ urls: [] }` |
+| GET | `/api/collections/:id/zip` | Download ZIP (optional `?ids=a,b`) |
+| POST | `/api/collections/:id/save` | Copy a shared collection to your account |
+| GET/POST/PATCH/DELETE | `/api/collections/:id/members[/:userId]` | Collaboration |
+| POST | `/api/collections/:id/checkout` | Start Stripe Checkout for a priced collection |
+| GET | `/api/collections/:id/access` | Purchase state (+ `session_id` verification) |
+| GET | `/api/collections/:id/sales` | Owner sales list and revenue |
+| POST | `/api/stripe/webhook` | Stripe webhook (raw body, signature verified) |
+| GET | `/api/photos/:filename` | Stream photo (`?thumb=1`, `?download=1`) |
+| DELETE | `/api/photos/:id` | Delete a single photo |
 
-The QR code encodes `<server-url>/c/<collection-id>`. The mobile app parses a
-scanned URL containing `/c/<id>` and opens the gallery for that collection.
+## Security
+
+- Service-role Supabase key stays server-side; RLS is enabled on all tables.
+- Private storage bucket; images are proxied through authenticated endpoints.
+- bcrypt password hashes, HTTP-only session cookies with TTL.
+- Rate limits on auth and uploads; SSRF guard on URL imports.
+- `X-Frame-Options`, `nosniff`, `Referrer-Policy`, HSTS behind TLS.

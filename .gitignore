@@ -9,3 +9,5 @@ app/web-build/
 *.log
 .DS_Store
 .env
+# Supabase CLI local state
+supabase/.temp/

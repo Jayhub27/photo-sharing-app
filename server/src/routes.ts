@@ -1,4 +1,4 @@
-import { Router, type Response } from 'express'
+import { Router, type Request, type Response } from 'express'
 import multer from 'multer'
 import QRCode from 'qrcode'
 import sharp from 'sharp'
@@ -7,6 +7,16 @@ import { generateId, publicBaseUrl } from './utils.js'
 import { createZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 import { rateLimit } from './ratelimit.js'
+import {
+  CURRENCIES,
+  applicationFeePercent,
+  isStripeConfigured,
+  sellingSchemaReady,
+  refreshSellingSchema,
+  stripe,
+  stripeWebhookSecret,
+  type Currency,
+} from './stripe.js'
 
 const router = Router()
 
@@ -100,6 +110,191 @@ async function makeThumb(buffer: Buffer): Promise<{ thumb: Buffer; width?: numbe
   }
 }
 
+async function storePhoto(
+  collectionId: string,
+  buffer: Buffer,
+  originalName: string,
+  mime: string,
+): Promise<Record<string, unknown> | null> {
+  const ext = (originalName.includes('.') ? '.' + originalName.split('.').pop() : '') || `.${mime.split('/')[1] || 'jpg'}`
+  const filename = generateId() + ext
+
+  let thumbFilename: string | null = null
+  let width: number | undefined
+  let height: number | undefined
+  const made = await makeThumb(buffer)
+  if (made) {
+    width = made.width
+    height = made.height
+    thumbFilename = generateId() + '.jpg'
+    const { error: thumbErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(thumbFilename, made.thumb, { contentType: 'image/jpeg', upsert: true })
+    if (thumbErr) thumbFilename = null
+  }
+
+  const { error } = await supabase.storage.from(BUCKET).upload(filename, buffer, { contentType: mime, upsert: true })
+  if (error) return null
+
+  const { data: row } = await supabase
+    .from('photos')
+    .insert({
+      id: generateId(),
+      collection_id: collectionId,
+      filename,
+      thumb_filename: thumbFilename,
+      original_name: originalName,
+      mime_type: mime,
+      size: buffer.length,
+      width,
+      height,
+    })
+    .select(PHOTO_FIELDS)
+    .single()
+  return row || null
+}
+
+/* ----------------------------------------------------------------- selling */
+
+const PRICE_MAX_CENTS = 5_000_000
+
+function normalizePrice(value: unknown): number | null | undefined {
+  if (value === null || value === '') return null
+  const n = Number(value)
+  if (!Number.isFinite(n)) return undefined
+  const cents = Math.round(n)
+  if (cents < 0 || cents > PRICE_MAX_CENTS) return undefined
+  return cents
+}
+
+function normalizeCurrency(value: unknown): Currency | undefined {
+  const c = String(value || '').trim().toLowerCase()
+  return (CURRENCIES as readonly string[]).includes(c) ? (c as Currency) : undefined
+}
+
+async function hasPurchased(collectionId: string, userId?: string, email?: string): Promise<boolean> {
+  if (!(await sellingSchemaReady())) return false
+  if (userId) {
+    const { data } = await supabase
+      .from('purchases')
+      .select('id')
+      .eq('collection_id', collectionId)
+      .eq('buyer_user_id', userId)
+      .eq('status', 'paid')
+      .limit(1)
+    if (data && data.length) return true
+  }
+  if (email) {
+    const { data } = await supabase
+      .from('purchases')
+      .select('id')
+      .eq('collection_id', collectionId)
+      .eq('buyer_email', email.toLowerCase())
+      .eq('status', 'paid')
+      .limit(1)
+    if (data && data.length) return true
+  }
+  return false
+}
+
+function isLocked(col: any, access: Access, purchased: boolean): boolean {
+  const price = Number(col?.price_cents)
+  if (!Number.isFinite(price) || price <= 0) return false
+  return !access.canEdit && !purchased
+}
+
+async function accessState(col: any, access: Access, userId?: string, email?: string) {
+  const price = Number.isFinite(Number(col?.price_cents)) ? Number(col.price_cents) : null
+  const priced = price !== null && price > 0
+  if (priced && userId && !email) {
+    const { data: buyer } = await supabase.from('users').select('email').eq('id', userId).maybeSingle()
+    email = buyer?.email
+  }
+  const purchased = priced ? await hasPurchased(col.id, userId, email) : false
+  return {
+    price_cents: priced ? price : null,
+    currency: (col?.currency as string) || 'usd',
+    purchased,
+    locked: priced && !access.canEdit && !purchased,
+    stripeConfigured: isStripeConfigured(),
+    schemaReady: await sellingSchemaReady(),
+  }
+}
+
+/* ------------------------------------------------------------ import (URLs) */
+
+const PRIVATE_HOST_RE =
+  /^(localhost|.*\.local|.*\.internal|0\.0\.0\.0|127\.|10\.|192\.168\.|169\.254\.|\[?::1\]?$|172\.(1[6-9]|2\d|3[01])\.)/i
+
+function assertPublicUrl(raw: string): URL {
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    throw new Error('Not a valid URL')
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Only http(s) links are supported')
+  if (PRIVATE_HOST_RE.test(url.hostname)) throw new Error('That host is not reachable from the server')
+  return url
+}
+
+/** Turn Google Drive/Photos share links into something the server can fetch. */
+function normalizeImportUrl(raw: string): string {
+  const url = new URL(raw)
+  const host = url.hostname.replace(/^www\./, '')
+  if (host === 'drive.google.com' || host === 'docs.google.com') {
+    const id = url.pathname.match(/\/d\/([^/]+)/)?.[1] || url.searchParams.get('id') || ''
+    if (id) return `https://drive.google.com/uc?export=download&id=${id}`
+  }
+  return raw
+}
+
+async function fetchImage(
+  raw: string,
+): Promise<{ buffer: Buffer; mime: string; name: string } | { error: string }> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 20_000)
+  try {
+    const url = assertPublicUrl(raw)
+    const res = await fetch(normalizeImportUrl(url.toString()), {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'user-agent':
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36',
+        accept: 'image/*,text/html;q=0.8,*/*;q=0.5',
+      },
+    })
+    if (!res.ok) return { error: `Server responded ${res.status}` }
+    const type = (res.headers.get('content-type') || '').split(';')[0].trim()
+    if (type.startsWith('image/')) {
+      const buffer = Buffer.from(await res.arrayBuffer())
+      if (buffer.length > 25 * 1024 * 1024) return { error: 'Image is larger than 25 MB' }
+      const name = decodeURIComponent(url.pathname.split('/').pop() || 'imported.jpg').slice(0, 120) || 'imported.jpg'
+      return { buffer, mime: type, name }
+    }
+    if (type.includes('text/html')) {
+      const html = await res.text()
+      const match =
+        html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+        html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+      if (!match) return { error: 'No image found on that page (album links often need direct photo links)' }
+      const imageUrl = new URL(match[1], url).toString()
+      const imgRes = await fetch(imageUrl, { signal: controller.signal, headers: { 'user-agent': 'Mozilla/5.0' } })
+      if (!imgRes.ok) return { error: `Could not load the page image (${imgRes.status})` }
+      const mime = (imgRes.headers.get('content-type') || 'image/jpeg').split(';')[0].trim()
+      const buffer = Buffer.from(await imgRes.arrayBuffer())
+      if (buffer.length > 25 * 1024 * 1024) return { error: 'Image is larger than 25 MB' }
+      return { buffer, mime, name: 'imported.jpg' }
+    }
+    return { error: `Unsupported content type (${type || 'unknown'})` }
+  } catch (err: any) {
+    return { error: err?.name === 'AbortError' ? 'Timed out while downloading' : err?.message || 'Download failed' }
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 /* ---------------------------------------------------------------- collections */
 
 router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
@@ -116,25 +311,37 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
   const memberIds = (memberships || []).map((m) => m.collection_id)
   const memberRoles = new Map((memberships || []).map((m) => [m.collection_id, m.role as Role]))
 
-  let query = supabase
-    .from('collections')
-    .select('id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename', { count: 'exact' })
-    .order(sort === 'name' ? 'name' : 'created_at', { ascending: sort === 'name' })
+  const BASE_FIELDS = 'id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename'
+  const SELLING_FIELDS = BASE_FIELDS + ', price_cents, currency'
 
-  if (filter === 'owned') {
-    query = query.eq('user_id', req.userId)
-  } else if (filter === 'shared') {
-    if (!memberIds.length) return res.json({ collections: [], total: 0, hasMore: false })
-    query = query.in('id', memberIds)
-  } else if (memberIds.length) {
-    query = query.or(`user_id.eq.${req.userId},id.in.(${memberIds.join(',')})`)
-  } else {
-    query = query.eq('user_id', req.userId)
+  if (filter === 'shared' && !memberIds.length) {
+    return res.json({ collections: [], total: 0, hasMore: false })
   }
-  if (q) query = query.ilike('name', `%${q}%`)
 
-  const { data, error, count } = await query.range(offset, offset + limit - 1)
-  if (error) return res.status(500).json({ error: 'Could not load collections' })
+  const build = (fields: string) => {
+    let query = supabase
+      .from('collections')
+      .select(fields, { count: 'exact' })
+      .order(sort === 'name' ? 'name' : 'created_at', { ascending: sort === 'name' })
+    if (filter === 'owned') {
+      query = query.eq('user_id', req.userId)
+    } else if (filter === 'shared') {
+      query = query.in('id', memberIds)
+    } else if (memberIds.length) {
+      query = query.or(`user_id.eq.${req.userId},id.in.(${memberIds.join(',')})`)
+    } else {
+      query = query.eq('user_id', req.userId)
+    }
+    if (q) query = query.ilike('name', `%${q}%`)
+    return query.range(offset, offset + limit - 1)
+  }
+
+  // Price columns only exist after the selling migration, so fall back when they are missing.
+  let result: { data: any[] | null; error: unknown; count: number | null } = await build(SELLING_FIELDS)
+  if (result.error) result = await build(BASE_FIELDS)
+  if (result.error) return res.status(500).json({ error: 'Could not load collections' })
+  const data = result.data
+  const count = result.count
 
   const ownIds = new Set((data || []).filter((c) => c.user_id === req.userId).map((c) => c.id))
   const counts = await countsFor((data || []).map((c) => c.id))
@@ -145,6 +352,8 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
     is_public: c.is_public !== false,
     cover_filename: c.cover_filename,
     cover_thumb_filename: c.cover_thumb_filename,
+    price_cents: Number.isFinite(Number(c.price_cents)) && Number(c.price_cents) > 0 ? Number(c.price_cents) : null,
+    currency: c.currency || 'usd',
     photo_count: counts[c.id] || 0,
     role: ownIds.has(c.id) ? 'owner' : memberRoles.get(c.id) || 'viewer',
     is_owner: ownIds.has(c.id),
@@ -190,6 +399,8 @@ router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => 
 
   const { data: photos, count } = await query.range(offset, offset + limit - 1)
 
+  const pricing = await accessState(access.col, access, req.userId)
+
   res.json({
     collection: access.col,
     photos: photos || [],
@@ -199,6 +410,7 @@ router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => 
     role: access.role,
     canEdit: access.canEdit,
     canManage: access.canManage,
+    pricing,
   })
 })
 
@@ -207,17 +419,38 @@ router.patch('/collections/:id', authMiddleware, async (req: AuthedRequest, res)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
   if (!access.canManage) return res.status(403).json({ error: 'Not your collection' })
 
-  const patch: { name?: string; is_public?: boolean } = {}
+  const patch: { name?: string; is_public?: boolean; price_cents?: number | null; currency?: string } = {}
   if (typeof req.body.name === 'string') {
     const name = req.body.name.trim().slice(0, 120)
     if (!name) return res.status(400).json({ error: 'Name is required' })
     patch.name = name
   }
   if (typeof req.body.is_public === 'boolean') patch.is_public = req.body.is_public
+  if ('price_cents' in req.body) {
+    const price = normalizePrice(req.body.price_cents)
+    if (price === undefined) return res.status(400).json({ error: 'Enter a valid price' })
+    if (price !== null && !(await sellingSchemaReady())) {
+      await refreshSellingSchema()
+      return res.status(503).json({
+        error: 'Selling is not enabled in the database yet',
+        code: 'schema_missing',
+        hint: 'Run the selling section of supabase/schema.sql in the Supabase SQL editor',
+      })
+    }
+    patch.price_cents = price
+  }
+  if ('currency' in req.body) {
+    const currency = normalizeCurrency(req.body.currency)
+    if (!currency) return res.status(400).json({ error: 'Unsupported currency' })
+    patch.currency = currency
+  }
   if (!Object.keys(patch).length) return res.status(400).json({ error: 'Nothing to update' })
 
   const { error } = await supabase.from('collections').update(patch).eq('id', req.params.id)
-  if (error) return res.status(500).json({ error: 'Could not update collection' })
+  if (error) {
+    await refreshSellingSchema()
+    return res.status(500).json({ error: 'Could not update collection' })
+  }
   res.json({ id: req.params.id, ...patch })
 })
 
@@ -307,10 +540,26 @@ router.get('/collections/:id/zip', optionalAuth, async (req: AuthedRequest, res)
     return res.status(403).json({ error: 'This collection is private' })
   }
   const col = access.col
-  const { data: photos } = await supabase
+  const pricing = await accessState(col, access, req.userId)
+  if (pricing.locked) {
+    return res.status(402).json({
+      error: 'Purchase required',
+      price_cents: pricing.price_cents,
+      currency: pricing.currency,
+      code: 'purchase_required',
+    })
+  }
+  const ids = String(req.query.ids || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 500)
+  let photosQuery = supabase
     .from('photos')
     .select('filename, original_name')
     .eq('collection_id', req.params.id)
+  if (ids.length) photosQuery = photosQuery.in('id', ids)
+  const { data: photos } = await photosQuery
   if (!photos || photos.length === 0) return res.status(404).json({ error: 'No photos in this collection' })
 
   const entries: { name: string; data: Buffer }[] = []
@@ -355,43 +604,7 @@ router.post(
 
     const photos = []
     for (const f of files) {
-      const ext = (f.originalname.includes('.') ? '.' + f.originalname.split('.').pop() : '') || `.${f.mimetype.split('/')[1]}`
-      const filename = generateId() + ext
-
-      let thumbFilename: string | null = null
-      let width: number | undefined
-      let height: number | undefined
-      const made = await makeThumb(f.buffer)
-      if (made) {
-        width = made.width
-        height = made.height
-        thumbFilename = generateId() + '.jpg'
-        const { error: thumbErr } = await supabase.storage
-          .from(BUCKET)
-          .upload(thumbFilename, made.thumb, { contentType: 'image/jpeg', upsert: true })
-        if (thumbErr) thumbFilename = null
-      }
-
-      const { error } = await supabase.storage
-        .from(BUCKET)
-        .upload(filename, f.buffer, { contentType: f.mimetype, upsert: true })
-      if (error) continue
-
-      const { data: row } = await supabase
-        .from('photos')
-        .insert({
-          id: generateId(),
-          collection_id: req.params.id,
-          filename,
-          thumb_filename: thumbFilename,
-          original_name: f.originalname,
-          mime_type: f.mimetype,
-          size: f.size,
-          width,
-          height,
-        })
-        .select(PHOTO_FIELDS)
-        .single()
+      const row = await storePhoto(req.params.id, f.buffer, f.originalname, f.mimetype)
       if (row) photos.push(row)
     }
     if (photos.length) await refreshCover(req.params.id)
@@ -424,7 +637,22 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
   const isPrivate = access.col ? access.col.is_public === false : false
   if (isPrivate && !access.role) return res.status(403).json({ error: 'This photo is private' })
 
-  const useThumb = req.query.thumb === '1' && !!photo.thumb_filename
+  let useThumb = req.query.thumb === '1' && !!photo.thumb_filename
+  if (!useThumb && access.col) {
+    const pricing = await accessState(access.col, access, req.userId)
+    if (pricing.locked) {
+      if (!photo.thumb_filename || req.query.download === '1') {
+        return res.status(402).json({
+          error: 'Purchase required',
+          code: 'purchase_required',
+          price_cents: pricing.price_cents,
+          currency: pricing.currency,
+        })
+      }
+      // Locked collections stream the low-res thumbnail instead of the original.
+      useThumb = true
+    }
+  }
   const key = useThumb ? photo.thumb_filename : photo.filename
   const { data: blob, error } = await supabase.storage.from(BUCKET).download(key as string)
   if (error || !blob) return res.status(404).json({ error: 'Photo not found' })
@@ -484,7 +712,7 @@ router.post('/collections/:id/members', authMiddleware, async (req: AuthedReques
   if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email address' })
 
   const { data: user } = await supabase.from('users').select('id, name, email').eq('email', email).maybeSingle()
-  if (!user) return res.status(404).json({ error: 'No PhotoShare account with that email' })
+  if (!user) return res.status(404).json({ error: 'No Take the shot account with that email' })
   if (user.id === access.col.user_id) return res.status(400).json({ error: 'That is the owner' })
 
   const { error } = await supabase
@@ -520,5 +748,246 @@ router.delete('/collections/:id/members/:userId', authMiddleware, async (req: Au
     .eq('user_id', req.params.userId)
   res.json({ ok: true })
 })
+
+/* ------------------------------------------------------------------- import */
+
+router.post('/collections/:id/import', authMiddleware, uploadLimiter, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (!access.canEdit) return res.status(403).json({ error: 'Not your collection' })
+
+  const raw = Array.isArray(req.body.urls) ? req.body.urls : [req.body.url]
+  const urls = raw
+    .map((u: unknown) => String(u || '').trim())
+    .filter(Boolean)
+    .slice(0, 10)
+  if (!urls.length) return res.status(400).json({ error: 'Paste at least one image link' })
+
+  const results: { url: string; photo?: unknown; error?: string }[] = []
+  for (const url of urls) {
+    const fetched = await fetchImage(url)
+    if ('error' in fetched) {
+      results.push({ url, error: fetched.error })
+      continue
+    }
+    const row = await storePhoto(req.params.id, fetched.buffer, fetched.name, fetched.mime)
+    results.push(row ? { url, photo: row } : { url, error: 'Could not store that image' })
+  }
+  const imported = results.filter((r) => r.photo).length
+  if (imported) await refreshCover(req.params.id)
+  res.json({ results, imported })
+})
+
+/* ------------------------------------------------------------ batch actions */
+
+router.post('/collections/:id/photos/delete', authMiddleware, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (!access.canEdit) return res.status(403).json({ error: 'Not your collection' })
+
+  const ids = (Array.isArray(req.body.ids) ? req.body.ids : [])
+    .map((v: unknown) => String(v || ''))
+    .filter(Boolean)
+    .slice(0, 200)
+  if (!ids.length) return res.status(400).json({ error: 'No photos selected' })
+
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('id, filename, thumb_filename')
+    .eq('collection_id', req.params.id)
+    .in('id', ids)
+  const keys = (photos || []).flatMap((p) => [p.filename, p.thumb_filename]).filter(Boolean) as string[]
+  if (keys.length) await supabase.storage.from(BUCKET).remove(keys)
+  await supabase.from('photos').delete().eq('collection_id', req.params.id).in('id', ids)
+  await refreshCover(req.params.id)
+  res.json({ deleted: (photos || []).length })
+})
+
+/* ------------------------------------------------------------------- selling */
+
+async function recordPurchase(session: any) {
+  const collectionId = session?.metadata?.collection_id
+  if (!collectionId) return
+  const paid = session.payment_status === 'paid'
+  const { data: existing } = await supabase
+    .from('purchases')
+    .select('id')
+    .eq('stripe_session_id', session.id)
+    .maybeSingle()
+  const payload = {
+    status: paid ? 'paid' : 'pending',
+    paid_at: paid ? new Date().toISOString() : null,
+    buyer_email: session.customer_details?.email || session.customer_email || null,
+    stripe_payment_intent:
+      typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
+  }
+  if (existing) {
+    await supabase.from('purchases').update(payload).eq('id', existing.id)
+    return
+  }
+  await supabase.from('purchases').insert({
+    id: generateId(),
+    collection_id: collectionId,
+    buyer_user_id: session.metadata?.buyer_user_id || null,
+    amount_cents: session.amount_total || 0,
+    currency: session.currency || 'usd',
+    stripe_session_id: session.id,
+    ...payload,
+  })
+}
+
+router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (access.col.is_public === false && !access.role) return res.status(403).json({ error: 'This collection is private' })
+
+  const price = Number(access.col.price_cents)
+  if (!Number.isFinite(price) || price <= 0) return res.status(400).json({ error: 'This collection is not for sale' })
+  if (access.canEdit) return res.status(400).json({ error: 'You already own this collection' })
+
+  if (!(await sellingSchemaReady())) {
+    return res.status(503).json({
+      error: 'Selling is not enabled in the database yet',
+      code: 'schema_missing',
+      hint: 'Run the selling section of supabase/schema.sql in the Supabase SQL editor',
+    })
+  }
+  const s = stripe()
+  if (!s) {
+    return res.status(503).json({
+      error: 'Payments are not configured',
+      code: 'stripe_not_configured',
+      hint: 'Set STRIPE_SECRET_KEY on the server',
+    })
+  }
+
+  let email: string | undefined
+  if (req.userId) {
+    const { data: buyer } = await supabase.from('users').select('email').eq('id', req.userId).maybeSingle()
+    email = buyer?.email
+  }
+  if (await hasPurchased(access.col.id, req.userId, email)) return res.json({ alreadyPurchased: true })
+
+  const currency = normalizeCurrency(access.col.currency) || 'usd'
+  const base = publicBaseUrl(req)
+  const { count } = await supabase
+    .from('photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('collection_id', access.col.id)
+
+  const params: any = {
+    mode: 'payment',
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency,
+          unit_amount: price,
+          product_data: {
+            name: String(access.col.name || 'Photo collection').slice(0, 120),
+            description: `${count || 0} original photo${count === 1 ? '' : 's'} · Take the shot`,
+          },
+        },
+      },
+    ],
+    success_url: `${base}/c/${access.col.id}?purchased=1&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/c/${access.col.id}?canceled=1`,
+    metadata: { collection_id: access.col.id, buyer_user_id: req.userId || '' },
+  }
+  if (email) params.customer_email = email
+
+  const { data: owner } = await supabase
+    .from('users')
+    .select('stripe_account_id')
+    .eq('id', access.col.user_id)
+    .maybeSingle()
+  const destination = owner?.stripe_account_id
+  if (destination) {
+    params.payment_intent_data = { transfer_data: { destination } }
+    const fee = applicationFeePercent()
+    if (fee > 0) params.payment_intent_data.application_fee_amount = Math.round((price * fee) / 100)
+  }
+
+  try {
+    const session = await s.checkout.sessions.create(params)
+    res.json({ url: session.url, id: session.id })
+  } catch (err: any) {
+    res.status(502).json({ error: err?.message || 'Could not start checkout' })
+  }
+})
+
+router.get('/collections/:id/access', optionalAuth, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+
+  const sessionId = String(req.query.session_id || '').trim()
+  if (sessionId && (await sellingSchemaReady())) {
+    const s = stripe()
+    if (s) {
+      try {
+        const session = await s.checkout.sessions.retrieve(sessionId)
+        if (session.payment_status === 'paid' && session.metadata?.collection_id === req.params.id) {
+          await recordPurchase(session)
+        }
+      } catch {}
+    }
+  }
+
+  const pricing = await accessState(access.col, access, req.userId)
+  res.json({ pricing, isOwner: access.isOwner, role: access.role, canEdit: access.canEdit })
+})
+
+router.get('/collections/:id/sales', authMiddleware, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (!access.canManage) return res.status(403).json({ error: 'Only the owner can see sales' })
+
+  const schemaReady = await sellingSchemaReady()
+  const { data: owner } = await supabase
+    .from('users')
+    .select('stripe_account_id')
+    .eq('id', req.userId)
+    .maybeSingle()
+  if (!schemaReady) {
+    return res.json({ sales: [], count: 0, gross_cents: 0, currency: 'usd', schemaReady, stripeConfigured: isStripeConfigured(), payoutAccount: owner?.stripe_account_id || null })
+  }
+
+  const { data: sales } = await supabase
+    .from('purchases')
+    .select('id, buyer_email, amount_cents, currency, status, created_at, paid_at')
+    .eq('collection_id', req.params.id)
+    .order('created_at', { ascending: false })
+    .limit(200)
+  const paid = (sales || []).filter((s) => s.status === 'paid')
+  res.json({
+    sales: sales || [],
+    count: paid.length,
+    gross_cents: paid.reduce((sum, s) => sum + (s.amount_cents || 0), 0),
+    currency: paid[0]?.currency || normalizeCurrency(access.col.currency) || 'usd',
+    schemaReady,
+    stripeConfigured: isStripeConfigured(),
+    payoutAccount: owner?.stripe_account_id || null,
+  })
+})
+
+export async function stripeWebhookHandler(req: Request, res: Response) {
+  const s = stripe()
+  const secret = stripeWebhookSecret()
+  if (!s || !secret) return res.status(503).json({ error: 'Stripe webhook is not configured' })
+  const signature = String(req.headers['stripe-signature'] || '')
+  if (!signature) return res.status(400).json({ error: 'Missing Stripe signature' })
+  try {
+    const event = s.webhooks.constructEvent(req.body as Buffer, signature, secret)
+    if (
+      event.type === 'checkout.session.completed' ||
+      event.type === 'checkout.session.async_payment_succeeded'
+    ) {
+      await recordPurchase(event.data.object)
+    }
+    res.json({ received: true })
+  } catch {
+    res.status(400).json({ error: 'Invalid Stripe signature' })
+  }
+}
 
 export default router

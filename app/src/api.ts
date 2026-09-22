@@ -30,8 +30,19 @@ export interface Collection {
   is_public?: boolean
   cover_filename?: string | null
   cover_thumb_filename?: string | null
+  price_cents?: number | null
+  currency?: string
   role?: MemberRole | null
   is_owner?: boolean
+}
+
+export interface Pricing {
+  price_cents: number | null
+  currency: string
+  purchased: boolean
+  locked: boolean
+  stripeConfigured: boolean
+  schemaReady: boolean
 }
 
 export interface CollectionResponse {
@@ -43,6 +54,7 @@ export interface CollectionResponse {
   role: MemberRole | null
   canEdit: boolean
   canManage: boolean
+  pricing?: Pricing
 }
 
 export type MemberRole = 'owner' | 'editor' | 'viewer'
@@ -293,6 +305,44 @@ export async function uploadPhoto(collectionId: string, uri: string): Promise<{ 
 export async function deletePhoto(photoId: string): Promise<void> {
   const res = await fetch(`${resolveBase()}/api/photos/${photoId}`, { method: 'DELETE', headers: headers() })
   if (!res.ok) throw await errorFrom(res, 'Delete failed')
+}
+
+/* ------------------------------------------------------- import + selling */
+
+export async function importFromLinks(
+  collectionId: string,
+  urls: string[]
+): Promise<{ imported: number; results: { url: string; error?: string }[] }> {
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/import`, {
+    method: 'POST',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ urls }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Import failed')
+  return res.json()
+}
+
+export async function setCollectionPrice(
+  collectionId: string,
+  priceCents: number | null,
+  currency = 'usd'
+): Promise<void> {
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}`, {
+    method: 'PATCH',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ price_cents: priceCents, currency }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not save pricing')
+}
+
+export async function startCheckout(
+  collectionId: string
+): Promise<{ url?: string; alreadyPurchased?: boolean; error?: string }> {
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/checkout`, {
+    method: 'POST',
+    headers: headers(),
+  })
+  return res.json()
 }
 
 export function parseCollectionUrl(url: string): string | null {

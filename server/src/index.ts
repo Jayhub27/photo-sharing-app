@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
-import api from './routes.js'
+import api, { stripeWebhookHandler } from './routes.js'
 import auth from './auth.js'
 import { supabase } from './db.js'
 import { publicBaseUrl } from './utils.js'
@@ -43,6 +43,9 @@ app.use((req, res, next) => {
   })(req, res, next)
 })
 
+// Stripe webhooks need the raw body, so this route is mounted before the JSON parser.
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhookHandler)
+
 app.use(express.json({ limit: '100kb' }))
 
 app.use('/api/auth', auth)
@@ -72,7 +75,7 @@ app.get('/c/:id', async (req, res) => {
       const image = col.cover_filename
         ? `${publicBaseUrl(req)}/api/photos/${col.cover_filename}`
         : undefined
-      meta = { title: col.name, description: `View "${col.name}" on PhotoShare.`, image }
+      meta = { title: col.name, description: `View "${col.name}" on Take the shot.`, image }
     }
   } catch {}
   res.type('html').send(collectionPage(req.params.id, '', meta))
@@ -82,6 +85,6 @@ export default app
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`PhotoShare server running on http://localhost:${PORT}`)
+    console.log(`Take the shot server running on http://localhost:${PORT}`)
   })
 }

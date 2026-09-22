@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PhotoShare",
+    "name": "Take the shot",
     "slug": "photo-share",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -17,13 +17,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow PhotoShare to access your camera to scan QR codes."
+          "cameraPermission": "Allow Take the shot to access your camera to scan QR codes."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow PhotoShare to access your photos."
+          "photosPermission": "Allow Take the shot to access your photos."
         }
       ]
     ]

@@ -37,7 +37,7 @@ export default function LoginScreen({ navigation }: Props) {
           <View style={styles.logoIcon}>
             <Text style={{ fontSize: 20 }}>📷</Text>
           </View>
-          <Text style={styles.logoText}>PhotoShare</Text>
+          <Text style={styles.logoText}>Take the shot</Text>
         </View>
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Log in to manage your photo collections.</Text>

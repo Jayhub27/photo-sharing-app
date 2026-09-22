@@ -76,7 +76,7 @@ function ScanScreenMobile({
     const collectionId = parseCollectionUrl(data)
     if (!collectionId) {
       setScanned(true)
-      Alert.alert('Not a PhotoShare QR', 'Point the camera at a PhotoShare collection QR code.', [
+      Alert.alert('Not a Take the shot QR', 'Point the camera at a Take the shot collection QR code.', [
         { text: 'OK', onPress: () => setScanned(false) },
       ])
       return

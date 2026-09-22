@@ -94,7 +94,7 @@ export default function HomeScreen({ navigation }: Props) {
             <View style={styles.logoIcon}>
               <Text style={{ fontSize: 20 }}>📷</Text>
             </View>
-            <Text style={styles.logoText}>PhotoShare</Text>
+            <Text style={styles.logoText}>Take the shot</Text>
           </View>
           <Text style={styles.title}>Share photos with a QR code</Text>
           <Text style={styles.subtitle}>
