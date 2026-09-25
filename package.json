@@ -12,5 +12,8 @@
     "app": "npm run start --workspace app",
     "website": "npx --yes serve website -l 8080",
     "build": "npm run build --workspace server"
+  },
+  "overrides": {
+    "expo-font": "~12.0.10"
   }
 }
