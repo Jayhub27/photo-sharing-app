@@ -65,6 +65,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
         <button id="miDownload" role="menuitem">\u2b07 Download all (ZIP)</button>
         <button id="miMembers" role="menuitem">\ud83d\udc65 Members</button>
         <button id="miSell" role="menuitem">\ud83c\udff7\ufe0f Pricing &amp; sales</button>
+        <button id="miExpiry" role="menuitem">\u23f3 Auto-delete</button>
         <div class="sep"></div>
         <button id="miRename" role="menuitem">\u270f\ufe0f Rename collection</button>
         <button id="miVisibility" role="menuitem">\ud83d\udd12 Make private</button>
@@ -194,6 +195,34 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
   </div>
 </div>
 
+<div class="modal" id="expiryModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Auto-delete this collection</h2><button class="modal-close" data-close="expiryModal" aria-label="Close">\u2715</button></div>
+    <div class="field">
+      <label for="expirySelect">Delete after</label>
+      <select id="expirySelect">
+        <option value="">Never (keep forever)</option>
+        <option value="1">1 day</option>
+        <option value="7">7 days</option>
+        <option value="30">30 days</option>
+        <option value="90">90 days</option>
+        <option value="365">1 year</option>
+        <option value="custom">Custom\u2026</option>
+      </select>
+    </div>
+    <div class="field hidden" id="expiryCustomWrap">
+      <label for="expiryDays">Number of days</label>
+      <input type="number" id="expiryDays" min="1" max="3650" step="1" placeholder="14">
+    </div>
+    <div class="note warn hidden" id="expirySellWarning">
+      <span><strong>Heads up:</strong> this collection has a price. When it auto-deletes, buyers lose access and the purchase records are removed too.</span>
+    </div>
+    <div class="hint" style="margin-bottom:14px">Photos are removed from storage and the database. The server sweeps hourly, so deletion happens within an hour of the deadline. You can trigger it early with the maintenance endpoint.</div>
+    <button class="btn" id="saveExpiry">Save schedule</button>
+    <div id="expiryStatus" class="hint" style="margin-top:12px"></div>
+  </div>
+</div>
+
 <div class="modal" id="membersModal">
   <div class="modal-card">
     <div class="modal-head"><h2>Members</h2><button class="modal-close" data-close="membersModal" aria-label="Close">\u2715</button></div>
@@ -215,6 +244,7 @@ let photos = [];
 let pricing = { locked: false, price_cents: null, currency: 'usd', purchased: false, stripeConfigured: false, schemaReady: true };
 let isOwner = false, canEdit = false, canManage = false, role = null, loggedIn = false;
 let total = 0, offset = 0, pageSize = 60, q = '', newestTs = '', createdAt = '', isPublic = true, photoSort = 'newest', photoView = 'grid';
+let expiresAt = null;
 let selected = new Set();
 let selectMode = false;
 let lastIndex = -1;
@@ -243,6 +273,11 @@ function renderMeta() {
     parts.push('<span>Free to view</span>');
   }
   if (!isPublic) parts.push('<span>\ud83d\udd12 Private</span>');
+  if (expiresAt) {
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    const days = Math.ceil(ms / 86400000);
+    parts.push('<span>\u23f3 ' + (days <= 0 ? 'deleting soon' : days === 1 ? 'deletes in 1 day' : 'deletes in ' + days + ' days') + '</span>');
+  }
   if (role && role !== 'owner') parts.push('<span>You are ' + esc(role) + '</span>');
   if (canManage && pricing.price_cents) parts.push('<span>\ud83d\udcb0 Selling</span>');
   if (createdAt) parts.push('<span>Created ' + esc(createdAt) + '</span>');
@@ -259,6 +294,7 @@ function updateChrome() {
   document.getElementById('miDownload').classList.toggle('hidden', !photos.length || pricing.locked);
   document.getElementById('miMembers').classList.toggle('hidden', !role);
   document.getElementById('miSell').classList.toggle('hidden', !canManage);
+  document.getElementById('miExpiry').classList.toggle('hidden', !canManage);
   document.getElementById('miRename').classList.toggle('hidden', !canManage);
   document.getElementById('miVisibility').classList.toggle('hidden', !canManage);
   document.getElementById('miDelete').classList.toggle('hidden', !canManage);
@@ -540,6 +576,16 @@ async function load(append) {
       document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\ud83d\udd12</div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
       return;
     }
+    if (res.status === 410) {
+      document.getElementById('title').textContent = '\u23f3 Collection expired';
+      document.getElementById('metaLine').innerHTML = 'These photos reached their expiry date and were removed.';
+      document.getElementById('actions').classList.add('hidden');
+      document.getElementById('mobileBar').classList.add('hidden');
+      document.querySelector('.toolbar').classList.add('hidden');
+      document.getElementById('loadMore').classList.add('hidden');
+      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\u23f3</div><div class="empty-text">This collection was set to auto-delete and is now gone.<br>Create a new collection to share more photos.</div></div>';
+      return;
+    }
     if (!res.ok) throw new Error();
     const data = await res.json();
     document.getElementById('title').innerHTML = '<span class="grad">' + esc(data.collection.name) + '</span>';
@@ -551,6 +597,7 @@ async function load(append) {
     canManage = !!data.canManage;
     role = data.role || null;
     isPublic = data.collection.is_public !== false;
+    expiresAt = data.collection.expires_at || null;
     pricing = data.pricing || pricing;
     photos = append ? photos.concat(data.photos) : data.photos;
     offset = photos.length;
@@ -723,6 +770,60 @@ async function uploadFiles(files, done) {
   }
 }
 
+/* ---------------------------------------------------------------- expiry */
+
+function openExpiry() {
+  const sel = document.getElementById('expirySelect');
+  const custom = document.getElementById('expiryCustomWrap');
+  const status = document.getElementById('expiryStatus');
+  if (expiresAt) {
+    const daysLeft = Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 86400000));
+    const known = ['1', '7', '30', '90', '365'];
+    if (known.includes(String(daysLeft))) {
+      sel.value = String(daysLeft);
+      custom.classList.add('hidden');
+    } else {
+      sel.value = 'custom';
+      document.getElementById('expiryDays').value = String(daysLeft);
+      custom.classList.remove('hidden');
+    }
+    status.textContent = 'Currently scheduled for ' + new Date(expiresAt).toLocaleString();
+  } else {
+    sel.value = '';
+    custom.classList.add('hidden');
+    status.textContent = 'No auto-delete scheduled.';
+  }
+  document.getElementById('expirySellWarning').classList.toggle('hidden', !pricing.price_cents);
+  openModal('expiryModal');
+}
+
+async function saveExpiry() {
+  const sel = document.getElementById('expirySelect');
+  let days = sel.value;
+  if (days === 'custom') days = document.getElementById('expiryDays').value;
+  const payload = days === '' ? null : Number(days);
+  if (payload !== null && (!Number.isFinite(payload) || payload < 1 || payload > 3650)) {
+    toast('Enter a number of days between 1 and 3650', 'error');
+    return;
+  }
+  const btn = document.getElementById('saveExpiry');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ expires_in_days: payload }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.hint || data.error || 'Could not save the schedule');
+    toast(payload ? 'Auto-delete scheduled in ' + payload + ' day' + (payload === 1 ? '' : 's') : 'Auto-delete removed', 'success');
+    closeModal('expiryModal');
+    await load(false);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  btn.disabled = false; btn.innerHTML = 'Save schedule';
+}
+
 /* -------------------------------------------------------------- members */
 
 async function loadMembers() {
@@ -825,6 +926,11 @@ document.getElementById('sellBtn').addEventListener('click', openSell);
 document.getElementById('salesBtn').addEventListener('click', function () { openSell(); });
 document.getElementById('qrToggle').addEventListener('click', openShare);
 document.getElementById('miSell').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openSell(); });
+document.getElementById('miExpiry').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openExpiry(); });
+document.getElementById('saveExpiry').addEventListener('click', saveExpiry);
+document.getElementById('expirySelect').addEventListener('change', function () {
+  document.getElementById('expiryCustomWrap').classList.toggle('hidden', this.value !== 'custom');
+});
 document.getElementById('miImport').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openModal('importModal'); });
 document.getElementById('importFromUpload').addEventListener('click', function () { closeModal('uploadModal'); openModal('importModal'); });
 document.getElementById('miDownload').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); window.location.href = BASE + '/api/collections/' + CID + '/zip'; });

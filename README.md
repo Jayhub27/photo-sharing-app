@@ -15,6 +15,7 @@ automatically after payment.
 | --- | --- |
 | Collections + QR sharing | Scan the QR and the gallery opens, no app install needed |
 | **Sell your shots** | Set a price per collection; buyers pay with Stripe Checkout |
+| **Time-limited hosting** | Auto-delete a collection after 1–3650 days; hourly sweeper + cron endpoint |
 | Free or paid | `price_cents` empty = free; thumbnails stay visible either way |
 | Locked originals | Paid collections stream low-res thumbnails until purchased |
 | Sales dashboard | Owners see sales count, revenue and buyer emails per collection |
@@ -138,6 +139,33 @@ directly, set the owner's `users.stripe_account_id` to a Stripe Connect account
 and optionally `STRIPE_APPLICATION_FEE_PERCENT` to keep a platform cut. Checkout
 then uses `transfer_data.destination` and `application_fee_amount`.
 
+## Time-limited collections
+
+Owners can schedule a collection to delete itself. In the collection page open
+**More → Auto-delete** and pick 1 day, 7 days, 30 days, 90 days, a year, or a
+custom number of days. Leaving it empty keeps the collection forever.
+
+- The deadline is stored as `collections.expires_at` (see the expiring section of
+  `supabase/schema.sql`).
+- A sweep runs **hourly** on a long-running server and is also available as an
+  endpoint so any cron can trigger it:
+
+  ```bash
+  curl -X POST https://your-domain.com/api/maintenance/sweep \
+    -H "x-maintenance-secret: $MAINTENANCE_SECRET"
+  ```
+
+- The sweep removes storage objects first, then photos, members, purchases and
+  the collection row. Deletion happens within an hour of the deadline, and
+  expired collections return `410 Gone` immediately even before the sweep runs.
+- `MAINTENANCE_SECRET` is required for the endpoint; without it the endpoint is
+  disabled. `MAINTENANCE_SWEEP_INTERVAL_MINUTES` tunes the in-process interval
+  (default 60, minimum 5).
+
+> **Selling and expiry conflict:** if a priced collection expires, buyers lose
+> access and their purchase rows are deleted. The pricing and auto-delete dialogs
+> warn about this.
+
 ## Importing photos
 
 **From a device:** tap **Add photos** on the web or the mobile app and pick files
@@ -177,7 +205,7 @@ Limitations:
 | GET | `/api/collections` | List (search `q`, `sort`, `filter`, paging) |
 | POST | `/api/collections` | Create collection |
 | GET | `/api/collections/:id` | Collection + photos + pricing/access state |
-| PATCH | `/api/collections/:id` | Rename, visibility, `price_cents`, `currency` |
+| PATCH | `/api/collections/:id` | Rename, visibility, `price_cents`, `currency`, `expires_in_days` |
 | DELETE | `/api/collections/:id` | Delete collection and its photos |
 | GET | `/api/collections/:id/qr` | PNG QR code for the share link |
 | POST | `/api/collections/:id/photos` | Upload images (multipart `photos`) |
@@ -190,6 +218,7 @@ Limitations:
 | GET | `/api/collections/:id/access` | Purchase state (+ `session_id` verification) |
 | GET | `/api/collections/:id/sales` | Owner sales list and revenue |
 | POST | `/api/stripe/webhook` | Stripe webhook (raw body, signature verified) |
+| POST | `/api/maintenance/sweep` | Delete expired collections (requires `x-maintenance-secret`) |
 | GET | `/api/photos/:filename` | Stream photo (`?thumb=1`, `?download=1`) |
 | DELETE | `/api/photos/:id` | Delete a single photo |
 

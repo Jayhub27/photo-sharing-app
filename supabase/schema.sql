@@ -110,3 +110,15 @@ create index if not exists idx_purchases_collection on public.purchases (collect
 create index if not exists idx_purchases_buyer on public.purchases (buyer_user_id);
 
 alter table public.purchases enable row level security;
+
+-- ------------------------------------------------------------------ expiring
+-- Collections can auto-delete after a deadline. The server sweeps hourly and
+-- POST /api/maintenance/sweep lets any external cron trigger the same cleanup.
+-- Deleting a collection also removes its purchases (buyers lose access), so the
+-- UI warns before pricing a time-limited collection.
+
+alter table public.collections add column if not exists expires_at timestamptz;
+
+create index if not exists idx_collections_expires
+  on public.collections (expires_at)
+  where expires_at is not null;

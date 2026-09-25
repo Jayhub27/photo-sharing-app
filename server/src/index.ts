@@ -5,6 +5,7 @@ import api, { stripeWebhookHandler } from './routes.js'
 import auth from './auth.js'
 import { supabase } from './db.js'
 import { publicBaseUrl } from './utils.js'
+import { startSweeper } from './maintenance.js'
 import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
 
 const PORT = process.env.PORT || 3000
@@ -87,4 +88,5 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Take the shot server running on http://localhost:${PORT}`)
   })
+  startSweeper()
 }

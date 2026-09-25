@@ -17,6 +17,13 @@ import {
   stripeWebhookSecret,
   type Currency,
 } from './stripe.js'
+import {
+  expiringSchemaReady,
+  isExpired,
+  maintenanceAuthorized,
+  refreshExpiringSchema,
+  sweepExpiredCollections,
+} from './maintenance.js'
 
 const router = Router()
 
@@ -373,6 +380,9 @@ router.post('/collections', authMiddleware, async (req: AuthedRequest, res) => {
 router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => {
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (isExpired(access.col.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
   if (access.col.is_public === false && !access.role) {
     return res.status(403).json({ error: 'This collection is private', private: true })
   }
@@ -419,7 +429,7 @@ router.patch('/collections/:id', authMiddleware, async (req: AuthedRequest, res)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
   if (!access.canManage) return res.status(403).json({ error: 'Not your collection' })
 
-  const patch: { name?: string; is_public?: boolean; price_cents?: number | null; currency?: string } = {}
+  const patch: { name?: string; is_public?: boolean; price_cents?: number | null; currency?: string; expires_at?: string | null } = {}
   if (typeof req.body.name === 'string') {
     const name = req.body.name.trim().slice(0, 120)
     if (!name) return res.status(400).json({ error: 'Name is required' })
@@ -442,7 +452,35 @@ router.patch('/collections/:id', authMiddleware, async (req: AuthedRequest, res)
   if ('currency' in req.body) {
     const currency = normalizeCurrency(req.body.currency)
     if (!currency) return res.status(400).json({ error: 'Unsupported currency' })
+    if (!(await sellingSchemaReady())) {
+      await refreshSellingSchema()
+      return res.status(503).json({
+        error: 'Selling is not enabled in the database yet',
+        code: 'schema_missing',
+        hint: 'Run the selling section of supabase/schema.sql in the Supabase SQL editor',
+      })
+    }
     patch.currency = currency
+  }
+  if ('expires_in_days' in req.body) {
+    const raw = req.body.expires_in_days
+    let expiresAt: string | null = null
+    if (raw !== null && raw !== '' && raw !== 0) {
+      const days = Number(raw)
+      if (!Number.isFinite(days) || days < 1 || days > 3650) {
+        return res.status(400).json({ error: 'Expiry must be between 1 and 3650 days' })
+      }
+      expiresAt = new Date(Date.now() + Math.round(days) * 24 * 60 * 60 * 1000).toISOString()
+    }
+    if (expiresAt && !(await expiringSchemaReady())) {
+      await refreshExpiringSchema()
+      return res.status(503).json({
+        error: 'Time-limited collections are not enabled in the database yet',
+        code: 'schema_missing',
+        hint: 'Run the expiring section of supabase/schema.sql in the Supabase SQL editor',
+      })
+    }
+    patch.expires_at = expiresAt
   }
   if (!Object.keys(patch).length) return res.status(400).json({ error: 'Nothing to update' })
 
@@ -536,6 +574,9 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
 router.get('/collections/:id/zip', optionalAuth, async (req: AuthedRequest, res) => {
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (isExpired(access.col.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
   if (access.col.is_public === false && !access.role) {
     return res.status(403).json({ error: 'This collection is private' })
   }
@@ -636,6 +677,9 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
   const access = await getAccess(photo.collection_id, req.userId)
   const isPrivate = access.col ? access.col.is_public === false : false
   if (isPrivate && !access.role) return res.status(403).json({ error: 'This photo is private' })
+  if (isExpired(access.col?.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
 
   let useThumb = req.query.thumb === '1' && !!photo.thumb_filename
   if (!useThumb && access.col) {
@@ -839,6 +883,9 @@ async function recordPurchase(session: any) {
 router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest, res) => {
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (isExpired(access.col.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
   if (access.col.is_public === false && !access.role) return res.status(403).json({ error: 'This collection is private' })
 
   const price = Number(access.col.price_cents)
@@ -968,6 +1015,22 @@ router.get('/collections/:id/sales', authMiddleware, async (req: AuthedRequest, 
     stripeConfigured: isStripeConfigured(),
     payoutAccount: owner?.stripe_account_id || null,
   })
+})
+
+/* ------------------------------------------------------------ maintenance */
+
+router.post('/maintenance/sweep', async (req, res) => {
+  const header =
+    req.headers['x-maintenance-secret'] ||
+    String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+  if (!process.env.MAINTENANCE_SECRET) {
+    return res.status(503).json({ error: 'Maintenance endpoint is disabled', code: 'disabled' })
+  }
+  if (!maintenanceAuthorized(header)) {
+    return res.status(403).json({ error: 'Invalid maintenance secret', code: 'forbidden' })
+  }
+  const result = await sweepExpiredCollections()
+  res.json(result)
 })
 
 export async function stripeWebhookHandler(req: Request, res: Response) {

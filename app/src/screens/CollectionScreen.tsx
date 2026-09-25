@@ -21,6 +21,7 @@ import {
   imageHeaders,
   importFromLinks,
   photoUrl,
+  setCollectionExpiry,
   setCollectionPrice,
   setCollectionVisibility,
   startCheckout,
@@ -66,6 +67,10 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [sellOpen, setSellOpen] = useState(false)
   const [priceText, setPriceText] = useState('')
   const [savingPrice, setSavingPrice] = useState(false)
+  const [expiresAt, setExpiresAt] = useState<string | null>(null)
+  const [expiryOpen, setExpiryOpen] = useState(false)
+  const [expiryDays, setExpiryDays] = useState('')
+  const [savingExpiry, setSavingExpiry] = useState(false)
 
   const { width } = useWindowDimensions()
   const columns = width >= 1000 ? 4 : width >= 700 ? 3 : 2
@@ -100,6 +105,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         setCanEdit(res.canEdit)
         setRole(res.role)
         setIsPublic(res.collection.is_public !== false)
+        setExpiresAt(res.collection.expires_at || null)
         if (res.pricing) setPricing(res.pricing)
         offsetRef.current = res.photos.length
         newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')
@@ -285,8 +291,29 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
-  const handleBuy = async () => {
+  const handleSaveExpiry = async () => {
+    const raw = expiryDays.trim()
+    const days = raw === '' ? null : Number(raw)
+    if (days !== null && (!Number.isFinite(days) || days < 1 || days > 3650)) {
+      return Alert.alert('Auto-delete', 'Enter a number of days between 1 and 3650')
+    }
+    setSavingExpiry(true)
     try {
+      await setCollectionExpiry(id, days)
+      await load(query.trim())
+      setExpiryOpen(false)
+      Alert.alert(
+        'Auto-delete saved',
+        days ? `This collection will be deleted in ${days} day${days === 1 ? '' : 's'}.` : 'This collection will be kept.'
+      )
+    } catch (err) {
+      Alert.alert('Could not save schedule', err instanceof Error ? err.message : 'Try again later')
+    } finally {
+      setSavingExpiry(false)
+    }
+  }
+
+  const handleBuy = async () => {    try {
       const res = await startCheckout(id)
       if (res.url) Linking.openURL(res.url)
       else if (res.alreadyPurchased) {
@@ -313,6 +340,9 @@ export default function CollectionScreen({ route, navigation }: Props) {
               ? pricing.purchased
                 ? `  ·  ✓ purchased`
                 : `  ·  ${formatCents(pricing.price_cents, pricing.currency)}`
+              : ''}
+            {expiresAt
+              ? `  ·  ⏳ ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
               : ''}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
@@ -368,6 +398,25 @@ export default function CollectionScreen({ route, navigation }: Props) {
             >
               <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
                 {pricing?.price_cents ? '🏷️ Edit price & sales' : '🏷️ Sell this collection'}
+              </Text>
+            </Pressable>
+          )}
+          {role === 'owner' && (
+            <Pressable
+              onPress={() => {
+                setExpiryDays(
+                  expiresAt
+                    ? String(Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 86400000)))
+                    : ''
+                )
+                setExpiryOpen(true)
+              }}
+              style={{ marginTop: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Set auto-delete for this collection"
+            >
+              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
+                {expiresAt ? '⏳ Edit auto-delete' : '⏳ Auto-delete after…'}
               </Text>
             </Pressable>
           )}
@@ -550,6 +599,71 @@ export default function CollectionScreen({ route, navigation }: Props) {
               <View style={{ flex: 1 }}>
                 <AnimatedButton onPress={handleSavePrice} disabled={savingPrice}>
                   <ButtonText>{savingPrice ? 'Saving…' : 'Save'}</ButtonText>
+                </AnimatedButton>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={expiryOpen} transparent animationType="fade" onRequestClose={() => setExpiryOpen(false)}>
+        <View style={modalStyles.backdrop}>
+          <View style={modalStyles.card}>
+            <Text style={modalStyles.title}>Auto-delete this collection</Text>
+            <Text style={modalStyles.hint}>
+              Photos are removed from storage and the database within an hour of the deadline. Leave empty (Never) to keep
+              the collection forever.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+              {['', '1', '7', '30', '90'].map((d) => (
+                <Pressable
+                  key={d || 'off'}
+                  onPress={() => setExpiryDays(d)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: expiryDays === d }}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: expiryDays === d ? colors.accent : colors.border,
+                    backgroundColor: expiryDays === d ? 'rgba(99,102,241,0.15)' : 'transparent',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: expiryDays === d ? colors.text : colors.textMuted,
+                      fontWeight: '600',
+                      fontSize: 13,
+                    }}
+                  >
+                    {d === '' ? 'Never' : `${d}d`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              keyboardType="number-pad"
+              value={expiryDays}
+              onChangeText={setExpiryDays}
+              placeholder="Custom days"
+              placeholderTextColor={colors.textMuted}
+              style={[styles.input, { marginBottom: 12 }]}
+            />
+            {pricing?.price_cents ? (
+              <Text style={[modalStyles.hint, { color: '#fbbf24' }]}>
+                Warning: this collection is for sale. When it deletes, buyers lose access and purchase records are removed.
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton outline onPress={() => setExpiryOpen(false)}>
+                  <ButtonText outline>Cancel</ButtonText>
+                </AnimatedButton>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton onPress={handleSaveExpiry} disabled={savingExpiry}>
+                  <ButtonText>{savingExpiry ? 'Saving…' : 'Save'}</ButtonText>
                 </AnimatedButton>
               </View>
             </View>

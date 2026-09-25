@@ -32,6 +32,7 @@ export interface Collection {
   cover_thumb_filename?: string | null
   price_cents?: number | null
   currency?: string
+  expires_at?: string | null
   role?: MemberRole | null
   is_owner?: boolean
 }
@@ -333,6 +334,18 @@ export async function setCollectionPrice(
     body: JSON.stringify({ price_cents: priceCents, currency }),
   })
   if (!res.ok) throw await errorFrom(res, 'Could not save pricing')
+}
+
+export async function setCollectionExpiry(
+  collectionId: string,
+  expiresInDays: number | null
+): Promise<void> {
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}`, {
+    method: 'PATCH',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ expires_in_days: expiresInDays }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not save the schedule')
 }
 
 export async function startCheckout(
