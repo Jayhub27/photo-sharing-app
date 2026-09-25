@@ -6,6 +6,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "sdkVersion": "51.0.0",
+    "splash": {
+      "backgroundColor": "#0b0b0b",
+      "resizeMode": "contain"
+    },
     "android": {
       "package": "com.photoshare.app",
       "permissions": ["CAMERA"]
