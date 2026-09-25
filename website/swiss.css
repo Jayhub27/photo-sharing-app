@@ -1,0 +1,269 @@
+/* Swiss / International Typographic Style version of the same page.
+   Dormant until <html data-style="swiss"> — cycle the header toggle or use ?style=swiss */
+
+html[data-style="swiss"]{
+  --paper:#ffffff;
+  --paper-2:#ffffff;
+  --ink:#000000;
+  --ink-soft:#3d3d3d;
+  --acid:#e30613;
+  --red:#e30613;
+  --blue:#e30613;
+  --white:#ffffff;
+  --line:1px;
+  --shadow:none;
+  --shadow-sm:none;
+  --display:"Helvetica Neue",Helvetica,Arial,"Nimbus Sans",sans-serif;
+  --mono:var(--display);
+  --swiss-red:#e30613;
+  --swiss-rule:#000000;
+  --swiss-muted:#6b6b6b;
+}
+
+html[data-style="swiss"] *{letter-spacing:normal}
+html[data-style="swiss"] body{
+  background:#fff;color:#000;
+  font-family:"Helvetica Neue",Helvetica,Arial,"Nimbus Sans",sans-serif;
+  font-size:16px;line-height:1.5;
+}
+html[data-style="swiss"] ::selection{background:var(--swiss-red);color:#fff}
+html[data-style="swiss"] :focus-visible{outline:2px solid var(--swiss-red);outline-offset:3px}
+html[data-style="swiss"] .skip-link{background:#000;color:#fff;border:none;border-radius:0}
+
+/* rail ------------------------------------------------------------------ */
+html[data-style="swiss"] .rail{
+  background:#fff;color:#000;border-top:6px solid var(--swiss-red);border-bottom:1px solid #000;
+  padding:10px 20px;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+}
+html[data-style="swiss"] .rail-blink{color:var(--swiss-red)}
+html[data-style="swiss"] .rail-sep{opacity:.3}
+html[data-style="swiss"] .rail-right{color:#000}
+
+/* header ---------------------------------------------------------------- */
+html[data-style="swiss"] .site-head{background:#fff;border-bottom:1px solid #000;padding:16px 20px}
+html[data-style="swiss"] .brand{
+  font-family:inherit;font-weight:700;font-size:17px;letter-spacing:-.02em;text-transform:none;gap:11px;
+}
+html[data-style="swiss"] .brand-mark{width:14px;height:14px;background:var(--swiss-red);box-shadow:none}
+html[data-style="swiss"] .site-nav{font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;gap:26px}
+html[data-style="swiss"] .site-nav a{color:#000;border-bottom:none;padding:4px 0}
+html[data-style="swiss"] .site-nav a:hover{color:var(--swiss-red)}
+html[data-style="swiss"] .style-toggle{
+  background:#fff;color:#000;border:1px solid #000;border-radius:0;
+  font-family:inherit;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:9px 13px;
+}
+html[data-style="swiss"] .style-toggle b{color:var(--swiss-red);font-weight:600}
+html[data-style="swiss"] .style-toggle:hover{background:#000;color:#fff}
+html[data-style="swiss"] .style-toggle:hover b{color:#fff}
+
+/* buttons --------------------------------------------------------------- */
+html[data-style="swiss"] .btn{
+  background:#000;color:#fff;border:1px solid #000;border-radius:0;box-shadow:none;
+  font-family:inherit;font-weight:500;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  padding:17px 26px;transition:background .12s ease,border-color .12s ease,color .12s ease;
+}
+html[data-style="swiss"] .btn:hover{transform:none;box-shadow:none;background:var(--swiss-red);border-color:var(--swiss-red);color:#fff}
+html[data-style="swiss"] .btn:active{transform:none}
+html[data-style="swiss"] .btn-xl{padding:20px 30px;font-size:13px}
+html[data-style="swiss"] .btn-sm{padding:10px 16px;font-size:10px;letter-spacing:.12em}
+html[data-style="swiss"] .btn-ghost{background:#fff;color:#000;border-color:#000}
+html[data-style="swiss"] .btn-ghost:hover{background:#000;border-color:#000;color:#fff}
+html[data-style="swiss"] .glyph{color:var(--swiss-red)}
+html[data-style="swiss"] .btn-ghost .glyph{color:inherit}
+
+/* hero ------------------------------------------------------------------ */
+html[data-style="swiss"] .hero{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);align-items:start}
+html[data-style="swiss"] .kicker{
+  background:transparent;color:var(--swiss-red);border:none;padding:0;
+  font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;margin-bottom:28px;
+}
+html[data-style="swiss"] .hero h1{
+  font-family:inherit;font-weight:700;
+  font-size:clamp(54px,9.5vw,148px);line-height:.92;letter-spacing:-.045em;text-transform:none;
+  margin-bottom:28px;
+}
+html[data-style="swiss"] .hero h1 mark{background:transparent;color:var(--swiss-red);padding:0;transform:none}
+html[data-style="swiss"] .lede{color:#3d3d3d;font-size:clamp(15px,1.4vw,18px);line-height:1.6;max-width:46ch}
+html[data-style="swiss"] .ticks{
+  border-top:1px solid #000;border-bottom:1px solid #000;padding:12px 0;
+  font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;gap:10px 28px;color:#000;
+}
+html[data-style="swiss"] .ticks li::before{content:"\2014";color:var(--swiss-red);margin-right:8px}
+
+/* phone ----------------------------------------------------------------- */
+html[data-style="swiss"] .hero-art{padding:8px 34px 8px 0}
+html[data-style="swiss"] .phone{
+  background:#fff;border:1px solid #000;border-radius:0;box-shadow:none;transform:none;padding:0;
+}
+html[data-style="swiss"] .phone-notch{background:#000;height:20px}
+html[data-style="swiss"] .phone-notch::after{background:#fff;height:4px;border-radius:0}
+html[data-style="swiss"] .phone-screen{padding:14px;gap:12px}
+html[data-style="swiss"] .app-bar{
+  border-bottom:1px solid #000;padding-bottom:10px;
+  font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+}
+html[data-style="swiss"] .app-col{
+  background:#000;color:#fff;border:none;border-radius:0;padding:9px 10px;
+  font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+}
+html[data-style="swiss"] .app-col b{color:var(--swiss-red);font-weight:600}
+html[data-style="swiss"] .app-grid{gap:3px}
+html[data-style="swiss"] .app-grid i{border:none;border-radius:0;filter:grayscale(1) contrast(1.08)}
+html[data-style="swiss"] .app-grid i.locked{background:#e5e5e5;filter:none}
+html[data-style="swiss"] .app-cta{
+  background:var(--swiss-red);color:#fff;border:none;border-radius:0;
+  font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;padding:12px 6px;
+}
+html[data-style="swiss"] .sticker{
+  background:var(--swiss-red);color:#fff;border:none;border-radius:0;box-shadow:none;transform:none;
+  font-family:inherit;font-weight:600;font-size:11px;line-height:1.2;letter-spacing:.16em;text-transform:uppercase;
+  padding:10px 12px;top:0;right:0;
+}
+html[data-style="swiss"] .sticker-2{display:none}
+
+/* marquee --------------------------------------------------------------- */
+html[data-style="swiss"] .marquee{
+  background:#fff;border-top:1px solid #000;border-bottom:1px solid #000;padding:14px 0;
+}
+html[data-style="swiss"] .marquee-track{animation-duration:38s}
+html[data-style="swiss"] .marquee-track span{
+  color:#000;font-family:inherit;font-weight:500;
+  font-size:12px;letter-spacing:.22em;text-transform:uppercase;padding-right:8px;
+}
+
+/* sections -------------------------------------------------------------- */
+html[data-style="swiss"] main{counter-reset:sec}
+html[data-style="swiss"] .section{border-bottom:1px solid #000;padding:clamp(64px,8vw,132px) 24px}
+html[data-style="swiss"] .section-alt{background:#fff}
+html[data-style="swiss"] .section-head{
+  border-top:1px solid #000;padding-top:20px;margin-bottom:56px;
+}
+html[data-style="swiss"] .section-head h2{
+  font-family:inherit;font-weight:700;letter-spacing:-.035em;text-transform:none;
+  font-size:clamp(30px,5vw,64px);line-height:1;display:flex;align-items:baseline;gap:18px;
+}
+html[data-style="swiss"] .section-head h2::before{
+  counter-increment:sec;content:counter(sec,decimal-leading-zero);
+  font-size:13px;font-weight:600;letter-spacing:.12em;color:var(--swiss-red);
+}
+html[data-style="swiss"] .section-note{
+  font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--swiss-muted);
+}
+
+/* features -------------------------------------------------------------- */
+html[data-style="swiss"] .feature-grid{
+  border:none;border-top:1px solid #000;border-bottom:1px solid #000;
+  background:transparent;gap:0;border-radius:0;
+}
+html[data-style="swiss"] .feature{
+  background:#fff;border-right:1px solid #000;border-bottom:1px solid #000;
+  padding:34px 28px 44px;position:relative;
+}
+html[data-style="swiss"] .feature:nth-child(3n){border-right:none}
+html[data-style="swiss"] .feature:nth-child(n+4){border-bottom:none}
+html[data-style="swiss"] .feature:hover{background:#fff;color:#000}
+html[data-style="swiss"] .feature:hover .num{color:var(--swiss-red)}
+html[data-style="swiss"] .feature .num{
+  font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.14em;
+  color:var(--swiss-red);margin-bottom:22px;
+}
+html[data-style="swiss"] .feature h3{
+  font-family:inherit;font-weight:600;font-size:20px;letter-spacing:-.015em;text-transform:none;margin-bottom:10px;
+}
+html[data-style="swiss"] .feature p{color:#3d3d3d;font-size:14px;line-height:1.65}
+
+/* steps ----------------------------------------------------------------- */
+html[data-style="swiss"] .steps{
+  gap:0;border-top:1px solid #000;border-bottom:1px solid #000;
+}
+html[data-style="swiss"] .steps li{
+  background:#fff;border:none;border-right:1px solid #000;border-radius:0;box-shadow:none;padding:34px 28px 44px;
+}
+html[data-style="swiss"] .steps li:last-child{border-right:none}
+html[data-style="swiss"] .step-num{
+  background:transparent;color:var(--swiss-red);border:none;border-radius:0;padding:0;
+  font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;margin-bottom:26px;
+}
+html[data-style="swiss"] .steps h3{
+  font-family:inherit;font-weight:600;font-size:21px;letter-spacing:-.015em;text-transform:none;margin-bottom:10px;
+}
+html[data-style="swiss"] .steps p{color:#3d3d3d;font-size:14px;line-height:1.65}
+
+/* download -------------------------------------------------------------- */
+html[data-style="swiss"] .download-grid{gap:0;border-top:1px solid #000;border-left:1px solid #000}
+html[data-style="swiss"] .dl{
+  background:#fff;border:none;border-right:1px solid #000;border-bottom:1px solid #000;
+  border-radius:0;box-shadow:none;padding:34px 28px 44px;
+}
+html[data-style="swiss"] .dl-primary{background:#fff}
+html[data-style="swiss"] .dl-tag{
+  background:#000;color:#fff;border-radius:0;padding:6px 11px;
+  font-size:10px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;
+}
+html[data-style="swiss"] .dl-primary .dl-tag{background:var(--swiss-red)}
+html[data-style="swiss"] .dl h3{
+  font-family:inherit;font-weight:700;letter-spacing:-.03em;text-transform:none;
+  font-size:clamp(26px,3vw,38px);line-height:1.05;
+}
+html[data-style="swiss"] .dl-meta{border-top:1px solid #000;font-size:12px}
+html[data-style="swiss"] .dl-meta div{border-bottom:1px solid #000;padding:10px 0}
+html[data-style="swiss"] .dl-meta dt{
+  font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--swiss-muted);opacity:1;
+}
+html[data-style="swiss"] .dl-meta dd{font-weight:600;text-transform:none}
+html[data-style="swiss"] .dl-note{color:#3d3d3d;font-size:13px;line-height:1.65}
+html[data-style="swiss"] .install-note{
+  background:#fff;border:1px solid #000;border-radius:0;padding:30px 28px;margin-top:40px;
+}
+html[data-style="swiss"] .install-note h3{
+  font-family:inherit;font-weight:700;letter-spacing:-.02em;text-transform:none;font-size:20px;
+}
+html[data-style="swiss"] .install-note b{background:transparent;color:var(--swiss-red);font-weight:600}
+
+/* faq ------------------------------------------------------------------- */
+html[data-style="swiss"] .faq{border-top:1px solid #000}
+html[data-style="swiss"] .faq details{border-bottom:1px solid #000}
+html[data-style="swiss"] .faq summary{
+  font-family:inherit;font-weight:600;font-size:clamp(18px,2.2vw,26px);
+  letter-spacing:-.02em;text-transform:none;padding:24px 4px;
+}
+html[data-style="swiss"] .faq summary::before{color:var(--swiss-red);font-weight:400;font-size:22px}
+html[data-style="swiss"] .faq summary:hover{background:transparent;color:var(--swiss-red);padding-left:4px}
+html[data-style="swiss"] .faq p{color:#3d3d3d;font-size:14px;line-height:1.7;padding:0 4px 30px 42px;max-width:78ch}
+
+/* footer ---------------------------------------------------------------- */
+html[data-style="swiss"] .site-foot{background:#000;color:#fff}
+html[data-style="swiss"] .foot-word{
+  color:#fff;font-family:inherit;font-weight:700;letter-spacing:-.045em;line-height:.9;
+}
+html[data-style="swiss"] .foot-cols h4{
+  color:var(--swiss-red);font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;
+}
+html[data-style="swiss"] .foot-cols a{color:rgba(255,255,255,.72);font-size:13px;text-transform:none}
+html[data-style="swiss"] .foot-cols a:hover{color:#fff;text-decoration:none}
+html[data-style="swiss"] .foot-bar{
+  border-top:1px solid #333;color:rgba(255,255,255,.6);
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+}
+html[data-style="swiss"] .foot-bar span:last-child{color:var(--swiss-red)}
+
+/* responsive ------------------------------------------------------------ */
+@media (max-width:1020px){
+  html[data-style="swiss"] .hero{grid-template-columns:1fr}
+  html[data-style="swiss"] .hero-art{justify-self:start;padding:24px 34px 8px 0}
+  html[data-style="swiss"] .feature:nth-child(3n){border-right:1px solid #000}
+  html[data-style="swiss"] .feature:nth-child(2n){border-right:none}
+  html[data-style="swiss"] .feature:nth-child(n+4){border-bottom:1px solid #000}
+  html[data-style="swiss"] .feature:nth-child(n+5){border-bottom:none}
+}
+@media (max-width:680px){
+  html[data-style="swiss"] .feature{border-right:none !important}
+  html[data-style="swiss"] .feature:nth-child(n+4){border-bottom:1px solid #000}
+  html[data-style="swiss"] .feature:last-child{border-bottom:none}
+  html[data-style="swiss"] .steps li{border-right:none;border-bottom:1px solid #000}
+  html[data-style="swiss"] .steps li:last-child{border-bottom:none}
+  html[data-style="swiss"] .download-grid{border-left:none}
+  html[data-style="swiss"] .dl{border-right:none}
+  html[data-style="swiss"] .section-head h2{flex-direction:column;gap:10px}
+  html[data-style="swiss"] .faq p{padding-left:4px}
+}
