@@ -1,0 +1,74 @@
+name: Build Android APK
+
+# Manual runs: Actions -> "Build Android APK" -> Run workflow.
+# Tagged runs: push a tag like v0.1.0 and the APK is attached to that release,
+# which is exactly what the website's DOWNLOAD APK button points at.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag to create/attach the APK to (e.g. v0.1.0). Empty = artifact only.'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Generate native Android project
+        working-directory: app
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+
+      - name: Build debug APK
+        working-directory: app/android
+        run: ./gradlew assembleDebug --no-daemon
+        env:
+          CI: '1'
+
+      - name: Rename APK for release
+        run: cp app/android/app/build/outputs/apk/debug/app-debug.apk take-the-shot-android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: take-the-shot-android-apk
+          path: take-the-shot-android.apk
+          if-no-files-found: error
+
+      - name: Attach APK to release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          name: Take the shot ${{ inputs.release_tag || github.ref_name }}
+          files: take-the-shot-android.apk
+          fail_on_unmatched_files: true

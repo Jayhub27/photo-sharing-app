@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en" data-style="brutal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Take the shot — share photos, sell originals</title>
+<meta name="description" content="A paid photo-sharing app. Create a collection, share it with a QR code, and sell the originals with Stripe. Download for Android, iOS or run it on the web.">
+<meta name="theme-color" content="#0b0b0b">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Take the shot — share photos, sell originals">
+<meta property="og:description" content="Create a collection. Share a QR code. Get paid for the originals with Stripe. Free to start.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0b0b'/%3E%3Crect x='8' y='16' width='48' height='34' fill='%23d8ff00'/%3E%3Crect x='22' y='10' width='20' height='8' fill='%23d8ff00'/%3E%3Ccircle cx='32' cy='33' r='11' fill='%230b0b0b'/%3E%3Ccircle cx='32' cy='33' r='5' fill='%23d8ff00'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="flat.css">
+<script>
+  // Apply the saved style before first paint so there is no flash.
+  (function () {
+    try {
+      var p = new URLSearchParams(location.search).get('style')
+      var s = p || localStorage.getItem('tts.style')
+      if (s === 'flat' || s === 'brutal') document.documentElement.dataset.style = s
+    } catch (e) {}
+  })()
+</script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="rail" role="status">
+  <span class="rail-blink" aria-hidden="true">&#9632;</span>
+  <b>Take the shot</b>
+  <span class="rail-sep" aria-hidden="true">//</span>
+  <span>v<span data-cfg="version">0.1.0</span></span>
+  <span class="rail-sep" aria-hidden="true">//</span>
+  <span data-cfg="status">Shipping</span>
+  <span class="rail-right">Android &#183; iOS &#183; Web</span>
+</div>
+
+<header class="site-head">
+  <a class="brand" href="#top">
+    <span class="brand-mark" aria-hidden="true"></span>
+    Take the shot
+  </a>
+  <nav class="site-nav" aria-label="Sections">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#download">Download</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <button class="style-toggle" id="styleToggle" type="button" aria-pressed="false">
+    Style: <b id="styleName">Flat</b>
+  </button>
+  <a class="btn btn-sm btn-invert" href="#download">Get the app</a>
+</header>
+
+<main id="main">
+
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <p class="kicker">Photo sharing / QR / Stripe</p>
+      <h1>Take<br>the<br><mark>shot.</mark></h1>
+      <p class="lede">
+        Create a collection, drop in your photos, share a QR code. Put a price on it
+        if you want, and Stripe unlocks the original files the moment someone pays.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-xl" data-link="apk" href="#download">
+          <span class="glyph" aria-hidden="true">&#9660;</span> Download for Android
+        </a>
+        <a class="btn btn-xl btn-ghost" href="#download">All platforms</a>
+      </div>
+      <ul class="ticks">
+        <li>Free to share</li>
+        <li>Sell with Stripe</li>
+        <li>No app needed to view</li>
+      </ul>
+    </div>
+
+    <div class="hero-art">
+      <div class="phone" aria-hidden="true">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="app-bar">
+            <span>Take the shot</span><span>&#9776;</span>
+          </div>
+          <div class="app-col">
+            <span>Iceland trip</span><b>$45.00</b>
+          </div>
+          <div class="app-grid">
+            <i style="--c1:#0018ff;--c2:#00e0ff"></i>
+            <i style="--c1:#ff2a00;--c2:#ffb000"></i>
+            <i style="--c1:#0b0b0b;--c2:#6b6b6b"></i>
+            <i class="locked">&#128274;</i>
+            <i style="--c1:#8a00ff;--c2:#ff00c8"></i>
+            <i style="--c1:#00a844;--c2:#d8ff00"></i>
+            <i style="--c1:#ff7a00;--c2:#ffe600"></i>
+            <i style="--c1:#004d40;--c2:#00bfa5"></i>
+            <i style="--c1:#3e2723;--c2:#a1887f"></i>
+          </div>
+          <div class="app-cta">Buy originals &#183; $45.00</div>
+        </div>
+      </div>
+      <p class="sticker">Free<br>to<br>start</p>
+      <p class="sticker sticker-2">QR<br>share</p>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Shoot &#10006; Share &#10006; Sell &#10006; Get paid &#10006; No subscription &#10006; Your photos &#10006; Your price &#10006;&nbsp;</span>
+      <span>Shoot &#10006; Share &#10006; Sell &#10006; Get paid &#10006; No subscription &#10006; Your photos &#10006; Your price &#10006;&nbsp;</span>
+    </div>
+  </div>
+
+  <section class="section" id="features">
+    <div class="section-head">
+      <h2>What it does</h2>
+      <p class="section-note">No fluff. Six things, done right.</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature">
+        <span class="num">01</span>
+        <h3>Collections</h3>
+        <p>Group shots into named collections. Grid or list, search, sort and filter that stick in the browser.</p>
+      </article>
+      <article class="feature">
+        <span class="num">02</span>
+        <h3>QR sharing</h3>
+        <p>Every collection gets a link and a QR code. Scan it and the gallery opens in any phone browser.</p>
+      </article>
+      <article class="feature">
+        <span class="num">03</span>
+        <h3>Sell originals</h3>
+        <p>Set a price per collection. Buyers pay with a card through Stripe Checkout and unlock instantly.</p>
+      </article>
+      <article class="feature">
+        <span class="num">04</span>
+        <h3>Locked until paid</h3>
+        <p>Priced collections stream 640px thumbnails only. Originals, single downloads and ZIPs stay locked.</p>
+      </article>
+      <article class="feature">
+        <span class="num">05</span>
+        <h3>Import anywhere</h3>
+        <p>Device picker, direct image URLs, Google Drive links, or any page with an og:image tag.</p>
+      </article>
+      <article class="feature">
+        <span class="num">06</span>
+        <h3>Collaborate</h3>
+        <p>Invite viewers and editors by email. New photos appear for everyone within about 5 seconds.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="how">
+    <div class="section-head">
+      <h2>How it works</h2>
+      <p class="section-note">Three steps. That is the whole thing.</p>
+    </div>
+    <ol class="steps">
+      <li>
+        <span class="step-num">Step 1</span>
+        <h3>Make a collection</h3>
+        <p>Name it, add photos from your phone or paste links. Thumbnails are generated automatically.</p>
+      </li>
+      <li>
+        <span class="step-num">Step 2</span>
+        <h3>Share the QR</h3>
+        <p>Send the link or let people scan the QR code. No install required to view or buy.</p>
+      </li>
+      <li>
+        <span class="step-num">Step 3</span>
+        <h3>Get paid</h3>
+        <p>Set a price or keep it free. Stripe handles checkout, downloads unlock on payment.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section" id="download">
+    <div class="section-head">
+      <h2>Download</h2>
+      <p class="section-note">Pick your machine. Same app on every one.</p>
+    </div>
+
+    <div class="download-grid">
+      <article class="dl dl-primary">
+        <span class="dl-tag">Android</span>
+        <h3>Android APK</h3>
+        <dl class="dl-meta">
+          <div><dt>Format</dt><dd>.APK</dd></div>
+          <div><dt>Requires</dt><dd>Android 7+</dd></div>
+          <div><dt>Price</dt><dd>$0.00</dd></div>
+        </dl>
+        <p class="dl-note">Direct download from GitHub Releases. Sideload it, allow unknown sources, done.</p>
+        <a class="btn btn-xl" data-link="apk" href="#" rel="noopener">&#9660; Download APK</a>
+      </article>
+
+      <article class="dl">
+        <span class="dl-tag">iOS</span>
+        <h3>iPhone / iPad</h3>
+        <dl class="dl-meta">
+          <div><dt>Format</dt><dd>TestFlight / EAS</dd></div>
+          <div><dt>Requires</dt><dd>iOS 14+</dd></div>
+          <div><dt>Price</dt><dd>$0.00</dd></div>
+        </dl>
+        <p class="dl-note">No App Store listing yet. Build it to your device with EAS, or run it in Expo Go.</p>
+        <a class="btn btn-xl btn-ghost" data-link="ios" href="#" rel="noopener">Build for iOS &#8599;</a>
+      </article>
+
+      <article class="dl">
+        <span class="dl-tag">Web</span>
+        <h3>Any browser</h3>
+        <dl class="dl-meta">
+          <div><dt>Format</dt><dd>Server-rendered</dd></div>
+          <div><dt>Requires</dt><dd>Any modern browser</dd></div>
+          <div><dt>Price</dt><dd>$0.00</dd></div>
+        </dl>
+        <p class="dl-note">Deploy your own copy to Vercel in one click. Set a public URL in config.js and the hosted app button appears here too.</p>
+        <div class="btn-stack">
+          <a class="btn btn-xl" data-link="deploy" href="#" rel="noopener">Deploy your own</a>
+          <a class="btn btn-xl btn-ghost" data-link="web" href="#" rel="noopener">Open web app</a>
+        </div>
+      </article>
+
+      <article class="dl">
+        <span class="dl-tag">Source</span>
+        <h3>Source code</h3>
+        <dl class="dl-meta">
+          <div><dt>Format</dt><dd>.ZIP</dd></div>
+          <div><dt>Stack</dt><dd>Expo + Express + Supabase</dd></div>
+          <div><dt>License</dt><dd>See repo</dd></div>
+        </dl>
+        <p class="dl-note">The whole thing: mobile app, API, database schema. Read it, fork it, run it yourself.</p>
+        <a class="btn btn-xl btn-ghost" data-link="source" href="#" rel="noopener">&#9660; Download .ZIP</a>
+      </article>
+    </div>
+
+    <div class="install-note">
+      <h3>Installing the APK</h3>
+      <ol>
+        <li>Tap <b>Download APK</b> on your Android phone.</li>
+        <li>Open the file and allow <b>install from unknown sources</b> when asked.</li>
+        <li>Launch <b>Take the shot</b>, sign up, and add your first collection.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="faq">
+    <div class="section-head">
+      <h2>Questions</h2>
+      <p class="section-note">Short answers, no fluff.</p>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>Is it really free?</summary>
+        <p>Yes. Creating collections, uploading and sharing are free. You only touch money if you decide to sell a collection, and then Stripe takes its usual card fee.</p>
+      </details>
+      <details>
+        <summary>Do people need the app to view my photos?</summary>
+        <p>No. A collection link or QR code opens in any phone browser. The app is for shooting, uploading and managing.</p>
+      </details>
+      <details>
+        <summary>What happens after someone pays?</summary>
+        <p>Stripe confirms the checkout through a webhook, the purchase is recorded, and every original file in that collection unlocks for that buyer, including ZIP downloads.</p>
+      </details>
+      <details>
+        <summary>Which files can I import?</summary>
+        <p>Photos from your device, direct image URLs, Google Drive file links, and any web page with an og:image tag. Max 10 links per request, 25 MB per image.</p>
+      </details>
+      <details>
+        <summary>Is my data safe?</summary>
+        <p>Passwords are bcrypt hashed, sessions are HTTP-only cookies, the storage bucket is private and images stream through authenticated endpoints. Supabase RLS is enabled on every table.</p>
+      </details>
+      <details>
+        <summary>Can I run it myself?</summary>
+        <p>Yes. The source zip has the Expo app, the Express API and the Supabase schema. Bring your own Supabase project and Stripe keys.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="foot-top">
+    <p class="foot-word">Take<br>the shot.</p>
+    <div class="foot-cols">
+      <div>
+        <h4>App</h4>
+        <a data-link="apk" href="#">Android APK</a>
+        <a data-link="ios" href="#">iOS build</a>
+        <a data-link="web" href="#">Web app</a>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <a data-link="repo" href="#">GitHub</a>
+        <a data-link="releases" href="#">Releases</a>
+        <a data-link="source" href="#">Source zip</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a data-link="repo" href="#">License</a>
+        <a data-link="repo" href="#">Privacy</a>
+        <a data-link="repo" href="#">Terms</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bar">
+    <span>&#169; <span data-cfg="year">2026</span> Take the shot</span>
+    <span>Built with Expo / Express / Supabase / Stripe</span>
+    <span data-cfg="status">Shipping</span>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

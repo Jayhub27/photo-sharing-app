@@ -6,6 +6,8 @@ app/node_modules/
 app/.expo/
 app/dist/
 app/web-build/
+app/android/
+app/ios/
 *.log
 .DS_Store
 .env

@@ -103,6 +103,7 @@ STRIPE_APPLICATION_FEE_PERCENT=10         # optional platform fee (with Connect)
 npm install
 npm run server        # API + web app on http://localhost:3000
 npm run app           # Expo app (set EXPO_PUBLIC_API_BASE first)
+npm run website       # download landing page on http://localhost:8080
 ```
 
 The mobile app talks to the API over your LAN or a tunnel:
