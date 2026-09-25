@@ -11,5 +11,6 @@ app/ios/
 *.log
 .DS_Store
 .env
+.vercel/
 # Supabase CLI local state
 supabase/.temp/
