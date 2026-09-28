@@ -1,0 +1,154 @@
+/* Neon sketch: the hand-drawn notebook from sketch.css, drawn in glowing marker
+   on dark paper. All layout/wobble/tape rules come from sketch.css (shared
+   selector); this file only re-colours and adds the glow + flicker.
+   Dormant until <html data-style="neonsketch"> — toggle or ?style=neonsketch */
+
+html[data-style="neonsketch"]{
+  background-color:#0b0a14;
+  --paper:#0b0a14;
+  --paper-2:#141322;
+  --ink:#e8e4ff;
+  --ink-soft:#a9a3c8;
+  --blue:#4dd6ff;
+  --green:#7dff9b;
+  --brown:#ffb86b;
+  --orange:#ffb86b;
+  --red:#ff5fd7;
+  --acid:#eaff5f;
+  --white:#0f0e1c;
+  --sec:var(--blue);
+  --shadow:4px 5px 0 rgba(77,214,255,.22);
+  --shadow-sm:3px 4px 0 rgba(255,95,215,.22);
+  --grid:rgba(77,214,255,.09);
+  --hole:rgba(77,214,255,.24);
+  --margin:rgba(255,95,215,.35);
+  --fold:rgba(77,214,255,.16);
+  --doodle-soft:rgba(232,228,255,.45);
+}
+
+/* per-section neon pens */
+html[data-style="neonsketch"] #features{--sec:var(--blue)}
+html[data-style="neonsketch"] #how{--sec:var(--green)}
+html[data-style="neonsketch"] #download{--sec:var(--orange)}
+html[data-style="neonsketch"] #faq{--sec:var(--red)}
+
+/* dark paper with a faint neon grid + a slow scanline wash */
+html[data-style="neonsketch"] body{background:transparent}
+html[data-style="neonsketch"] body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.028) 0 1px,transparent 1px 3px);
+  animation:nsScan 10s linear infinite;
+}
+@keyframes nsScan{to{background-position:0 132px}}
+
+html[data-style="neonsketch"] ::selection{background:rgba(234,255,95,.45);color:#0b0a14}
+html[data-style="neonsketch"] :focus-visible{outline:3px dashed var(--blue);box-shadow:0 0 18px rgba(77,214,255,.4)}
+html[data-style="neonsketch"] .skip-link{background:var(--blue);color:#0b0a14}
+
+/* glowing strokes: hairline borders drawn in ink become neon dashes --------- */
+html[data-style="neonsketch"] .rail{
+  background:#0f0e1c;border-bottom-color:rgba(77,214,255,.35);
+}
+html[data-style="neonsketch"] .rail-blink{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.9)}
+html[data-style="neonsketch"] .rail-right{color:var(--blue);text-shadow:0 0 10px rgba(77,214,255,.6)}
+html[data-style="neonsketch"] .site-head{background:#0f0e1c;border-bottom-color:rgba(255,95,215,.35)}
+html[data-style="neonsketch"] .brand-mark{box-shadow:0 0 16px rgba(77,214,255,.7);animation:nsPulse 3s ease-in-out infinite}
+@keyframes nsPulse{
+  0%,100%{box-shadow:0 0 12px rgba(77,214,255,.6)}
+  50%{box-shadow:0 0 22px rgba(255,95,215,.75)}
+}
+html[data-style="neonsketch"] .site-nav a{text-decoration-color:rgba(255,95,215,.5)}
+html[data-style="neonsketch"] .site-nav a:hover{color:var(--blue);text-shadow:0 0 12px rgba(77,214,255,.7)}
+html[data-style="neonsketch"] .style-toggle{background:#0f0e1c}
+html[data-style="neonsketch"] .style-toggle b{color:var(--red);text-shadow:0 0 10px rgba(255,95,215,.7)}
+html[data-style="neonsketch"] .style-toggle:hover{background:rgba(77,214,255,.16);color:var(--ink)}
+
+html[data-style="neonsketch"] .ticks{border-top-color:rgba(77,214,255,.3);border-bottom-color:rgba(255,95,215,.3)}
+html[data-style="neonsketch"] .ticks li::before{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.8)}
+
+html[data-style="neonsketch"] .section{border-bottom-color:rgba(77,214,255,.22)}
+html[data-style="neonsketch"] .section-alt{background:rgba(125,255,155,.045)}
+html[data-style="neonsketch"] .section-head h2{text-shadow:0 0 24px rgba(77,214,255,.25)}
+html[data-style="neonsketch"] .section-head h2::after{filter:drop-shadow(0 0 8px currentColor)}
+html[data-style="neonsketch"] .section-note{text-shadow:0 0 12px rgba(77,214,255,.5)}
+
+/* buttons: marker outline that lights up on hover -------------------------- */
+html[data-style="neonsketch"] .btn{background:#12111f;border-color:var(--blue);color:var(--blue);text-shadow:0 0 10px rgba(77,214,255,.55)}
+html[data-style="neonsketch"] .btn:hover{background:rgba(77,214,255,.16);color:#fff;box-shadow:1px 1px 0 rgba(77,214,255,.3),0 0 24px rgba(77,214,255,.45)}
+html[data-style="neonsketch"] .btn-ghost{border-color:var(--red);color:var(--red);text-shadow:0 0 10px rgba(255,95,215,.55)}
+html[data-style="neonsketch"] .btn-ghost:hover{background:rgba(255,95,215,.16);color:#fff;box-shadow:0 0 24px rgba(255,95,215,.45)}
+
+html[data-style="neonsketch"] .kicker{background:rgba(125,255,155,.14);color:var(--green);box-shadow:0 0 18px rgba(125,255,155,.25)}
+html[data-style="neonsketch"] .hero h1{text-shadow:0 0 28px rgba(77,214,255,.28);animation:nsFlicker 7s infinite}
+@keyframes nsFlicker{
+  0%,93%,100%{opacity:1}
+  94%{opacity:.75}
+  95%{opacity:1}
+  96%{opacity:.65}
+  97%{opacity:1}
+}
+html[data-style="neonsketch"] .hero h1 mark{
+  background:linear-gradient(transparent 52%, rgba(234,255,95,.26) 52%);
+  filter:drop-shadow(0 0 12px rgba(234,255,95,.35));
+}
+html[data-style="neonsketch"] .lede b{background:linear-gradient(transparent 55%,rgba(234,255,95,.24) 55%)}
+
+/* phone: dark doodle frame with a scanning screen -------------------------- */
+html[data-style="neonsketch"] .phone{background:#12111f;box-shadow:6px 7px 0 rgba(255,95,215,.28),0 0 40px rgba(77,214,255,.18)}
+html[data-style="neonsketch"] .phone-screen{background:#0f0e1c;position:relative;overflow:hidden}
+html[data-style="neonsketch"] .phone-screen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 42%,rgba(77,214,255,.16) 50%,transparent 58%);
+  animation:nsScreenScan 5s linear infinite;
+}
+@keyframes nsScreenScan{from{transform:translateY(-105%)}to{transform:translateY(105%)}}
+html[data-style="neonsketch"] .app-bar{border-bottom-color:rgba(77,214,255,.3);color:var(--blue)}
+html[data-style="neonsketch"] .app-col{background:rgba(255,95,215,.12);color:#ffd9f5;border-color:var(--red)}
+html[data-style="neonsketch"] .app-grid i{filter:saturate(1.15) hue-rotate(190deg) contrast(1.05)}
+html[data-style="neonsketch"] .app-grid i.locked{background:repeating-linear-gradient(45deg,rgba(77,214,255,.16) 0 5px,transparent 5px 10px)}
+html[data-style="neonsketch"] .app-cta{background:rgba(125,255,155,.16);color:var(--green);box-shadow:0 0 20px rgba(125,255,155,.25)}
+html[data-style="neonsketch"] .sticker{background:rgba(77,214,255,.12);color:#cdf1ff;border-color:var(--blue);box-shadow:var(--shadow-sm),0 0 22px rgba(77,214,255,.35)}
+html[data-style="neonsketch"] .sticker-2{background:rgba(255,95,215,.14);color:#ffd9f5;border-color:var(--red);box-shadow:5px 5px 0 rgba(77,214,255,.25),0 0 22px rgba(255,95,215,.45)}
+
+/* marquee: neon washi tape -------------------------------------------------- */
+html[data-style="neonsketch"] .marquee{
+  background:repeating-linear-gradient(90deg,rgba(77,214,255,.16) 0 70px,rgba(125,255,155,.13) 70px 140px,rgba(234,255,95,.12) 140px 210px,rgba(255,95,215,.14) 210px 280px);
+  border-top-color:rgba(77,214,255,.4);border-bottom-color:rgba(255,95,215,.4);
+}
+html[data-style="neonsketch"] .marquee-track span{color:var(--ink);text-shadow:0 0 10px rgba(77,214,255,.45)}
+
+/* cards: tape becomes neon glass, borders glow ----------------------------- */
+html[data-style="neonsketch"] .feature,
+html[data-style="neonsketch"] .steps li,
+html[data-style="neonsketch"] .dl{background:#12111f;box-shadow:var(--shadow),0 0 26px rgba(77,214,255,.06)}
+html[data-style="neonsketch"] .feature::before,
+html[data-style="neonsketch"] .dl::before{
+  background:rgba(77,214,255,.2);border-left-color:rgba(77,214,255,.3);border-right-color:rgba(255,95,215,.3);
+}
+html[data-style="neonsketch"] .feature:hover .num,
+html[data-style="neonsketch"] .feature .num{color:var(--sec);text-shadow:0 0 10px currentColor}
+html[data-style="neonsketch"] .step-num-big{color:var(--sec);text-shadow:0 0 16px currentColor}
+html[data-style="neonsketch"] .dl-primary{background:rgba(125,255,155,.09);box-shadow:var(--shadow),0 0 30px rgba(125,255,155,.2)}
+html[data-style="neonsketch"] .dl-primary .dl-tag{background:rgba(125,255,155,.16);color:var(--green)}
+html[data-style="neonsketch"] .dl-tag{border-color:var(--sec);color:var(--sec)}
+html[data-style="neonsketch"] .dl-meta{border-top-color:rgba(77,214,255,.35)}
+html[data-style="neonsketch"] .dl-meta div{border-bottom-color:rgba(77,214,255,.18)}
+html[data-style="neonsketch"] .dl-meta dt{color:var(--ink-soft);opacity:1}
+html[data-style="neonsketch"] .install-note{background:#12111f;border-left-color:var(--orange);box-shadow:0 0 24px rgba(255,184,107,.18)}
+html[data-style="neonsketch"] .install-note b{background:linear-gradient(transparent 55%,rgba(234,255,95,.28) 55%)}
+
+/* faq ------------------------------------------------------------------- */
+html[data-style="neonsketch"] .faq{border-top-color:rgba(255,95,215,.35)}
+html[data-style="neonsketch"] .faq details{border-bottom-color:rgba(255,95,215,.22)}
+html[data-style="neonsketch"] .faq summary::before{color:var(--sec);text-shadow:0 0 10px currentColor}
+html[data-style="neonsketch"] .faq details[open] summary{color:var(--sec);text-shadow:0 0 14px currentColor}
+html[data-style="neonsketch"] .faq summary:hover{color:var(--blue);text-shadow:0 0 12px rgba(77,214,255,.7)}
+
+/* footer ---------------------------------------------------------------- */
+html[data-style="neonsketch"] .site-foot{background:#0f0e1c;border-top-color:rgba(77,214,255,.35)}
+html[data-style="neonsketch"] .foot-word{text-shadow:0 0 26px rgba(77,214,255,.3)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(1) h4{color:var(--blue);text-shadow:0 0 10px rgba(77,214,255,.6)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(2) h4{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.6)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(3) h4{color:var(--red);text-shadow:0 0 10px rgba(255,95,215,.6)}
+html[data-style="neonsketch"] .foot-bar{border-top-color:rgba(232,228,255,.22);color:var(--ink-soft)}
+html[data-style="neonsketch"] .foot-bar span:last-child{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.6)}

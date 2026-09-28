@@ -1,0 +1,125 @@
+/* Cyber-brutalist mix: brutalist structure (thick borders, hard offset shadows,
+   Arial Black, chunky blocks) wearing a neon palette (dark ground, acid, cyan,
+   magenta) with a few restrained glows and scanlines.
+   Dormant until <html data-style="cyber"> — toggle or ?style=cyber */
+
+html[data-style="cyber"]{
+  --paper:#0a0a12;
+  --paper-2:#13131f;
+  --ink:#eef3ff;
+  --ink-soft:#aeb9cc;
+  --acid:#d8ff00;
+  --red:#ff2bd6;
+  --blue:#00f0ff;
+  --white:#0d0d18;
+  --line:3px;
+  --shadow:8px 8px 0 var(--blue);
+  --shadow-sm:5px 5px 0 var(--acid);
+  --display:"Arial Black","Arial Bold",Arial,Helvetica,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+
+/* CRT scanlines over the whole page */
+html[data-style="cyber"] body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);
+  animation:cyberScan 9s linear infinite;
+}
+@keyframes cyberScan{to{background-position:0 132px}}
+
+html[data-style="cyber"] :focus-visible{outline:4px solid var(--blue);outline-offset:3px;box-shadow:0 0 18px rgba(0,240,255,.45)}
+html[data-style="cyber"] ::selection{background:var(--acid);color:#0a0a12}
+
+/* header / rail --------------------------------------------------------- */
+html[data-style="cyber"] .rail{background:var(--ink);color:var(--paper)}
+html[data-style="cyber"] .rail-blink{color:var(--red);text-shadow:0 0 8px rgba(255,43,214,.9)}
+html[data-style="cyber"] .rail-right{color:#0a0a12;background:var(--acid);padding:2px 8px}
+html[data-style="cyber"] .site-head{background:var(--paper)}
+html[data-style="cyber"] .brand-mark{box-shadow:inset 0 0 0 5px var(--acid),0 0 18px rgba(216,255,0,.45);animation:cyberPulse 3s ease-in-out infinite}
+@keyframes cyberPulse{
+  0%,100%{box-shadow:inset 0 0 0 5px var(--acid),0 0 12px rgba(216,255,0,.35)}
+  50%{box-shadow:inset 0 0 0 5px var(--acid),0 0 26px rgba(255,43,214,.55)}
+}
+html[data-style="cyber"] .site-nav a:hover{border-bottom-color:var(--blue);color:var(--blue);text-shadow:0 0 12px rgba(0,240,255,.7)}
+html[data-style="cyber"] .style-toggle{border-width:3px}
+html[data-style="cyber"] .style-toggle b{color:var(--red);text-shadow:0 0 10px rgba(255,43,214,.6)}
+html[data-style="cyber"] .style-toggle:hover{background:var(--acid);color:#0a0a12;box-shadow:4px 4px 0 var(--red)}
+html[data-style="cyber"] .style-toggle:hover b{color:#0a0a12;text-shadow:none}
+
+/* buttons: chunky white blocks, acid hard shadow, breathing glow ---------- */
+html[data-style="cyber"] .btn{
+  box-shadow:var(--shadow-sm),0 0 22px rgba(216,255,0,.22);
+  animation:cyberGlow 3.4s ease-in-out infinite;
+}
+html[data-style="cyber"] .btn:hover{
+  transform:translate(3px,3px);
+  box-shadow:2px 2px 0 var(--acid),0 0 30px rgba(216,255,0,.5);
+  background:var(--acid);color:#0a0a12;border-color:var(--acid);
+}
+html[data-style="cyber"] .btn:active{box-shadow:0 0 0 var(--acid)}
+@keyframes cyberGlow{
+  0%,100%{box-shadow:var(--shadow-sm),0 0 14px rgba(216,255,0,.18)}
+  50%{box-shadow:var(--shadow-sm),0 0 30px rgba(216,255,0,.38)}
+}
+html[data-style="cyber"] .btn-ghost{
+  background:transparent;color:var(--ink);border-color:var(--ink);
+  box-shadow:var(--shadow-sm),0 0 22px rgba(0,240,255,.25);
+}
+html[data-style="cyber"] .btn-ghost:hover{background:var(--blue);color:#0a0a12;border-color:var(--blue);box-shadow:2px 2px 0 var(--acid),0 0 30px rgba(0,240,255,.5)}
+
+/* hero ------------------------------------------------------------------ */
+html[data-style="cyber"] .kicker{
+  background:var(--acid);color:#0a0a12;border-color:var(--ink);
+  box-shadow:5px 5px 0 var(--red);
+}
+html[data-style="cyber"] .hero h1{text-shadow:0 0 34px rgba(216,255,0,.22)}
+html[data-style="cyber"] .hero h1 mark{
+  background:var(--acid);color:#0a0a12;box-shadow:8px 8px 0 var(--red);
+}
+html[data-style="cyber"] .ticks li::before{color:var(--red);text-shadow:0 0 8px rgba(255,43,214,.8)}
+
+/* phone ----------------------------------------------------------------- */
+html[data-style="cyber"] .phone{
+  box-shadow:14px 14px 0 var(--red),0 0 46px rgba(0,240,255,.28);
+}
+html[data-style="cyber"] .app-cta{
+  background:#08080f;color:var(--acid);border-color:var(--acid);
+  box-shadow:0 0 20px rgba(216,255,0,.35);
+}
+html[data-style="cyber"] .sticker{box-shadow:5px 5px 0 var(--blue),0 0 20px rgba(216,255,0,.35)}
+html[data-style="cyber"] .sticker-2{box-shadow:5px 5px 0 var(--blue),0 0 20px rgba(255,43,214,.45)}
+
+/* marquee: acid slab with magenta rules --------------------------------- */
+html[data-style="cyber"] .marquee{
+  background:var(--acid);color:#0a0a12;
+  border-top:var(--line) solid var(--red);border-bottom:var(--line) solid var(--red);
+}
+html[data-style="cyber"] .marquee-track span{color:#0a0a12}
+
+/* sections -------------------------------------------------------------- */
+html[data-style="cyber"] .section-head h2{text-shadow:0 0 30px rgba(0,240,255,.2)}
+html[data-style="cyber"] .section-note{color:var(--blue);text-shadow:0 0 12px rgba(0,240,255,.55)}
+html[data-style="cyber"] .feature-grid{box-shadow:0 0 40px rgba(0,240,255,.14)}
+html[data-style="cyber"] .feature .num{color:var(--acid);text-shadow:0 0 14px rgba(216,255,0,.5)}
+html[data-style="cyber"] .feature:hover .num{color:var(--red)}
+html[data-style="cyber"] .step-num{background:var(--blue);color:#0a0a12;box-shadow:0 0 18px rgba(0,240,255,.45)}
+html[data-style="cyber"] .steps li:hover{border-color:var(--blue)}
+html[data-style="cyber"] .dl-tag{background:var(--ink);color:#0a0a12}
+html[data-style="cyber"] .dl-primary{box-shadow:var(--shadow),0 0 34px rgba(216,255,0,.3)}
+html[data-style="cyber"] .install-note{border-color:var(--blue);box-shadow:0 0 28px rgba(0,240,255,.16)}
+html[data-style="cyber"] .install-note b{background:var(--acid);color:#0a0a12;padding:1px 6px}
+html[data-style="cyber"] .faq summary::before{color:var(--red);text-shadow:0 0 10px rgba(255,43,214,.7)}
+html[data-style="cyber"] .faq summary:hover{background:var(--acid);color:#0a0a12}
+html[data-style="cyber"] .faq summary:hover::before{color:#0a0a12;text-shadow:none}
+
+/* footer: dark slab, neon column headings ------------------------------- */
+html[data-style="cyber"] .site-foot{background:#07070f;color:var(--ink)}
+html[data-style="cyber"] .foot-word{color:var(--ink);text-shadow:0 0 34px rgba(0,240,255,.28)}
+html[data-style="cyber"] .foot-cols > div:nth-child(1) h4{color:var(--blue);text-shadow:0 0 12px rgba(0,240,255,.6)}
+html[data-style="cyber"] .foot-cols > div:nth-child(2) h4{color:var(--acid);text-shadow:0 0 12px rgba(216,255,0,.5)}
+html[data-style="cyber"] .foot-cols > div:nth-child(3) h4{color:var(--red);text-shadow:0 0 12px rgba(255,43,214,.6)}
+html[data-style="cyber"] .foot-cols a{color:var(--ink-soft)}
+html[data-style="cyber"] .foot-cols a:hover{color:var(--blue);text-shadow:0 0 10px rgba(0,240,255,.6)}
+html[data-style="cyber"] .foot-cols > div:nth-child(3) a:hover{color:var(--red);text-shadow:0 0 10px rgba(255,43,214,.6)}
+html[data-style="cyber"] .foot-bar{border-top:3px solid var(--ink);color:var(--ink-soft)}
+html[data-style="cyber"] .foot-bar span:last-child{color:#0a0a12;background:var(--acid);padding:2px 8px}

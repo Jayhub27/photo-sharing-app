@@ -15,18 +15,23 @@
 <link rel="stylesheet" href="flat.css">
 <link rel="stylesheet" href="swiss.css">
 <link rel="stylesheet" href="sketch.css">
+<link rel="stylesheet" href="neonsketch.css">
+<link rel="stylesheet" href="neon.css">
+<link rel="stylesheet" href="cyber.css">
+<link rel="stylesheet" href="neonflat.css">
 <script>
   // Apply the saved style before first paint so there is no flash.
   (function () {
     try {
       var p = new URLSearchParams(location.search).get('style')
       var s = p || localStorage.getItem('tts.style')
-      if (s === 'brutal' || s === 'flat' || s === 'swiss' || s === 'sketch') document.documentElement.dataset.style = s
+      if (['brutal', 'flat', 'swiss', 'sketch', 'neon', 'cyber', 'neonflat', 'neonsketch'].indexOf(s) !== -1) document.documentElement.dataset.style = s
     } catch (e) {}
   })()
 </script>
 </head>
 <body>
+<canvas id="bg3d" aria-hidden="true"></canvas>
 <a class="skip-link" href="#main">Skip to content</a>
 
 <div class="rail" role="status">
