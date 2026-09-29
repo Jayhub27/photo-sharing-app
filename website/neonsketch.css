@@ -147,8 +147,8 @@ html[data-style="neonsketch"] .faq summary:hover{color:var(--blue);text-shadow:0
 /* footer ---------------------------------------------------------------- */
 html[data-style="neonsketch"] .site-foot{background:#0f0e1c;border-top-color:rgba(77,214,255,.35)}
 html[data-style="neonsketch"] .foot-word{text-shadow:0 0 26px rgba(77,214,255,.3)}
-html[data-style="neonsketch"] .foot-cols > div:nth-child(1) h4{color:var(--blue);text-shadow:0 0 10px rgba(77,214,255,.6)}
-html[data-style="neonsketch"] .foot-cols > div:nth-child(2) h4{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.6)}
-html[data-style="neonsketch"] .foot-cols > div:nth-child(3) h4{color:var(--red);text-shadow:0 0 10px rgba(255,95,215,.6)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(1) h2{color:var(--blue);text-shadow:0 0 10px rgba(77,214,255,.6)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(2) h2{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.6)}
+html[data-style="neonsketch"] .foot-cols > div:nth-child(3) h2{color:var(--red);text-shadow:0 0 10px rgba(255,95,215,.6)}
 html[data-style="neonsketch"] .foot-bar{border-top-color:rgba(232,228,255,.22);color:var(--ink-soft)}
 html[data-style="neonsketch"] .foot-bar span:last-child{color:var(--green);text-shadow:0 0 10px rgba(125,255,155,.6)}

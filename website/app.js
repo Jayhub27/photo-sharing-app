@@ -16,7 +16,7 @@
       if (label) el.textContent = label
       if (/^https?:/i.test(url) && url.indexOf(location.host) === -1) {
         el.target = '_blank'
-        el.rel = 'noopener'
+        el.rel = 'noopener noreferrer'
       }
     })
   }
@@ -27,7 +27,7 @@
   setLink('repo', cfg.repoUrl)
   setLink('releases', cfg.releasesUrl)
   setLink('guide', cfg.guideUrl)
-  setLink('ios', cfg.iosUrl || cfg.iosGuideUrl, cfg.iosUrl ? null : 'Build for iOS \u2197')
+  setLink('ios', cfg.iosUrl || cfg.iosGuideUrl)
   if (cfg.webAppUrl) {
     setLink('web', cfg.webAppUrl)
   } else {
@@ -48,7 +48,7 @@
     fetch('https://api.github.com/repos/' + repo + '/releases/latest')
       .then(function (res) {
         if (res.status === 404) {
-          setLink('apk', cfg.releasesUrl, 'Get APK \u2197')
+          setLink('apk', cfg.releasesUrl, 'See releases')
           return null
         }
         return res.ok ? res.json() : null
@@ -59,7 +59,7 @@
           return /\.apk$/i.test(a.name)
         })[0]
         if (apk) {
-          setLink('apk', apk.browser_download_url, '\u25BC Download APK')
+          setLink('apk', apk.browser_download_url, 'Download APK')
           document.querySelectorAll('[data-cfg="status"]').forEach(function (el) {
             el.textContent = 'APK ready'
           })
@@ -126,6 +126,8 @@
       )
     }
     if (themeMeta) themeMeta.setAttribute('content', STYLE_THEME_COLORS[style])
+    const announce = document.getElementById('styleAnnounce')
+    if (announce) announce.textContent = STYLE_LABELS[style] + ' style, ' + STYLE_LABELS[next] + ' next'
     if (persist) {
       try { localStorage.setItem(STYLE_KEY, style) } catch (e) {}
     }

@@ -297,10 +297,10 @@
 :is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-word{
   color:var(--ink);font-family:var(--display);font-weight:400;text-transform:none;letter-spacing:.02em;line-height:1.05;
 }
-:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols h4{font-size:14px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
-:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(1) h4{color:var(--blue)}
-:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(2) h4{color:var(--green)}
-:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(3) h4{color:var(--red)}
+:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols h2{font-size:14px;font-weight:700;letter-spacing:.02em;text-transform:uppercase}
+:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(1) h2{color:var(--blue)}
+:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(2) h2{color:var(--green)}
+:is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols > div:nth-child(3) h2{color:var(--red)}
 :is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols a{color:var(--ink-soft);font-size:15px;text-transform:none}
 :is(html[data-style="sketch"], html[data-style="neonsketch"]) .foot-cols a:hover{
   color:var(--blue);text-decoration:underline;text-decoration-style:wavy;text-underline-offset:4px;text-decoration-thickness:2px;

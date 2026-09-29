@@ -3,12 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Take the shot — share photos, sell originals</title>
-<meta name="description" content="A paid photo-sharing app. Create a collection, share it with a QR code, and sell the originals with Stripe. Download for Android, iOS or run it on the web.">
+<title>Take the shot — share photos, sell the originals</title>
+<meta name="description" content="Create a photo collection, share it with a QR code, and sell the original files with Stripe checkout. Free to start on Android, iOS or the web.">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="theme-color" content="#0b0b0b">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'none'; object-src 'none'">
+<link rel="canonical" href="https://take-the-shot-site.vercel.app/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Take the shot — share photos, sell originals">
-<meta property="og:description" content="Create a collection. Share a QR code. Get paid for the originals with Stripe. Free to start.">
+<meta property="og:site_name" content="Take the shot">
+<meta property="og:url" content="https://take-the-shot-site.vercel.app/">
+<meta property="og:title" content="Take the shot — share photos, sell the originals">
+<meta property="og:description" content="Create a photo collection, share it with a QR code, and sell the original files with Stripe checkout.">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0b0b'/%3E%3Crect x='8' y='16' width='48' height='34' fill='%23d8ff00'/%3E%3Crect x='22' y='10' width='20' height='8' fill='%23d8ff00'/%3E%3Ccircle cx='32' cy='33' r='11' fill='%230b0b0b'/%3E%3Ccircle cx='32' cy='33' r='5' fill='%23d8ff00'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
@@ -19,29 +25,45 @@
 <link rel="stylesheet" href="neon.css">
 <link rel="stylesheet" href="cyber.css">
 <link rel="stylesheet" href="neonflat.css">
+<link rel="stylesheet" href="tokens.css">
 <script>
-  // Apply the saved style before first paint so there is no flash.
+  // Pick the saved style before first paint so there is no flash of the wrong theme.
   (function () {
     try {
-      var p = new URLSearchParams(location.search).get('style')
-      var s = p || localStorage.getItem('tts.style')
-      if (['brutal', 'flat', 'swiss', 'sketch', 'neon', 'cyber', 'neonflat', 'neonsketch'].indexOf(s) !== -1) document.documentElement.dataset.style = s
+      var fromUrl = new URLSearchParams(location.search).get('style')
+      var saved = fromUrl || localStorage.getItem('tts.style')
+      var known = ['brutal', 'flat', 'swiss', 'sketch', 'neon', 'cyber', 'neonflat', 'neonsketch']
+      if (known.indexOf(saved) !== -1) document.documentElement.dataset.style = saved
     } catch (e) {}
   })()
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Take the shot",
+  "description": "Photo sharing you can sell: create a collection, share it with a QR code, and sell the original files with Stripe checkout.",
+  "applicationCategory": "PhotographyApplication",
+  "operatingSystem": "Android, iOS, web",
+  "softwareVersion": "0.1.0",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "downloadUrl": "https://github.com/Jayhub27/photo-sharing-app/releases/latest/download/take-the-shot-android.apk",
+  "codeRepository": "https://github.com/Jayhub27/photo-sharing-app"
+}
 </script>
 </head>
 <body>
 <canvas id="bg3d" aria-hidden="true"></canvas>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<div class="rail" role="status">
+<div class="rail">
   <span class="rail-blink" aria-hidden="true">&#9632;</span>
   <b>Take the shot</b>
   <span class="rail-sep" aria-hidden="true">//</span>
   <span>v<span data-cfg="version">0.1.0</span></span>
   <span class="rail-sep" aria-hidden="true">//</span>
-  <span data-cfg="status">Shipping</span>
-  <span class="rail-right">Android &#183; iOS &#183; Web</span>
+  <span data-cfg="status" aria-live="polite">Shipping</span>
+  <span class="rail-right">Android, iOS and web</span>
 </div>
 
 <header class="site-head">
@@ -49,25 +71,25 @@
     <span class="brand-mark" aria-hidden="true"></span>
     Take the shot
   </a>
-  <nav class="site-nav" aria-label="Sections">
+  <nav class="site-nav" aria-label="Page sections">
     <a href="#features">Features</a>
-    <a href="#why">Why</a>
     <a href="#how">How it works</a>
     <a href="#download">Download</a>
-    <a href="#faq">FAQ</a>
+    <a href="#faq">Questions</a>
   </nav>
-  <button class="style-toggle" id="styleToggle" type="button" aria-label="Switch visual style">
+  <button class="style-toggle" id="styleToggle" type="button" aria-label="Change visual style">
     Style: <b id="styleName">Flat</b>
   </button>
   <a class="btn btn-sm btn-invert" href="#download">Get the app</a>
 </header>
+<p class="visually-hidden" id="styleAnnounce" aria-live="polite"></p>
 
 <main id="main">
 
-  <section class="hero" id="top">
+  <section class="hero" id="top" aria-labelledby="hero-title">
     <div class="hero-copy">
       <p class="kicker">Private by default / QR sharing / Stripe</p>
-      <h1>Take<br>the<br><mark>shot.</mark></h1>
+      <h1 id="hero-title">Take<br>the<br><mark>shot.</mark></h1>
       <p class="lede">
         A simple, private alternative to subscription photo galleries. Create a
         collection, drop in your photos, share a QR code. Put a price on it if you
@@ -75,15 +97,12 @@
         stay on your own server.
       </p>
       <div class="cta-row">
-        <a class="btn btn-xl" data-link="apk" href="#download">
-          <span class="glyph" aria-hidden="true">&#9660;</span> Download for Android
-        </a>
+        <a class="btn btn-xl" data-link="apk" href="#download">Download for Android</a>
         <a class="btn btn-xl btn-ghost" href="#download">All platforms</a>
       </div>
       <ul class="ticks">
-        <li>Your server, your photos</li>
-        <li>No tracking, no ads</li>
-        <li>No monthly plan</li>
+        <li>Free to share</li>
+        <li>Sell with Stripe</li>
         <li>No app needed to view</li>
       </ul>
     </div>
@@ -112,8 +131,8 @@
           <div class="app-cta">Buy originals &#183; $45.00</div>
         </div>
       </div>
-      <p class="sticker">Free<br>to<br>start</p>
-      <p class="sticker sticker-2">QR<br>share</p>
+      <p class="sticker" aria-hidden="true">Free<br>to<br>start</p>
+      <p class="sticker sticker-2" aria-hidden="true">QR<br>share</p>
     </div>
   </section>
 
@@ -124,72 +143,63 @@
     </div>
   </div>
 
-  <section class="section" id="features">
+  <section class="section" id="features" aria-labelledby="features-title">
     <div class="section-head">
-      <h2>What it does</h2>
+      <h2 id="features-title">What it does</h2>
       <p class="section-note">No fluff. Six things, done right.</p>
     </div>
     <div class="feature-grid">
       <article class="feature">
-        <span class="num">01</span>
         <h3>Collections</h3>
         <p>Group shots into named collections. Grid or list, search, sort and filter that stick in the browser.</p>
       </article>
       <article class="feature">
-        <span class="num">02</span>
         <h3>QR sharing</h3>
         <p>Every collection gets a link and a QR code. Scan it and the gallery opens in any phone browser.</p>
       </article>
       <article class="feature">
-        <span class="num">03</span>
         <h3>Sell originals</h3>
         <p>Set a price per collection. Buyers pay with a card through Stripe Checkout and unlock instantly.</p>
       </article>
       <article class="feature">
-        <span class="num">04</span>
         <h3>Locked until paid</h3>
         <p>Priced collections stream 640px thumbnails only. Originals, single downloads and ZIPs stay locked.</p>
       </article>
       <article class="feature">
-        <span class="num">05</span>
         <h3>Import anywhere</h3>
         <p>Device picker, direct image URLs, Google Drive links, or any page with an og:image tag.</p>
       </article>
       <article class="feature">
-        <span class="num">06</span>
         <h3>Collaborate</h3>
         <p>Invite viewers and editors by email. New photos appear for everyone within about 5 seconds.</p>
       </article>
     </div>
   </section>
 
-  <section class="section section-alt" id="why">
+  <section class="section section-alt" id="why" aria-labelledby="why-title">
     <div class="section-head">
-      <h2>Why Take the shot</h2>
+      <h2 id="why-title">Why Take the shot</h2>
       <p class="section-note">Private, simple, and no subscription</p>
     </div>
     <div class="feature-grid">
       <article class="feature">
-        <span class="num">&#128274;</span>
         <h3>Private by design</h3>
         <p>Self-host it and your photos never leave your server. No analytics, no tracking pixels, no ads, no third-party scripts or fonts. The storage bucket is private and every image streams through an access check.</p>
       </article>
       <article class="feature">
-        <span class="num">&#9737;</span>
         <h3>Simple by default</h3>
         <p>Name a collection, add photos, share the QR. Buyers just open a link: no app install, no account, no checkout maze. One price per collection instead of plan tiers and feature gates.</p>
       </article>
       <article class="feature">
-        <span class="num">&#36;</span>
         <h3>An alternative to subscriptions</h3>
         <p>Other galleries charge $8-50 per month and keep a commission on sales. Run this yourself and you pay your own Stripe fees only. Free to share, and it can delete itself after 1-3650 days.</p>
       </article>
     </div>
   </section>
 
-  <section class="section" id="how">
+  <section class="section section-alt" id="how" aria-labelledby="how-title">
     <div class="section-head">
-      <h2>How it works</h2>
+      <h2 id="how-title">How it works</h2>
       <p class="section-note">Three steps. That is the whole thing.</p>
     </div>
     <ol class="steps">
@@ -212,14 +222,14 @@
         <p>Set a price or keep it free. Stripe handles checkout, downloads unlock on payment.</p>
       </li>
     </ol>
-    <div class="cta-row" style="margin-top:28px">
-      <a class="btn btn-xl" data-link="guide" href="#faq">Full getting started guide</a>
+    <div class="cta-row cta-row-after">
+      <a class="btn btn-xl btn-ghost" data-link="guide" href="#">Full getting started guide</a>
     </div>
   </section>
 
-  <section class="section" id="download">
+  <section class="section" id="download" aria-labelledby="download-title">
     <div class="section-head">
-      <h2>Download</h2>
+      <h2 id="download-title">Download</h2>
       <p class="section-note">Pick your machine. Same app on every one.</p>
     </div>
 
@@ -232,20 +242,20 @@
           <div><dt>Requires</dt><dd>Android 7+</dd></div>
           <div><dt>Price</dt><dd>$0.00</dd></div>
         </dl>
-        <p class="dl-note">Direct download from GitHub Releases. Sideload it, allow unknown sources, done.</p>
-        <a class="btn btn-xl" data-link="apk" href="#" rel="noopener">&#9660; Download APK</a>
+        <p class="dl-note">A debug build straight from GitHub Releases. Sideload it, allow unknown sources, done.</p>
+        <a class="btn btn-xl" data-link="apk" href="#" rel="noopener noreferrer">Download APK</a>
       </article>
 
       <article class="dl">
         <span class="dl-tag">iOS</span>
-        <h3>iPhone / iPad</h3>
+        <h3>iPhone and iPad</h3>
         <dl class="dl-meta">
-          <div><dt>Format</dt><dd>TestFlight / EAS</dd></div>
+          <div><dt>Format</dt><dd>EAS build</dd></div>
           <div><dt>Requires</dt><dd>iOS 14+</dd></div>
           <div><dt>Price</dt><dd>$0.00</dd></div>
         </dl>
-        <p class="dl-note">No App Store listing yet. Build it to your device with EAS, or run it in Expo Go.</p>
-        <a class="btn btn-xl btn-ghost" data-link="ios" href="#" rel="noopener">Build for iOS &#8599;</a>
+        <p class="dl-note">No App Store listing yet. Build it to your own device with EAS, or run it in Expo Go.</p>
+        <a class="btn btn-xl btn-ghost" data-link="ios" href="#" rel="noopener noreferrer">iOS build guide</a>
       </article>
 
       <article class="dl">
@@ -256,10 +266,10 @@
           <div><dt>Requires</dt><dd>Any modern browser</dd></div>
           <div><dt>Price</dt><dd>$0.00</dd></div>
         </dl>
-        <p class="dl-note">Deploy your own copy to Vercel in one click. Set a public URL in config.js and the hosted app button appears here too.</p>
+        <p class="dl-note">Deploy your own copy to Vercel in one click, or open the hosted app if you have a URL.</p>
         <div class="btn-stack">
-          <a class="btn btn-xl" data-link="deploy" href="#" rel="noopener">Deploy your own</a>
-          <a class="btn btn-xl btn-ghost" data-link="web" href="#" rel="noopener">Open web app</a>
+          <a class="btn btn-xl" data-link="deploy" href="#" rel="noopener noreferrer">Deploy your own</a>
+          <a class="btn btn-xl btn-ghost" data-link="web" href="#" rel="noopener noreferrer">Open the web app</a>
         </div>
       </article>
 
@@ -268,11 +278,11 @@
         <h3>Source code</h3>
         <dl class="dl-meta">
           <div><dt>Format</dt><dd>.ZIP</dd></div>
-          <div><dt>Stack</dt><dd>Expo + Express + Supabase</dd></div>
+          <div><dt>Stack</dt><dd>Expo, Express, Supabase</dd></div>
           <div><dt>License</dt><dd>See repo</dd></div>
         </dl>
-        <p class="dl-note">The whole thing: mobile app, API, database schema. Read it, fork it, run it yourself.</p>
-        <a class="btn btn-xl btn-ghost" data-link="source" href="#" rel="noopener">&#9660; Download .ZIP</a>
+        <p class="dl-note">The mobile app, the API and the database schema. Read it, fork it, run it yourself.</p>
+        <a class="btn btn-xl btn-ghost" data-link="source" href="#" rel="noopener noreferrer">Download source .zip</a>
       </article>
     </div>
 
@@ -286,9 +296,9 @@
     </div>
   </section>
 
-  <section class="section section-alt" id="faq">
+  <section class="section section-alt" id="faq" aria-labelledby="faq-title">
     <div class="section-head">
-      <h2>Questions</h2>
+      <h2 id="faq-title">Questions</h2>
       <p class="section-note">Short answers, no fluff.</p>
     </div>
     <div class="faq">
@@ -336,30 +346,30 @@
 <footer class="site-foot">
   <div class="foot-top">
     <p class="foot-word">Take<br>the shot.</p>
-    <div class="foot-cols">
+    <nav class="foot-cols" aria-label="Footer">
       <div>
-        <h4>App</h4>
+        <h2>App</h2>
         <a data-link="apk" href="#">Android APK</a>
         <a data-link="ios" href="#">iOS build</a>
         <a data-link="web" href="#">Web app</a>
       </div>
       <div>
-        <h4>Project</h4>
+        <h2>Project</h2>
         <a data-link="repo" href="#">GitHub</a>
         <a data-link="releases" href="#">Releases</a>
         <a data-link="source" href="#">Source zip</a>
       </div>
       <div>
-        <h4>Legal</h4>
+        <h2>Legal</h2>
         <a data-link="repo" href="#">License</a>
         <a data-link="repo" href="#">Privacy</a>
         <a data-link="repo" href="#">Terms</a>
       </div>
-    </div>
+    </nav>
   </div>
   <div class="foot-bar">
     <span>&#169; <span data-cfg="year">2026</span> Take the shot</span>
-    <span>Built with Expo / Express / Supabase / Stripe</span>
+    <span>Built with Expo, Express, Supabase and Stripe</span>
     <span data-cfg="status">Shipping</span>
   </div>
 </footer>

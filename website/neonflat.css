@@ -269,10 +269,10 @@ html[data-style="neonflat"] .foot-word{
   font-family:var(--display);font-weight:800;text-transform:none;letter-spacing:-.04em;line-height:1;
   background-image:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
 }
-html[data-style="neonflat"] .foot-cols h4{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
-html[data-style="neonflat"] .foot-cols > div:nth-child(1) h4{color:#22d3ee}
-html[data-style="neonflat"] .foot-cols > div:nth-child(2) h4{color:#818cf8}
-html[data-style="neonflat"] .foot-cols > div:nth-child(3) h4{color:#e879f9}
+html[data-style="neonflat"] .foot-cols h2{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+html[data-style="neonflat"] .foot-cols > div:nth-child(1) h2{color:#22d3ee}
+html[data-style="neonflat"] .foot-cols > div:nth-child(2) h2{color:#818cf8}
+html[data-style="neonflat"] .foot-cols > div:nth-child(3) h2{color:#e879f9}
 html[data-style="neonflat"] .foot-cols a{color:var(--ink-soft);font-size:14px;text-transform:none}
 html[data-style="neonflat"] .foot-cols a:hover{color:var(--ink);text-decoration:none}
 html[data-style="neonflat"] .foot-bar{border-top:1px solid rgba(129,140,248,.2);color:var(--ink-soft);font-size:12px;letter-spacing:.04em;text-transform:none}

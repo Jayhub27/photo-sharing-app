@@ -115,9 +115,9 @@ html[data-style="cyber"] .faq summary:hover::before{color:#0a0a12;text-shadow:no
 /* footer: dark slab, neon column headings ------------------------------- */
 html[data-style="cyber"] .site-foot{background:#07070f;color:var(--ink)}
 html[data-style="cyber"] .foot-word{color:var(--ink);text-shadow:0 0 34px rgba(0,240,255,.28)}
-html[data-style="cyber"] .foot-cols > div:nth-child(1) h4{color:var(--blue);text-shadow:0 0 12px rgba(0,240,255,.6)}
-html[data-style="cyber"] .foot-cols > div:nth-child(2) h4{color:var(--acid);text-shadow:0 0 12px rgba(216,255,0,.5)}
-html[data-style="cyber"] .foot-cols > div:nth-child(3) h4{color:var(--red);text-shadow:0 0 12px rgba(255,43,214,.6)}
+html[data-style="cyber"] .foot-cols > div:nth-child(1) h2{color:var(--blue);text-shadow:0 0 12px rgba(0,240,255,.6)}
+html[data-style="cyber"] .foot-cols > div:nth-child(2) h2{color:var(--acid);text-shadow:0 0 12px rgba(216,255,0,.5)}
+html[data-style="cyber"] .foot-cols > div:nth-child(3) h2{color:var(--red);text-shadow:0 0 12px rgba(255,43,214,.6)}
 html[data-style="cyber"] .foot-cols a{color:var(--ink-soft)}
 html[data-style="cyber"] .foot-cols a:hover{color:var(--blue);text-shadow:0 0 10px rgba(0,240,255,.6)}
 html[data-style="cyber"] .foot-cols > div:nth-child(3) a:hover{color:var(--red);text-shadow:0 0 10px rgba(255,43,214,.6)}

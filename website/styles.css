@@ -277,7 +277,7 @@ a{color:inherit}
 .foot-top{max-width:1280px;margin:0 auto;padding:clamp(44px,6vw,80px) 24px 40px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px}
 .foot-word{font-family:var(--display);font-size:clamp(44px,8vw,110px);line-height:.84;letter-spacing:-4px;text-transform:uppercase;color:var(--acid)}
 .foot-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-content:start}
-.foot-cols h4{font-size:12px;letter-spacing:2px;color:var(--acid);margin-bottom:14px;text-transform:uppercase}
+.foot-cols h2{font-size:12px;letter-spacing:2px;color:var(--acid);margin-bottom:14px;text-transform:uppercase}
 .foot-cols a{display:block;text-decoration:none;font-size:13px;padding:5px 0;color:var(--paper);opacity:.85;text-transform:uppercase}
 .foot-cols a:hover{opacity:1;text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:3px}
 .foot-bar{
