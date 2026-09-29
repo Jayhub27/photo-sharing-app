@@ -1,14 +1,18 @@
 name: Build Android APK
 
 # Manual runs: Actions -> "Build Android APK" -> Run workflow.
-# Tagged runs: push a tag like v0.1.0 and the APK is attached to that release,
+# Tagged runs: push a tag like v0.3.0 and the APK is attached to that release,
 # which is exactly what the website's DOWNLOAD APK button points at.
+#
+# With the ANDROID_KEYSTORE_BASE64 secret set, this produces a signed release
+# build split per CPU ABI (arm64 is published). Without it, it falls back to a
+# debug APK so the workflow still works in forks.
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Tag to create/attach the APK to (e.g. v0.1.0). Empty = artifact only.'
+        description: 'Tag to create/attach the APK to (e.g. v0.3.0). Empty = artifact only.'
         required: false
         default: ''
   push:
@@ -49,20 +53,55 @@ jobs:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
 
-      - name: Build debug APK
+      - name: Configure release signing
+        working-directory: app
+        run: node scripts/configure-android-signing.mjs
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+
+      - name: Build APK
         working-directory: app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
         env:
           CI: '1'
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
-      - name: Rename APK for release
-        run: cp app/android/app/build/outputs/apk/debug/app-debug.apk take-the-shot-android.apk
+      - name: Collect APKs
+        run: |
+          OUT=app/android/app/build/outputs/apk
+          if [ -f "$OUT/release/app-arm64-v8a-release.apk" ]; then
+            cp "$OUT/release/app-arm64-v8a-release.apk" take-the-shot-android.apk
+            echo "Publishing arm64-v8a release build"
+          elif [ -f "$OUT/release/app-release.apk" ]; then
+            cp "$OUT/release/app-release.apk" take-the-shot-android.apk
+            echo "Publishing universal release build"
+          else
+            cp "$OUT/debug/app-debug.apk" take-the-shot-android.apk
+            echo "Publishing debug build"
+          fi
+          mkdir -p apk-splits
+          cp "$OUT"/release/*.apk apk-splits/ 2>/dev/null || cp "$OUT"/debug/*.apk apk-splits/
+          ls -la take-the-shot-android.apk apk-splits
 
       - uses: actions/upload-artifact@v7
         with:
           name: take-the-shot-android-apk
           path: take-the-shot-android.apk
           if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: take-the-shot-android-apk-splits
+          path: apk-splits
+          if-no-files-found: ignore
 
       - name: Attach APK to release
         if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
