@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest a capability or an improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation, not the implementation. What are you trying to do today and where does it break down?
+      placeholder: I run event shoots and want guests to find their own photos ...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Optional. How would you expect it to work in the UI or API?
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Selling and payments
+        - Uploading and importing
+        - Sharing and QR
+        - Mobile app
+        - Self-hosting and deployment
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other tools or workarounds you tried
+    validations:
+      required: false

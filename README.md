@@ -36,6 +36,13 @@ installs as a PWA (Android, iOS, desktop) with no app store involved.
 | Installable PWA | Add to Home Screen on Android/iOS/desktop, offline page, no app store |
 | Mobile uploads | Camera or library picker, on-device downscale, per-file progress |
 
+## Screenshots
+
+| Web | Mobile web | Expo app |
+| --- | --- | --- |
+| ![Collection list](docs/screenshots/web-home.jpg) | ![Mobile collection](docs/screenshots/mobile-web.jpg) | ![Expo app](docs/screenshots/mobile-app.jpg) |
+| ![Collection](docs/screenshots/web-collection.jpg) | ![Share dialog](docs/screenshots/web-share.jpg) | |
+
 ## Architecture
 
 ```
@@ -52,16 +59,19 @@ installs as a PWA (Android, iOS, desktop) with no app store involved.
 photo-sharing-app/
 ├─ server/                 Express + TypeScript API and web pages
 │  ├─ src/
-│  │  ├─ index.ts          App entry, security headers, CORS, Stripe webhook mount
+│  │  ├─ index.ts          App entry, security headers, CORS, static PWA assets
 │  │  ├─ routes.ts         Collections, photos, QR, members, import, selling
 │  │  ├─ stripe.ts         Stripe client + schema/feature detection
 │  │  ├─ auth.ts           Signup/login/sessions
-│  │  ├─ ui.ts             Shared CSS + page helpers
+│  │  ├─ theme.ts          Shared CSS (brutalist-flat theme, dark + light)
+│  │  ├─ ui.ts             Layout, PWA plumbing, theme/install helpers
 │  │  ├─ page-home.ts      Collection list page
 │  │  ├─ page-collection.ts Collection page (selection, selling, import, upload)
 │  │  ├─ page-auth.ts      Login/signup pages
 │  │  ├─ ratelimit.ts      Fixed-window limiter
 │  │  └─ zip.ts            ZIP writer
+│  ├─ public/              PWA manifest, service worker, icons, offline page
+│  └─ scripts/             Icon generator (sharp)
 ├─ app/                    Expo / React Native mobile app
 ├─ supabase/schema.sql     Full database schema (run in the Supabase SQL editor)
 └─ supabase/migrations/    Incremental migrations (selling)

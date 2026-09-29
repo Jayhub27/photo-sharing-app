@@ -3,7 +3,7 @@
 
 window.TTS_CONFIG = {
   // Shown in the status rail and footer
-  version: '0.1.0',
+  version: '0.2.0',
   status: 'Shipping',
 
   // Android APK. The GitHub Actions workflow (.github/workflows/android-apk.yml)

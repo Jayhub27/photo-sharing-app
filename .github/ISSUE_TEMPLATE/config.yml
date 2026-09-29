@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Self-hosting guide
+    url: https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/SELF_HOSTING.md
+    about: Supabase setup, environment variables, Docker, HTTPS and backups
+  - name: Mobile and PWA notes
+    url: https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/MOBILE.md
+    about: Installable PWA, upload pipeline and the Expo app
+  - name: Questions and ideas
+    url: https://github.com/Jayhub27/photo-sharing-app/discussions
+    about: Ask a question or share what you built
