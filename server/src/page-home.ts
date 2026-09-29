@@ -45,6 +45,20 @@ export function homePage(apiBase: string): string {
         <a class="btn" href="/signup">Create an account</a>
         <a class="btn outline" href="/login">Log in</a>
       </div>
+      <div style="margin-top:18px"><button class="btn ghost small" id="replayTour" type="button">Show me how it works</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="onboard" id="onboard" role="dialog" aria-modal="true" aria-label="Getting started">
+  <div class="onboard-card">
+    <button class="onboard-skip" id="onboardSkip" type="button">Skip</button>
+    <div class="onboard-art" id="onboardArt"></div>
+    <div class="onboard-step" id="onboardStep"></div>
+    <div class="onboard-dots" id="onboardDots"></div>
+    <div class="onboard-actions">
+      <button class="btn ghost hidden" id="onboardBack" type="button">Back</button>
+      <button class="btn" id="onboardNext" type="button">Next</button>
     </div>
   </div>
 </div>
@@ -180,6 +194,87 @@ document.getElementById('viewToggle').addEventListener('click', () => {
 });
 applyView();
 checkAuth();
+
+/* ---------------------------------------------------------------- onboarding */
+const TOUR = [
+  {
+    art: '<div class="logo-icon"><i class="ico ico-camera"></i></div>',
+    title: 'Welcome to Take the shot',
+    body: 'One place for your photos: share a collection with a QR code, or sell the originals.',
+  },
+  {
+    art: '<div class="onboard-tiles"><i></i><i></i><i></i><i></i><i></i><i></i></div>',
+    title: 'Create a collection',
+    body: 'Drop in your photos and send a QR code or a link. Anyone who scans it sees the gallery \u2014 no app needed.',
+  },
+  {
+    art: '<div class="onboard-chips"><span class="onboard-chip"><i class="ico ico-user"></i><span>you@example.com</span></span></div>',
+    title: 'Sign up free',
+    body: 'Create an account with your email in a few seconds. It keeps collections yours and lets buyers pay you directly.',
+  },
+  {
+    art: '<div class="onboard-chips"><span class="onboard-chip"><i class="ico ico-tag"></i><strong>$12</strong></span><span class="onboard-chip"><i class="ico ico-wallet"></i><span>Paid \u00b7 downloads unlocked</span></span></div>',
+    title: 'Get paid with Stripe',
+    body: 'Set a price on a collection. Buyers pay by card on a secure Stripe checkout, and their downloads unlock the moment the payment clears.',
+  },
+];
+let tourStep = 0;
+const tourEl = document.getElementById('onboard');
+function saveTour() { try { localStorage.setItem('tts.onboarded', '1'); } catch (e) {} }
+function endTour(go) {
+  tourEl.classList.remove('open');
+  document.body.style.overflow = '';
+  saveTour();
+  if (go) window.location.href = '/signup';
+}
+function renderTour() {
+  const step = TOUR[tourStep];
+  document.getElementById('onboardArt').innerHTML = step.art;
+  const stepEl = document.getElementById('onboardStep');
+  stepEl.innerHTML = '<h2>' + step.title + '</h2><p>' + step.body + '</p>';
+  stepEl.style.animation = 'none';
+  void stepEl.offsetWidth;
+  stepEl.style.animation = '';
+  document.getElementById('onboardDots').innerHTML = TOUR.map(function (s, i) {
+    return '<button type="button" aria-label="Step ' + (i + 1) + ' of ' + TOUR.length + '" data-step="' + i + '" class="' + (i === tourStep ? 'on' : '') + '"></button>';
+  }).join('');
+  document.getElementById('onboardBack').classList.toggle('hidden', tourStep === 0);
+  document.getElementById('onboardNext').textContent = tourStep === TOUR.length - 1 ? 'Create an account' : 'Next';
+}
+function openTour() {
+  tourStep = 0;
+  renderTour();
+  tourEl.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+document.getElementById('onboardNext').addEventListener('click', function () {
+  if (tourStep === TOUR.length - 1) { endTour(true); return; }
+  tourStep++;
+  renderTour();
+});
+document.getElementById('onboardBack').addEventListener('click', function () {
+  if (tourStep > 0) { tourStep--; renderTour(); }
+});
+document.getElementById('onboardSkip').addEventListener('click', function () { endTour(false); });
+document.getElementById('onboardDots').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (b) { tourStep = Number(b.dataset.step); renderTour(); }
+});
+document.addEventListener('keydown', function (e) {
+  if (tourEl.classList.contains('open') && e.key === 'Escape') endTour(false);
+});
+document.getElementById('replayTour').addEventListener('click', openTour);
+(function () {
+  let seen = false;
+  try { seen = localStorage.getItem('tts.onboarded') === '1'; } catch (e) {}
+  const forced = new URLSearchParams(location.search).get('tour') === '1';
+  if (!seen || forced) {
+    setTimeout(function () {
+      const guestVisible = !document.getElementById('guest').classList.contains('hidden');
+      if (guestVisible || forced) openTour();
+    }, 700);
+  }
+})();
 `
 
   return layout('Take the shot', '', body, script)

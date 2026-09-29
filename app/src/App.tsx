@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavigationContainer, DefaultTheme, type Theme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StatusBar } from 'expo-status-bar'
@@ -11,10 +11,14 @@ import GalleryScreen from './screens/GalleryScreen'
 import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
 import MembersScreen from './screens/MembersScreen'
+import OnboardingScreen from './screens/OnboardingScreen'
 import { LoadingScreen } from './components'
 import { AuthProvider, useAuth } from './auth'
+import { getValue, setValue } from './storage'
 import { colors } from './styles'
 import type { RootStackParamList } from './api'
+
+const ONBOARDED_KEY = 'tts.onboarded'
 
 const navTheme: Theme = {
   ...DefaultTheme,
@@ -40,11 +44,38 @@ const screenOptions = {
 
 function RootNavigator() {
   const { user, ready } = useAuth()
+  const [checkedTour, setCheckedTour] = useState(false)
+  const [showTour, setShowTour] = useState(false)
+  const [startAt, setStartAt] = useState<'Login' | 'Signup'>('Login')
 
-  if (!ready) return <LoadingScreen />
+  useEffect(() => {
+    let active = true
+    getValue(ONBOARDED_KEY).then((seen) => {
+      if (!active) return
+      setShowTour(!seen)
+      setCheckedTour(true)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  if (!ready || !checkedTour) return <LoadingScreen />
+
+  if (showTour && !user) {
+    return (
+      <OnboardingScreen
+        onDone={async (action) => {
+          await setValue(ONBOARDED_KEY, '1')
+          if (action === 'signup') setStartAt('Signup')
+          setShowTour(false)
+        }}
+      />
+    )
+  }
 
   return (
-    <Stack.Navigator initialRouteName={user ? 'Home' : 'Login'} screenOptions={screenOptions}>
+    <Stack.Navigator initialRouteName={user ? 'Home' : startAt} screenOptions={screenOptions}>
       {user ? (
         <>
           <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />

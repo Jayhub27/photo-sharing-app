@@ -337,6 +337,34 @@ html[data-theme="light"] .btn .spinner{border-color:rgba(0,0,0,.22);border-top-c
 body.has-mobile-bar .pwa-install,body.has-mobile-bar .ios-hint{bottom:calc(94px + env(safe-area-inset-bottom))}
 @media(min-width:641px){.ios-hint{left:auto;right:18px;max-width:360px}}
 
+/* --------------------------------------------------------------- onboarding */
+.onboard{position:fixed;inset:0;z-index:300;background:var(--bg);display:none;align-items:center;justify-content:center;padding:16px}
+.onboard.open{display:flex;animation:fadeIn .2s}
+.onboard-card{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow-2);padding:clamp(20px,4vw,30px);position:relative;overflow:hidden}
+.onboard-skip{position:absolute;top:14px;right:14px;height:38px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--border);background:transparent;color:var(--muted);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;z-index:2}
+.onboard-skip:hover{color:var(--text);border-color:var(--border-strong)}
+.onboard-art{height:168px;border-radius:20px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;margin-bottom:22px;overflow:hidden}
+.onboard-art .logo-icon{width:62px;height:62px;border-radius:18px}
+.onboard-art .logo-icon .ico{width:30px;height:30px}
+.onboard-tiles{display:grid;grid-template-columns:repeat(3,52px);gap:8px}
+.onboard-tiles i{display:block;width:52px;height:52px;border-radius:12px;background:var(--surface);border:1px solid var(--border);animation:pop .45s var(--ease) both}
+.onboard-tiles i:nth-child(2){animation-delay:.06s}
+.onboard-tiles i:nth-child(3){animation-delay:.12s}
+.onboard-tiles i:nth-child(4){animation-delay:.18s}
+.onboard-tiles i:nth-child(5){animation-delay:.24s}
+.onboard-tiles i:nth-child(6){animation-delay:.3s;background:var(--accent);border-color:transparent}
+.onboard-chips{display:flex;flex-direction:column;gap:10px;align-items:center}
+.onboard-chip{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:11px 18px;font-size:15px;font-weight:600;color:var(--text);animation:pop .45s var(--ease) both}
+.onboard-chip .ico{color:var(--accent-text)}
+.onboard-chip:nth-child(2){animation-delay:.1s}
+.onboard-step h2{margin-bottom:8px}
+.onboard-step p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px}
+.onboard-dots{display:flex;gap:6px;justify-content:center;margin-bottom:18px}
+.onboard-dots button{width:7px;height:7px;padding:0;border:none;border-radius:var(--r-pill);background:var(--border-strong);cursor:pointer;transition:width .25s var(--ease),background .25s}
+.onboard-dots button.on{width:20px;background:var(--accent)}
+.onboard-actions{display:flex;gap:10px}
+.onboard-actions .btn{flex:1}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 @keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
