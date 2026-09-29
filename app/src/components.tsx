@@ -45,16 +45,16 @@ export function AnimatedButton({
       <Pressable
         style={[
           {
-            backgroundColor: outline ? 'transparent' : colors.accent,
+            backgroundColor: outline ? 'transparent' : 'rgba(0,240,255,0.07)',
             paddingVertical: 16,
             paddingHorizontal: 24,
-            borderRadius: 16,
+            borderRadius: 4,
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'row',
             gap: 8,
-            borderWidth: outline ? 1.5 : 0,
-            borderColor: outline ? colors.border : 'transparent',
+            borderWidth: 1,
+            borderColor: outline ? 'rgba(255,43,214,0.55)' : 'rgba(0,240,255,0.55)',
           },
           style as any,
         ]}
@@ -78,9 +78,11 @@ export function ButtonText({
   return (
     <Text
       style={{
-        color: outline ? colors.text : '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+        color: outline ? colors.accent3 : colors.accent,
+        fontSize: 13,
+        fontWeight: '700',
+        letterSpacing: 1.4,
+        textTransform: 'uppercase',
       }}
     >
       {children}
@@ -194,7 +196,7 @@ export function SkeletonCard() {
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: 16,
+          borderRadius: 6,
           borderWidth: 1,
           borderColor: colors.border,
           height: 72,
@@ -232,7 +234,7 @@ export function LoadingScreen() {
         style={{
           width: 32,
           height: 32,
-          borderRadius: 16,
+          borderRadius: 6,
           borderWidth: 3,
           borderColor: colors.border,
           borderTopColor: colors.accent,
@@ -287,13 +289,15 @@ export function PhotoViewer({
             zIndex: 2,
             width: 44,
             height: 44,
-            borderRadius: 12,
-            backgroundColor: 'rgba(255,255,255,0.14)',
+            borderRadius: 4,
+            backgroundColor: 'rgba(0,240,255,0.14)',
+            borderWidth: 1,
+            borderColor: 'rgba(0,240,255,0.5)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#fff', fontSize: 22 }}>✕</Text>
+          <Text style={{ color: colors.accent, fontSize: 22 }}>✕</Text>
         </Pressable>
         <FlatList
           ref={listRef}

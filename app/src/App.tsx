@@ -32,8 +32,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 
 const screenOptions = {
   headerStyle: { backgroundColor: colors.bg },
-  headerTintColor: colors.text,
-  headerTitleStyle: { fontWeight: '600' as const },
+  headerTintColor: colors.accent,
+  headerTitleStyle: { fontWeight: '700' as const, letterSpacing: 1 },
   headerShadowVisible: false,
   contentStyle: { backgroundColor: colors.bg },
 }

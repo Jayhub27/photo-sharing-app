@@ -105,7 +105,7 @@ export default function MembersScreen({ route }: Props) {
                       alignItems: 'center',
                       borderWidth: 1.5,
                       borderColor: role === r ? colors.accent : colors.border,
-                      backgroundColor: role === r ? 'rgba(99,102,241,0.15)' : 'transparent',
+                      backgroundColor: role === r ? 'rgba(0,240,255,0.15)' : 'transparent',
                     }}
                   >
                     <Text style={{ color: role === r ? colors.text : colors.textMuted, fontWeight: '600' }}>

@@ -478,7 +478,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               borderRadius: 999,
               borderWidth: 1,
               borderColor: photoSort === s ? colors.accent : colors.border,
-              backgroundColor: photoSort === s ? 'rgba(99,102,241,0.15)' : 'transparent',
+              backgroundColor: photoSort === s ? 'rgba(0,240,255,0.15)' : 'transparent',
             }}
           >
             <Text style={{ color: photoSort === s ? colors.text : colors.textMuted, fontSize: 13, fontWeight: '600' }}>
@@ -542,7 +542,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
             right: 0,
             bottom: 0,
             padding: 24,
-            backgroundColor: 'rgba(10,10,15,0.96)',
+            backgroundColor: 'rgba(5,1,15,0.96)',
           }}
         >
           <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>
@@ -645,7 +645,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
                     borderRadius: 999,
                     borderWidth: 1,
                     borderColor: expiryDays === d ? colors.accent : colors.border,
-                    backgroundColor: expiryDays === d ? 'rgba(99,102,241,0.15)' : 'transparent',
+                    backgroundColor: expiryDays === d ? 'rgba(0,240,255,0.15)' : 'transparent',
                   }}
                 >
                   <Text
