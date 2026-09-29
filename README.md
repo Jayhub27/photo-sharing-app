@@ -5,8 +5,11 @@ QR code or link, and — if you want — put a price on it so people can buy the
 original files with a card. Stripe handles checkout; downloads unlock
 automatically after payment.
 
-- **Web app** — server-rendered, responsive, mobile-first (works from any phone browser)
-- **Mobile app** — Expo / React Native (iOS + Android)
+Self-hostable, MIT licensed, and works as an app on your phone: the web client
+installs as a PWA (Android, iOS, desktop) with no app store involved.
+
+- **Web app** — server-rendered, responsive, mobile-first, installable PWA
+- **Mobile app** — optional Expo / React Native client (iOS + Android)
 - **Backend** — Express + TypeScript, Postgres + Storage on Supabase, Stripe for payments
 
 ## What it does
@@ -30,6 +33,8 @@ automatically after payment.
 | Save a shared collection | Copies photos into your own account |
 | Accounts | Sessions, bcrypt hashes, rate limits, session TTL |
 | Responsive + mobile UI | Bottom action bar, bottom-sheet modals, safe-area padding, dark/light theme |
+| Installable PWA | Add to Home Screen on Android/iOS/desktop, offline page, no app store |
+| Mobile uploads | Camera or library picker, on-device downscale, per-file progress |
 
 ## Architecture
 
@@ -101,17 +106,32 @@ STRIPE_APPLICATION_FEE_PERCENT=10         # optional platform fee (with Connect)
 
 ```bash
 npm install
-npm run server        # API + web app on http://localhost:3000
-npm run app           # Expo app (set EXPO_PUBLIC_API_BASE first)
-npm run website       # download landing page on http://localhost:8080
+cp server/.env.example server/.env    # fill in Supabase (+ Stripe to sell)
+npm run server                        # API + web app on http://localhost:3000
+npm run app                           # Expo app (set EXPO_PUBLIC_API_BASE first)
+npm run website                       # download landing page on http://localhost:8080
 ```
+
+Or with Docker:
+
+```bash
+docker compose up --build -d          # reads server/.env, health at /api/health
+```
+
+The full self-hosting guide — Supabase cloud or self-hosted, HTTPS, Stripe,
+backups and upgrades — is in [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md).
 
 The mobile app talks to the API over your LAN or a tunnel:
 
 ```bash
-export EXPO_PUBLIC_API_BASE="https://your-domain.com"
+cp app/.env.example app/.env
+# set EXPO_PUBLIC_API_BASE="https://your-domain.com"
 npm run app
 ```
+
+You can also change the server URL at runtime from the login screen, so a phone
+can point at any deployment without a rebuild. See [docs/MOBILE.md](docs/MOBILE.md)
+for the PWA and native mobile details.
 
 ## Selling photos
 
@@ -230,3 +250,23 @@ Limitations:
 - bcrypt password hashes, HTTP-only session cookies with TTL.
 - Rate limits on auth and uploads; SSRF guard on URL imports.
 - `X-Frame-Options`, `nosniff`, `Referrer-Policy`, HSTS behind TLS.
+- The service worker caches only the app shell; API responses and photos are
+  never stored on the device.
+
+## Mobile
+
+The web app is an installable PWA. On Android/desktop Chrome use the **Install
+app** button; on iPhone open Share → **Add to Home Screen**. Both give a
+standalone window, offline fallback and camera/library uploads with client-side
+downscaling. The optional Expo app lives in `app/` and can be pointed at any
+server from its login screen. Details and the research behind the approach are
+in [docs/MOBILE.md](docs/MOBILE.md).
+
+## Contributing
+
+Pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) — it
+covers local setup and the two checks CI runs (server build + app typecheck).
+
+## License
+
+[MIT](LICENSE) © Take the shot contributors.

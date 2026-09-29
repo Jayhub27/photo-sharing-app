@@ -127,8 +127,13 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     <div class="modal-head"><h2>Add photos</h2><button class="modal-close" data-close="uploadModal" aria-label="Close">\u2715</button></div>
     <div class="dropzone" id="dropzone">
       <div class="dropzone-icon">\ud83d\udce4</div>
-      <div class="dropzone-text"><strong>Click to browse</strong> or drag photos here</div>
+      <div class="dropzone-text"><strong>Choose photos</strong> or drag them here</div>
       <input type="file" id="files" accept="image/*" multiple style="display:none">
+      <input type="file" id="camera" accept="image/*" capture="environment" style="display:none">
+      <div class="dropzone-actions">
+        <button class="btn small" id="pickFiles" type="button">\ud83d\uddbc\ufe0f Choose photos</button>
+        <button class="btn small outline" id="takePhoto" type="button">\ud83d\udcf7 Take photo</button>
+      </div>
     </div>
     <div id="uploadProgress" class="hidden" style="margin-top:14px">
       <div class="progress" style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div class="progress-bar" id="progressBar" style="height:100%;width:0;background:var(--grad);transition:width .3s"></div></div>
@@ -748,26 +753,108 @@ async function runImport() {
 
 /* -------------------------------------------------------------- upload */
 
+const MAX_EDGE = 2048;
+const JPEG_QUALITY = 0.85;
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise(function (resolve) { canvas.toBlob(resolve, type, quality); });
+}
+
+/* Downscale in the browser before uploading. Decodes one image at a time so a
+   mid-range phone does not run out of memory, applies EXIF orientation, and
+   falls back to the original file when decoding is not supported (e.g. HEIC
+   outside iOS). */
+async function shrinkImage(file) {
+  if (!/^image\\//.test(file.type || '') || file.type === 'image/gif') return file;
+  if (file.size < 600 * 1024) return file;
+  if (typeof createImageBitmap !== 'function') return file;
+  let bitmap = null;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size < 1.5 * 1024 * 1024) { bitmap.close(); return file; }
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    let canvas;
+    if (typeof OffscreenCanvas === 'function') {
+      canvas = new OffscreenCanvas(width, height);
+    } else {
+      canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+    }
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    bitmap = null;
+    const blob = typeof canvas.convertToBlob === 'function'
+      ? await canvas.convertToBlob({ type: 'image/jpeg', quality: JPEG_QUALITY })
+      : await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+    if (!blob || blob.size >= file.size) return file;
+    const name = (file.name || 'photo').replace(/\\.[^.]+$/, '') + '.jpg';
+    return new File([blob], name, { type: 'image/jpeg' });
+  } catch (e) {
+    try { if (bitmap) bitmap.close(); } catch (e2) {}
+    return file;
+  }
+}
+
+function uploadOne(file, onProgress) {
+  return new Promise(function (resolve, reject) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', BASE + '/api/collections/' + CID + '/photos');
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) { resolve(); return; }
+      let message = 'Upload failed';
+      try { message = JSON.parse(xhr.responseText).error || message; } catch (e) {}
+      reject(new Error(message));
+    };
+    xhr.onerror = function () { reject(new Error('Network error while uploading')); };
+    const fd = new FormData();
+    fd.append('photos', file, file.name || 'photo.jpg');
+    xhr.send(fd);
+  });
+}
+
 async function uploadFiles(files, done) {
+  const list = Array.prototype.slice.call(files || []);
+  if (!list.length) return;
   const prog = document.getElementById('uploadProgress');
   const bar = document.getElementById('progressBar');
+  const text = document.getElementById('progressText');
   prog.classList.remove('hidden');
-  bar.style.width = '0';
-  const fd = new FormData();
-  for (const f of files) fd.append('photos', f);
-  try {
-    const res = await fetch(BASE + '/api/collections/' + CID + '/photos', { method: 'POST', credentials: 'include', body: fd });
-    if (!res.ok) throw new Error();
-    bar.style.width = '100%';
-    toast(files.length + ' photo' + (files.length === 1 ? '' : 's') + ' uploaded', 'success');
-    document.getElementById('files').value = '';
-    setTimeout(function () { prog.classList.add('hidden'); }, 800);
-    await load(false);
-    if (done) done();
-  } catch {
-    toast('Upload failed', 'error');
-    prog.classList.add('hidden');
+  let ok = 0;
+  let failed = 0;
+  for (let i = 0; i < list.length; i++) {
+    text.textContent = 'Photo ' + (i + 1) + ' of ' + list.length + ' \\u2014 preparing\\u2026';
+    bar.style.width = Math.round((i / list.length) * 100) + '%';
+    const prepared = await shrinkImage(list[i]);
+    try {
+      await uploadOne(prepared, function (ratio) {
+        bar.style.width = Math.round(((i + ratio) / list.length) * 100) + '%';
+        text.textContent = 'Photo ' + (i + 1) + ' of ' + list.length + ' \\u2014 ' + Math.round(ratio * 100) + '%';
+      });
+      ok += 1;
+    } catch (e) {
+      failed += 1;
+    }
+    bar.style.width = Math.round(((i + 1) / list.length) * 100) + '%';
   }
+  text.textContent = failed
+    ? ok + ' uploaded, ' + failed + ' failed'
+    : ok + (ok === 1 ? ' photo uploaded' : ' photos uploaded');
+  if (ok) {
+    toast(ok + (ok === 1 ? ' photo' : ' photos') + ' uploaded', 'success');
+    await load(false);
+  }
+  if (failed) toast(failed + (failed === 1 ? ' photo' : ' photos') + ' failed', 'error');
+  document.getElementById('files').value = '';
+  document.getElementById('camera').value = '';
+  setTimeout(function () { prog.classList.add('hidden'); bar.style.width = '0'; }, 1200);
+  if (done && ok) done();
 }
 
 /* ---------------------------------------------------------------- expiry */
@@ -971,11 +1058,15 @@ function openShare() {
 
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('files');
-dropzone.addEventListener('click', function () { fileInput.click(); });
+const cameraInput = document.getElementById('camera');
+dropzone.addEventListener('click', function (e) { if (e.target.closest('button')) return; fileInput.click(); });
+document.getElementById('pickFiles').addEventListener('click', function (e) { e.stopPropagation(); fileInput.click(); });
+document.getElementById('takePhoto').addEventListener('click', function (e) { e.stopPropagation(); cameraInput.click(); });
 dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('drag'); });
 dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('drag'); });
 dropzone.addEventListener('drop', function (e) { e.preventDefault(); dropzone.classList.remove('drag'); if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files, function () { closeModal('uploadModal'); }); });
 fileInput.addEventListener('change', function () { if (fileInput.files.length) uploadFiles(fileInput.files, function () { closeModal('uploadModal'); }); });
+cameraInput.addEventListener('change', function () { if (cameraInput.files.length) uploadFiles(cameraInput.files, function () { closeModal('uploadModal'); }); });
 
 document.getElementById('lightbox').addEventListener('click', function (e) { if (e.target.id === 'lightbox') closeLightbox(); });
 document.getElementById('lbClose').addEventListener('click', closeLightbox);

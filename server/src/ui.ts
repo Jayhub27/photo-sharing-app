@@ -19,7 +19,8 @@ html[data-theme="light"]{
   --border:rgba(15,23,42,.1);--text:#0f172a;--muted:#5b6478;
   --shadow:0 8px 32px rgba(15,23,42,.08);--shadow-lg:0 24px 64px rgba(15,23,42,.12);
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at top left,rgba(99,102,241,.12),transparent 50%),radial-gradient(ellipse at bottom right,rgba(236,72,153,.08),transparent 50%);pointer-events:none;z-index:0}
 .wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px;position:relative;z-index:1}
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -71,7 +72,7 @@ h1 .grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-c
 /* top bar + prominent back pill */
 .topbar{position:sticky;top:0;z-index:60;background:var(--bg);border-bottom:1px solid var(--border)}
 @supports (backdrop-filter:blur(14px)){.topbar{background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px)}}
-.topbar-inner{max-width:var(--wrap);margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+.topbar-inner{max-width:var(--wrap);margin:0 auto;padding:calc(10px + env(safe-area-inset-top)) 20px 10px;display:flex;align-items:center;gap:12px}
 .back-pill{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;min-height:46px;border-radius:999px;background:var(--grad);color:#fff;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 6px 20px rgba(99,102,241,.35);transition:transform .2s var(--transition)}
 .back-pill:hover{transform:translateX(-2px)}
 .topbar-title{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:var(--muted)}
@@ -214,7 +215,7 @@ body.selecting .photo-overlay{display:none}
 .skip-link{position:absolute;left:-9999px;top:0;background:var(--surface);color:var(--text);padding:10px 16px;border-radius:0 0 10px 0;z-index:400}
 .skip-link:focus{left:0}
 /* auth pages */
-.auth-wrap{max-width:420px;margin:0 auto;padding:24px 20px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1}
+.auth-wrap{max-width:420px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) 20px 24px;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1}
 .auth-card{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:clamp(24px,5vw,36px);animation:fadeUp .5s var(--transition);box-shadow:var(--shadow)}
 .auth-logo{width:56px;height:56px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 24px;box-shadow:0 4px 24px rgba(99,102,241,.4)}
 .auth-title{font-size:24px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-.5px}
@@ -246,7 +247,7 @@ body.selecting .photo-overlay{display:none}
   body.has-mobile-bar .theme-toggle{bottom:calc(88px + env(safe-area-inset-bottom))}
   body.selecting .theme-toggle{display:none}
   .topbar-title{display:none}
-  .topbar-inner{padding:10px 14px;gap:8px}
+  .topbar-inner{padding:calc(10px + env(safe-area-inset-top)) 14px 10px;gap:8px}
   .topbar-actions .nav-logo{display:none}
   .back-pill{padding:10px 14px;font-size:13px}
   .modal{padding:0;align-items:flex-end}
@@ -267,6 +268,24 @@ body.selecting .photo-overlay{display:none}
   .card-list:not(.grid){display:grid;grid-template-columns:repeat(2,1fr)}
 }
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+/* PWA install + iOS add-to-home-screen hint */
+.pwa-install{position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:130;display:none;align-items:center;gap:8px;padding:12px 18px;min-height:46px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:var(--shadow);transition:transform .2s var(--transition)}
+.pwa-install.show{display:inline-flex}
+.pwa-install:active{transform:scale(.97)}
+.ios-hint{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:140;display:none;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-lg);font-size:14px;line-height:1.5;animation:toastIn .3s var(--transition)}
+.ios-hint.show{display:flex}
+.ios-hint strong{display:block;margin-bottom:2px}
+.ios-hint button{margin-left:auto;background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:4px;min-width:36px;min-height:36px;flex-shrink:0}
+body.has-mobile-bar .pwa-install{bottom:calc(88px + env(safe-area-inset-bottom))}
+body.has-mobile-bar .ios-hint{bottom:calc(88px + env(safe-area-inset-bottom))}
+@media(min-width:641px){.ios-hint{left:auto;right:18px;max-width:340px}}
+/* upload dropzone */
+.dropzone{border:2px dashed var(--border);border-radius:16px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--grad-soft)}
+.dropzone-icon{font-size:34px;margin-bottom:8px}
+.dropzone-text{color:var(--muted);font-size:14px}
+.dropzone-actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.dropzone-actions .btn{min-height:46px}
 `
 
 export function TOAST_JS(): string {
@@ -302,7 +321,12 @@ function wireModals() {
 
 export function THEME_JS(): string {
   return `
-function applyTheme(theme){ document.documentElement.dataset.theme = theme; try { localStorage.setItem('tts.theme', theme); } catch(e){} }
+function applyTheme(theme){
+  document.documentElement.dataset.theme = theme;
+  try { localStorage.setItem('tts.theme', theme); } catch(e){}
+  var color = theme === 'light' ? '#f4f5fb' : '#0a0a0f';
+  document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){ m.setAttribute('content', color); });
+}
 function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'); }
 (function(){
   var saved = null; try { saved = localStorage.getItem('tts.theme') || localStorage.getItem('photoshare.theme'); } catch(e){}
@@ -320,6 +344,74 @@ function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'l
 `
 }
 
+export function PWA_JS(): string {
+  return `
+function isStandalone(){
+  try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+  catch(e){ return false; }
+}
+function isIOS(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function installedFlag(cb){
+  try { cb(localStorage.getItem('tts.installed') === '1'); } catch(e){ cb(false); }
+}
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(function(){});
+  });
+}
+(function(){
+  if (isStandalone()) return;
+  var installBtn = document.createElement('button');
+  installBtn.type = 'button';
+  installBtn.className = 'pwa-install';
+  installBtn.innerHTML = '\\u2b07 Install app';
+  installBtn.setAttribute('aria-label', 'Install Take the shot as an app');
+  document.body.appendChild(installBtn);
+  var deferred = null;
+  var dismissed = false;
+  try { dismissed = localStorage.getItem('tts.install.dismissed') === '1'; } catch(e){}
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferred = e;
+    if (!dismissed) setTimeout(function(){ installBtn.classList.add('show'); }, 1500);
+  });
+  installBtn.addEventListener('click', function(){
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function(choice){
+      deferred = null;
+      installBtn.classList.remove('show');
+      try { localStorage.setItem('tts.install.dismissed', choice && choice.outcome === 'dismissed' ? '1' : '0'); } catch(e){}
+    });
+  });
+  window.addEventListener('appinstalled', function(){
+    installBtn.classList.remove('show');
+    try { localStorage.setItem('tts.installed', '1'); } catch(e){}
+  });
+
+  if (!isIOS()) return;
+  var visits = 0;
+  try {
+    visits = Number(localStorage.getItem('tts.visits') || '0') + 1;
+    localStorage.setItem('tts.visits', String(visits));
+    if (localStorage.getItem('tts.ioshint.dismissed') === '1') return;
+  } catch(e){}
+  if (visits < 2) return;
+  var hint = document.createElement('div');
+  hint.className = 'ios-hint';
+  hint.innerHTML = '<span><strong>Install Take the shot</strong>Tap Share, then \\u201cAdd to Home Screen\\u201d for a full-screen app.</span>' +
+    '<button type="button" aria-label="Dismiss install hint">\\u2715</button>';
+  hint.querySelector('button').addEventListener('click', function(){
+    hint.remove();
+    try { localStorage.setItem('tts.ioshint.dismissed', '1'); } catch(e){}
+  });
+  setTimeout(function(){ document.body.appendChild(hint); hint.classList.add('show'); }, 2500);
+})();
+`
+}
+
 export function htmlEscape(value: string): string {
   return String(value).replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
@@ -332,7 +424,18 @@ export function layout(title: string, head: string, body: string, script: string
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0f">
+<meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f5fb" media="(prefers-color-scheme: light)">
+<meta name="color-scheme" content="dark light">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Take the shot">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <title>${htmlEscape(title)}</title>
 ${head}
 <style>${SHARED_CSS}</style>
@@ -340,7 +443,7 @@ ${head}
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
 <script>
-${TOAST_JS()}${THEME_JS()}
+${TOAST_JS()}${THEME_JS()}${PWA_JS()}
 ${script}
 </script>
 </body>

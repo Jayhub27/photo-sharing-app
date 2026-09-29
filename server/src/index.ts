@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import { fileURLToPath } from 'node:url'
 import api, { stripeWebhookHandler } from './routes.js'
 import auth from './auth.js'
 import { supabase } from './db.js'
@@ -9,6 +10,7 @@ import { startSweeper } from './maintenance.js'
 import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
 
 const PORT = process.env.PORT || 3000
+const publicDir = fileURLToPath(new URL('../public', import.meta.url))
 const app = express()
 
 app.disable('x-powered-by')
@@ -27,6 +29,18 @@ app.use((req, res, next) => {
   if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains')
   next()
 })
+
+// PWA assets: manifest, service worker, icons and the offline page.
+app.use(
+  express.static(publicDir, {
+    index: false,
+    maxAge: '1h',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache')
+      if (filePath.endsWith('.webmanifest')) res.setHeader('Content-Type', 'application/manifest+json')
+    },
+  })
+)
 
 app.use((req, res, next) => {
   cors({
@@ -48,6 +62,10 @@ app.use((req, res, next) => {
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), stripeWebhookHandler)
 
 app.use(express.json({ limit: '100kb' }))
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true })
+})
 
 app.use('/api/auth', auth)
 app.use('/api', api)

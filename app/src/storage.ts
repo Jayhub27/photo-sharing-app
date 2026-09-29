@@ -3,26 +3,34 @@ import * as SecureStore from 'expo-secure-store'
 
 const KEY = 'photoshare.session'
 
-export async function getToken(): Promise<string | null> {
+export async function getValue(key: string): Promise<string | null> {
   try {
     if (Platform.OS === 'web') {
-      return typeof localStorage !== 'undefined' ? localStorage.getItem(KEY) : null
+      return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null
     }
-    return await SecureStore.getItemAsync(KEY)
+    return await SecureStore.getItemAsync(key)
   } catch {
     return null
   }
 }
 
-export async function setToken(token: string | null): Promise<void> {
+export async function setValue(key: string, value: string | null): Promise<void> {
   try {
     if (Platform.OS === 'web') {
       if (typeof localStorage === 'undefined') return
-      if (token) localStorage.setItem(KEY, token)
-      else localStorage.removeItem(KEY)
+      if (value) localStorage.setItem(key, value)
+      else localStorage.removeItem(key)
       return
     }
-    if (token) await SecureStore.setItemAsync(KEY, token)
-    else await SecureStore.deleteItemAsync(KEY)
+    if (value) await SecureStore.setItemAsync(key, value)
+    else await SecureStore.deleteItemAsync(key)
   } catch {}
+}
+
+export function getToken(): Promise<string | null> {
+  return getValue(KEY)
+}
+
+export function setToken(token: string | null): Promise<void> {
+  return setValue(KEY, token)
 }

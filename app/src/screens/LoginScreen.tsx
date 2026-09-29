@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Alert, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../auth'
-import type { RootStackParamList } from '../api'
+import { getApiBase, setApiBase, type RootStackParamList } from '../api'
 import { colors, styles } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn, LoadingScreen } from '../components'
 
@@ -13,6 +13,23 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
+  const [base, setBase] = useState(getApiBase())
+  const [serverUrl, setServerUrl] = useState(getApiBase() || '')
+  const [serverOpen, setServerOpen] = useState(!getApiBase())
+  const [saving, setSaving] = useState(false)
+
+  const saveServer = async () => {
+    const value = serverUrl.trim()
+    if (!/^https?:\/\//i.test(value)) {
+      Alert.alert('Invalid URL', 'Enter a full URL including http:// or https://')
+      return
+    }
+    setSaving(true)
+    await setApiBase(value)
+    setBase(getApiBase())
+    setSaving(false)
+    setServerOpen(false)
+  }
 
   const submit = async () => {
     if (!email.trim() || !password) {
@@ -41,6 +58,35 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Log in to manage your photo collections.</Text>
+        {serverOpen ? (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>
+              Server URL (the deployed API this app should talk to)
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="http://192.168.1.50:3000"
+              placeholderTextColor={colors.textMuted}
+              value={serverUrl}
+              onChangeText={setServerUrl}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              onSubmitEditing={saveServer}
+            />
+            <Pressable onPress={saveServer} disabled={saving} style={{ paddingVertical: 10 }}>
+              <Text style={{ color: colors.accent, fontWeight: '600', textAlign: 'center' }}>
+                {saving ? 'Saving…' : 'Save server'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable onPress={() => setServerOpen(true)} style={{ marginBottom: 16 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center' }}>
+              Server: <Text style={{ color: colors.accent }}>{base}</Text> · change
+            </Text>
+          </Pressable>
+        )}
         <TextInput
           style={styles.input}
           placeholder="you@example.com"

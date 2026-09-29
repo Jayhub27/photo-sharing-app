@@ -1,9 +1,59 @@
-export const API_BASE = 'http://192.168.1.100:3000'
+import { Platform } from 'react-native'
+import { getValue, setValue } from './storage'
+
+const API_BASE_KEY = 'photoshare.apiBase'
 
 let authToken: string | null = null
 
 export function setAuthToken(token: string | null) {
   authToken = token
+}
+
+function normalizeBase(value: string): string {
+  return value.trim().replace(/\/+$/, '')
+}
+
+function envBase(): string | null {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_API_BASE) {
+      return normalizeBase(String(process.env.EXPO_PUBLIC_API_BASE))
+    }
+  } catch {}
+  return null
+}
+
+let configuredBase: string | null = envBase() || (Platform.OS === 'web' ? 'http://localhost:3000' : null)
+
+/** The API base currently in use, or null when nothing is configured yet. */
+export function getApiBase(): string | null {
+  return configuredBase
+}
+
+/** Point the app at a server at runtime (stored on the device). */
+export async function setApiBase(value: string | null): Promise<void> {
+  if (value) {
+    configuredBase = normalizeBase(value)
+    await setValue(API_BASE_KEY, configuredBase)
+    return
+  }
+  await setValue(API_BASE_KEY, null)
+  configuredBase = envBase() || (Platform.OS === 'web' ? 'http://localhost:3000' : null)
+}
+
+/** Restore the saved server URL. Call once before the first request. */
+export async function loadApiBase(): Promise<void> {
+  if (envBase()) return
+  const stored = await getValue(API_BASE_KEY)
+  if (stored) configuredBase = normalizeBase(stored)
+}
+
+function resolveBase(): string {
+  if (!configuredBase) {
+    throw new Error(
+      'No server URL configured. Set EXPO_PUBLIC_API_BASE in app/.env or enter your server URL on the login screen.'
+    )
+  }
+  return configuredBase
 }
 
 export function imageHeaders(): Record<string, string> | undefined {
@@ -94,13 +144,6 @@ export type RootStackParamList = {
   Scan: undefined
   Gallery: { collectionId: string }
   Members: { id: string; name?: string }
-}
-
-function resolveBase(): string {
-  if (typeof process !== 'undefined' && process.env && process.env.EXPO_PUBLIC_API_BASE) {
-    return process.env.EXPO_PUBLIC_API_BASE
-  }
-  return API_BASE
 }
 
 function headers(extra?: Record<string, string>): Record<string, string> {
