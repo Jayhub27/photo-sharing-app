@@ -2,7 +2,7 @@
   "expo": {
     "name": "Take the shot",
     "slug": "photo-share",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "sdkVersion": "51.0.0",
@@ -24,7 +24,8 @@
       "navigationBar": {
         "backgroundColor": "#f9f4ec",
         "barStyle": "dark-content"
-      }
+      },
+      "versionCode": 3
     },
     "ios": {
       "bundleIdentifier": "com.photoshare.app",
