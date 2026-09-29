@@ -318,12 +318,21 @@ function mimeForName(name: string): string {
   return 'image/jpeg'
 }
 
+async function appendPhoto(form: FormData, uri: string): Promise<void> {
+  const name = uri.split('/').pop() || 'photo.jpg'
+  const type = mimeForName(name)
+  if (Platform.OS === 'web') {
+    // On web the picker returns a blob:/data: URL, so fetch it and append a real File.
+    const blob = await (await fetch(uri)).blob()
+    form.append('photos', new File([blob], name, { type: blob.type || type }))
+    return
+  }
+  form.append('photos', { uri, name, type } as unknown as Blob)
+}
+
 export async function uploadPhotos(collectionId: string, uris: string[]): Promise<{ photos: Photo[] }> {
   const form = new FormData()
-  uris.forEach((uri) => {
-    const name = uri.split('/').pop() || 'photo.jpg'
-    form.append('photos', { uri, name, type: mimeForName(name) } as unknown as Blob)
-  })
+  for (const uri of uris) await appendPhoto(form, uri)
   const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/photos`, {
     method: 'POST',
     headers: headers(),
@@ -335,8 +344,7 @@ export async function uploadPhotos(collectionId: string, uris: string[]): Promis
 
 export async function uploadPhoto(collectionId: string, uri: string): Promise<{ photos: Photo[] }> {
   const form = new FormData()
-  const name = uri.split('/').pop() || 'photo.jpg'
-  form.append('photos', { uri, name, type: mimeForName(name) } as unknown as Blob)
+  await appendPhoto(form, uri)
   const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/photos`, {
     method: 'POST',
     headers: headers(),

@@ -7,16 +7,22 @@
     "userInterfaceStyle": "dark",
     "sdkVersion": "51.0.0",
     "scheme": "taketheshot",
+    "icon": "./assets/icon.png",
     "splash": {
       "backgroundColor": "#0b0b0b",
       "resizeMode": "contain"
     },
     "android": {
       "package": "com.photoshare.app",
-      "permissions": ["CAMERA"]
+      "permissions": ["CAMERA"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0f"
+      }
     },
     "ios": {
-      "bundleIdentifier": "com.photoshare.app"
+      "bundleIdentifier": "com.photoshare.app",
+      "supportsTablet": true
     },
     "plugins": [
       [
@@ -28,7 +34,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Take the shot to access your photos."
+          "photosPermission": "Allow Take the shot to access your photos.",
+          "cameraPermission": "Allow Take the shot to take photos."
         }
       ]
     ]

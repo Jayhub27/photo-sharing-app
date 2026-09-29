@@ -1,3 +1,5 @@
+import { registerRootComponent } from 'expo'
 import App from './src/App'
 
-export default App
+// Registers the root component so it mounts on native and web.
+registerRootComponent(App)

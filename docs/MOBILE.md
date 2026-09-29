@@ -34,9 +34,10 @@ Cache API work; background sync and background fetch do not. Practical rules:
 
 **Native (Expo)** — the existing app targets Expo SDK 51. Upgrading the SDK
 blind, without a device in the loop, risks breaking `expo-camera` and friends, so
-the app stays on SDK 51 and instead became configuration-complete: no hardcoded
-LAN IP, `.env` based API base, and a server URL field at login so a phone can
-point at any deployment without a rebuild.
+the app stays on SDK 51 and instead became a complete, verified client: it now
+mounts (the entry point was only `export default App`, so nothing registered a
+root component and the app rendered blank), takes photos with the camera, and
+points at any server at runtime instead of a hardcoded LAN IP.
 
 ## What the code does now
 
@@ -69,11 +70,23 @@ point at any deployment without a rebuild.
 
 ### Expo app
 
+- `app/index.ts` calls `registerRootComponent(App)`. Without it the app never
+  mounted on native or web.
 - `app/src/api.ts` resolves the API base at runtime: `EXPO_PUBLIC_API_BASE`,
   then a user-configured server URL stored on device, then `localhost` on web.
   If none is set, requests fail with a clear message instead of hitting a
   hardcoded IP.
-- `app/.env.example` documents the variable.
+- Runtime server URL field on the login screen, stored with the same secure
+  storage used for the session.
+- Uploads: library picker (`allowsMultipleSelection`) plus a **Camera** button
+  using `launchCameraAsync`; sequential uploads with an on-screen
+  "Uploading N/M" progress bar.
+- On web the picker returns a `blob:` URL, so `appendPhoto()` fetches it and
+  appends a real `File`; on native it appends the `{ uri, name, type }` object
+  that React Native expects. This makes the same upload path work in both.
+- `app/assets/icon.png` and `adaptive-icon.png` (generated from the same SVG as
+  the PWA icons) so `expo prebuild` produces a branded APK/icon.
+- `app/.env.example` documents the API base variable.
 
 ## Verification checklist
 
@@ -89,6 +102,9 @@ point at any deployment without a rebuild.
 
 ## Future work
 
+- Authenticated download/save of purchased originals on device
+  (`expo-file-system` + `expo-media-library`/`expo-sharing`); the web app already
+  has ZIP and single-file downloads.
 - Chunked/resumable uploads for very large batches and videos.
 - Expo SDK upgrade (52+) with on-device testing, and shared code between the web
   and native upload pipelines.

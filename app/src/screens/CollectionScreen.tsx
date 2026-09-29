@@ -184,18 +184,8 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
-  const handleAdd = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) return Alert.alert('Permission needed', 'Allow photo access to upload.')
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    })
-    if (result.canceled || !result.assets?.length) return
-
-    const assets = result.assets
+  const uploadAssets = async (assets: ImagePicker.ImagePickerAsset[]) => {
+    if (!assets.length) return
     const uploaded: Photo[] = []
     setUploading(true)
     setUploadProgress({ done: 0, total: assets.length })
@@ -218,6 +208,27 @@ export default function CollectionScreen({ route, navigation }: Props) {
       setUploading(false)
       setUploadProgress(null)
     }
+  }
+
+  const handleAdd = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) return Alert.alert('Permission needed', 'Allow photo access to upload.')
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    })
+    if (result.canceled || !result.assets?.length) return
+    await uploadAssets(result.assets)
+  }
+
+  const handleCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync()
+    if (!perm.granted) return Alert.alert('Permission needed', 'Allow camera access to take a photo.')
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 })
+    if (result.canceled || !result.assets?.length) return
+    await uploadAssets(result.assets)
   }
 
   const handleDelete = (photo: Photo) => {
@@ -350,6 +361,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
               <View style={{ flex: 1, minWidth: 140 }}>
                 <AnimatedButton onPress={handleAdd} disabled={uploading}>
                   <ButtonText>+ Add Photos</ButtonText>
+                </AnimatedButton>
+              </View>
+            )}
+            {canEdit && (
+              <View style={{ flex: 1, minWidth: 140 }}>
+                <AnimatedButton outline onPress={handleCamera} disabled={uploading}>
+                  <ButtonText outline>📷 Camera</ButtonText>
                 </AnimatedButton>
               </View>
             )}
