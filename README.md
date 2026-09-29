@@ -1,16 +1,20 @@
 # Take the shot
 
-A **paid photo-sharing service**. Create a collection of photos, share it with a
-QR code or link, and — if you want — put a price on it so people can buy the
-original files with a card. Stripe handles checkout; downloads unlock
-automatically after payment.
+A **simple, private alternative to subscription photo galleries**. Create a
+collection, share it with a QR code or link, and put a price on it if you want —
+buyers pay by card with Stripe and the originals unlock instantly.
 
-Self-hostable, MIT licensed, and works as an app on your phone: the web client
-installs as a PWA (Android, iOS, desktop) with no app store involved.
+Run it yourself and nothing leaves your server: no analytics, no tracking, no ads,
+no third-party scripts, no monthly plan. Photos live in your private storage and
+you decide when they expire.
 
-- **Web app** — server-rendered, responsive, mobile-first, installable PWA
-- **Mobile app** — optional Expo / React Native client (iOS + Android)
-- **Backend** — Express + TypeScript, Postgres + Storage on Supabase, Stripe for payments
+- **Simple** — three steps: name a collection, add photos, share the QR code
+- **Private** — self-hosted, private storage, auto-delete, no trackers
+- **Paid** — sell the original files with Stripe; no subscription, no commission
+- **Web + mobile** — installable PWA, plus an optional Expo app
+
+**New here? [Getting started](docs/GETTING_STARTED.md)** walks through creating an
+account, uploading from your phone, and getting paid.
 
 ## What it does
 
@@ -35,6 +39,44 @@ installs as a PWA (Android, iOS, desktop) with no app store involved.
 | Responsive + mobile UI | Bottom action bar, bottom-sheet modals, safe-area padding, dark/light theme |
 | Installable PWA | Add to Home Screen on Android/iOS/desktop, offline page, no app store |
 | Mobile uploads | Camera or library picker, on-device downscale, per-file progress |
+
+## Why Take the shot
+
+A quick, honest comparison with the alternatives people usually use.
+
+| | Take the shot | Subscription galleries | QR event apps |
+| --- | --- | --- | --- |
+| Where photos live | **Your server, your private bucket** | Their cloud | Their cloud |
+| Monthly plan | **None** | $8-50/month | None |
+| Cost per sale | **0%** (your own Stripe) | 0-15% commission | per-event fee, usually $19-49 |
+| Sell original files | **Yes, built in** | Yes, print-first | Rarely |
+| Account needed to view or buy | **No** | No | No |
+| Analytics, ads, tracking | **None** | Varies | Varies |
+| Auto-delete hosting | **1-3650 days, your choice** | Rarely | 30-90 days |
+| Face / selfie search | Not yet ([#1](https://github.com/Jayhub27/photo-sharing-app/issues/1)) | Some | Some |
+| Print fulfillment | No | Yes | No |
+| Video | No | Yes | Some |
+
+If you need print labs, video delivery or face search today, ShootProof,
+Pixieset or Pic-Time are genuinely better products for that. Take the shot is for
+the simpler job: hand people a link, let them buy the originals, keep the photos
+on your own infrastructure.
+
+## Privacy
+
+- **No analytics, no tracking pixels, no ads, no third-party scripts.** CSS, JS
+  and the PWA assets are served from your own origin — including fonts, so a
+  gallery load does not leak visitors to anyone.
+- **Private storage.** The bucket is never public; every image byte is streamed
+  through an authenticated endpoint after an access check on the collection.
+- **Buyers don't need accounts.** Their email is only passed to Stripe for the
+  receipt.
+- **Expiring by design.** Auto-delete removes storage objects, photo rows,
+  members and purchase records within an hour of the deadline.
+- **Small data footprint.** Accounts (name, email, bcrypt hash), photos and
+  metadata, sessions, membership, purchases. Nothing else.
+- **No lock-in.** Every original can be downloaded as a ZIP; the schema is plain
+  Postgres and the storage is a standard Supabase bucket.
 
 ## Screenshots
 

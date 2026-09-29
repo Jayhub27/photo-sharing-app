@@ -26,6 +26,7 @@ window.TTS_CONFIG = {
   sourceUrl: 'https://github.com/Jayhub27/photo-sharing-app/archive/refs/heads/main.zip',
   repoUrl: 'https://github.com/Jayhub27/photo-sharing-app',
   releasesUrl: 'https://github.com/Jayhub27/photo-sharing-app/releases',
+  guideUrl: 'https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md',
 
   // Credit line in the footer
   year: new Date().getFullYear(),

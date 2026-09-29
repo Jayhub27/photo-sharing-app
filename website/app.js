@@ -26,6 +26,7 @@
   setLink('deploy', cfg.deployUrl)
   setLink('repo', cfg.repoUrl)
   setLink('releases', cfg.releasesUrl)
+  setLink('guide', cfg.guideUrl)
   setLink('ios', cfg.iosUrl || cfg.iosGuideUrl, cfg.iosUrl ? null : 'Build for iOS \u2197')
   if (cfg.webAppUrl) {
     setLink('web', cfg.webAppUrl)

@@ -51,6 +51,7 @@
   </a>
   <nav class="site-nav" aria-label="Sections">
     <a href="#features">Features</a>
+    <a href="#why">Why</a>
     <a href="#how">How it works</a>
     <a href="#download">Download</a>
     <a href="#faq">FAQ</a>
@@ -65,11 +66,13 @@
 
   <section class="hero" id="top">
     <div class="hero-copy">
-      <p class="kicker">Photo sharing / QR / Stripe</p>
+      <p class="kicker">Private by default / QR sharing / Stripe</p>
       <h1>Take<br>the<br><mark>shot.</mark></h1>
       <p class="lede">
-        Create a collection, drop in your photos, share a QR code. Put a price on it
-        if you want, and Stripe unlocks the original files the moment someone pays.
+        A simple, private alternative to subscription photo galleries. Create a
+        collection, drop in your photos, share a QR code. Put a price on it if you
+        want, and Stripe unlocks the originals the moment someone pays. Your photos
+        stay on your own server.
       </p>
       <div class="cta-row">
         <a class="btn btn-xl" data-link="apk" href="#download">
@@ -78,8 +81,9 @@
         <a class="btn btn-xl btn-ghost" href="#download">All platforms</a>
       </div>
       <ul class="ticks">
-        <li>Free to share</li>
-        <li>Sell with Stripe</li>
+        <li>Your server, your photos</li>
+        <li>No tracking, no ads</li>
+        <li>No monthly plan</li>
         <li>No app needed to view</li>
       </ul>
     </div>
@@ -159,7 +163,31 @@
     </div>
   </section>
 
-  <section class="section section-alt" id="how">
+  <section class="section section-alt" id="why">
+    <div class="section-head">
+      <h2>Why Take the shot</h2>
+      <p class="section-note">Private, simple, and no subscription</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature">
+        <span class="num">&#128274;</span>
+        <h3>Private by design</h3>
+        <p>Self-host it and your photos never leave your server. No analytics, no tracking pixels, no ads, no third-party scripts or fonts. The storage bucket is private and every image streams through an access check.</p>
+      </article>
+      <article class="feature">
+        <span class="num">&#9737;</span>
+        <h3>Simple by default</h3>
+        <p>Name a collection, add photos, share the QR. Buyers just open a link: no app install, no account, no checkout maze. One price per collection instead of plan tiers and feature gates.</p>
+      </article>
+      <article class="feature">
+        <span class="num">&#36;</span>
+        <h3>An alternative to subscriptions</h3>
+        <p>Other galleries charge $8-50 per month and keep a commission on sales. Run this yourself and you pay your own Stripe fees only. Free to share, and it can delete itself after 1-3650 days.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="how">
     <div class="section-head">
       <h2>How it works</h2>
       <p class="section-note">Three steps. That is the whole thing.</p>
@@ -184,6 +212,9 @@
         <p>Set a price or keep it free. Stripe handles checkout, downloads unlock on payment.</p>
       </li>
     </ol>
+    <div class="cta-row" style="margin-top:28px">
+      <a class="btn btn-xl" data-link="guide" href="#faq">Full getting started guide</a>
+    </div>
   </section>
 
   <section class="section" id="download">
@@ -263,27 +294,39 @@
     <div class="faq">
       <details open>
         <summary>Is it really free?</summary>
-        <p>Yes. Creating collections, uploading and sharing are free. You only touch money if you decide to sell a collection, and then Stripe takes its usual card fee.</p>
+        <p>Yes. Creating collections, uploading and sharing cost nothing. The only costs are your own hosting and Stripe's usual card fee, and only if you decide to sell.</p>
+      </details>
+      <details>
+        <summary>Do you track me or the people who view my galleries?</summary>
+        <p>No. There is no analytics, no tracking pixel, no advertising and no third-party script or font. Everything - including the app's own assets - is served from your own server.</p>
+      </details>
+      <details>
+        <summary>Where do my photos live?</summary>
+        <p>On your own storage. The bucket is private and every image streams through an authenticated endpoint after an access check. Passwords are bcrypt hashed, sessions are HTTP-only cookies, and Supabase RLS is enabled on every table.</p>
       </details>
       <details>
         <summary>Do people need the app to view my photos?</summary>
         <p>No. A collection link or QR code opens in any phone browser. The app is for shooting, uploading and managing.</p>
       </details>
       <details>
+        <summary>How do I get paid?</summary>
+        <p>Add your Stripe keys to the server. Buyers pay by card, Apple Pay or Google Pay through Stripe Checkout, and the money lands in your Stripe account - Stripe pays out to your bank on your normal schedule. Running an instance for several photographers? Set their Stripe Connect account and the payment is transferred straight to them.</p>
+      </details>
+      <details>
+        <summary>What does selling cost?</summary>
+        <p>0% commission. There is no subscription and no per-sale cut; you only pay Stripe's card fee. If you run a multi-photographer instance you can optionally keep a platform fee for yourself.</p>
+      </details>
+      <details>
         <summary>What happens after someone pays?</summary>
         <p>Stripe confirms the checkout through a webhook, the purchase is recorded, and every original file in that collection unlocks for that buyer, including ZIP downloads.</p>
       </details>
       <details>
+        <summary>Can I run it myself?</summary>
+        <p>Yes. It is MIT licensed: bring your own Supabase project and Stripe keys, or <code>docker compose up</code>. The full walkthrough is in the <a data-link="guide" href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md">getting started guide</a>.</p>
+      </details>
+      <details>
         <summary>Which files can I import?</summary>
         <p>Photos from your device, direct image URLs, Google Drive file links, and any web page with an og:image tag. Max 10 links per request, 25 MB per image.</p>
-      </details>
-      <details>
-        <summary>Is my data safe?</summary>
-        <p>Passwords are bcrypt hashed, sessions are HTTP-only cookies, the storage bucket is private and images stream through authenticated endpoints. Supabase RLS is enabled on every table.</p>
-      </details>
-      <details>
-        <summary>Can I run it myself?</summary>
-        <p>Yes. The source zip has the Expo app, the Express API and the Supabase schema. Bring your own Supabase project and Stripe keys.</p>
       </details>
     </div>
   </section>

@@ -42,13 +42,13 @@ export function homePage(apiBase: string): string {
   <div id="guest" class="hidden">
     <div class="hero" style="text-align:center;padding-top:clamp(40px,8vw,90px)">
       <h1>Share a QR. <span class="grad">Sell the originals.</span></h1>
-      <p class="sub" style="margin:0 auto 32px">Take the shot is a paid photo-sharing service: drop your photos in a collection, send a QR code to friends, or set a price and let Stripe handle checkout and payouts.</p>
+      <p class="sub" style="margin:0 auto 32px">A simple, private alternative to subscription galleries: your photos, your server, no tracking. Share a QR code, or set a price and let Stripe handle checkout.</p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a class="btn" href="/signup">Start free</a>
         <a class="btn outline" href="/login">Log in</a>
       </div>
-      <div class="note" style="max-width:560px;margin:32px auto 0;text-align:left">
-        <span><strong>Free to share.</strong> Add a price only if you want to sell your shots \u2014 buyers pay with card, downloads unlock instantly.</span>
+      <div class="note" style="max-width:600px;margin:32px auto 0;text-align:left">
+        <span><strong>Free to share, private by default.</strong> Add a price only if you want to sell your shots \u2014 buyers pay with card, downloads unlock instantly. <a href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md" target="_blank" rel="noopener">Getting started guide</a></span>
       </div>
     </div>
   </div>
