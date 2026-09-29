@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   deletePhoto as deletePhotoApi,
@@ -375,15 +376,15 @@ export default function CollectionScreen({ route, navigation }: Props) {
           <Text style={styles.title}>{name}</Text>
           <Text style={styles.subtitle}>
             {total} photo{total === 1 ? '' : 's'} in this collection
-            {!isPublic ? '  ·  🔒 private' : ''}
+            {!isPublic ? '  ·  private' : ''}
             {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
             {pricing?.price_cents
               ? pricing.purchased
-                ? `  ·  ✓ purchased`
+                ? `  ·  purchased`
                 : `  ·  ${formatCents(pricing.price_cents, pricing.currency)}`
               : ''}
             {expiresAt
-              ? `  ·  ⏳ ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
+              ? `  ·  ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
               : ''}
           </Text>
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
@@ -397,14 +398,16 @@ export default function CollectionScreen({ route, navigation }: Props) {
             {canEdit && (
               <View style={{ flex: 1, minWidth: 140 }}>
                 <AnimatedButton outline onPress={handleCamera} disabled={uploading}>
-                  <ButtonText outline>📷 Camera</ButtonText>
+                  <Ionicons name="camera-outline" size={17} color={colors.text} />
+                  <ButtonText outline>Camera</ButtonText>
                 </AnimatedButton>
               </View>
             )}
             {canEdit && (
               <View style={{ flex: 1, minWidth: 140 }}>
                 <AnimatedButton outline onPress={() => setImportOpen(true)}>
-                  <ButtonText outline>🔗 Import</ButtonText>
+                  <Ionicons name="link-outline" size={17} color={colors.text} />
+                  <ButtonText outline>Import</ButtonText>
                 </AnimatedButton>
               </View>
             )}
@@ -431,7 +434,10 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Manage members"
             >
-              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>👥 Manage members</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="people-outline" size={16} color={colors.accentDark} />
+                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>Manage members</Text>
+              </View>
             </Pressable>
           )}
           {role === 'owner' && (
@@ -444,9 +450,12 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Set a price for this collection"
             >
-              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
-                {pricing?.price_cents ? '🏷️ Edit price & sales' : '🏷️ Sell this collection'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="pricetag-outline" size={16} color={colors.accentDark} />
+                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
+                  {pricing?.price_cents ? 'Edit price & sales' : 'Sell this collection'}
+                </Text>
+              </View>
             </Pressable>
           )}
           {role === 'owner' && (
@@ -463,9 +472,12 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Set auto-delete for this collection"
             >
-              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
-                {expiresAt ? '⏳ Edit auto-delete' : '⏳ Auto-delete after…'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="time-outline" size={16} color={colors.accentDark} />
+                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
+                  {expiresAt ? 'Edit auto-delete' : 'Auto-delete after…'}
+                </Text>
+              </View>
             </Pressable>
           )}
           {role === 'owner' && (
@@ -475,9 +487,12 @@ export default function CollectionScreen({ route, navigation }: Props) {
               accessibilityRole="button"
               accessibilityLabel={isPublic ? 'Make collection private' : 'Make collection public'}
             >
-              <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 15 }}>
-                {isPublic ? '🔒 Make private' : '🔓 Make public'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name={isPublic ? 'lock-closed-outline' : 'lock-open-outline'} size={16} color={colors.accentDark} />
+                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
+                  {isPublic ? 'Make private' : 'Make public'}
+                </Text>
+              </View>
             </Pressable>
           )}
         </View>
@@ -539,7 +554,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🖼️</Text>
+              <Ionicons name="images-outline" size={40} color={colors.textMuted} style={{ marginBottom: 14, opacity: 0.6 }} />
               <Text style={styles.emptyText}>
                 {query ? 'No photos match your search.' : `No photos yet.\n${canEdit ? 'Tap "Add Photos" to add some.' : 'Check back later.'}`}
               </Text>

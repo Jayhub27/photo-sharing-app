@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { Alert, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
@@ -143,7 +144,7 @@ export default function MembersScreen({ route }: Props) {
               </View>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 6 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 12, textTransform: 'uppercase' }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>
                 {item.role}
               </Text>
               {canManage && item.role !== 'owner' && (
@@ -156,7 +157,7 @@ export default function MembersScreen({ route }: Props) {
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <Ionicons name="people-outline" size={40} color={colors.textMuted} style={{ marginBottom: 14, opacity: 0.6 }} />
             <Text style={styles.emptyText}>No members yet.</Text>
           </View>
         }

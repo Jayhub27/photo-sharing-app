@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, useWindowDimensions, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
@@ -109,7 +110,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🖼️</Text>
+            <Ionicons name="images-outline" size={40} color={colors.textMuted} style={{ marginBottom: 14, opacity: 0.6 }} />
             <Text style={styles.emptyText}>This collection has no photos yet.</Text>
           </View>
         }

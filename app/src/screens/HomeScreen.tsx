@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { imageHeaders, listCollections, photoUrl, type Collection, type RootStackParamList } from '../api'
 import { useAuth } from '../auth'
 import { colors, styles } from '../styles'
+import { Ionicons } from '@expo/vector-icons'
 import { AnimatedButton, ButtonText, AnimatedCard, FadeIn, SkeletonCard } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>
@@ -92,20 +93,22 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.hero}>
           <View style={styles.logoRow}>
             <View style={styles.logoIcon}>
-              <Text style={{ fontSize: 20 }}>📷</Text>
+              <Ionicons name="camera" size={21} color="#2a2119" />
             </View>
             <Text style={styles.logoText}>Take the shot</Text>
           </View>
-          <Text style={styles.title}>Share photos with a QR code</Text>
+          <Text style={styles.title}>Your photos, shared or sold.</Text>
           <Text style={styles.subtitle}>
-            Create a collection, add your photos, and share a QR code. Anyone who scans it instantly sees your gallery.
+            Create a collection, add your photos, then share a QR code — or set a price and sell the originals.
           </Text>
           <View style={{ gap: 10 }}>
             <AnimatedButton onPress={() => navigation.navigate('CreateCollection')}>
-              <ButtonText>+ New Collection</ButtonText>
+              <Ionicons name="add" size={18} color={colors.onAccent} />
+              <ButtonText>New collection</ButtonText>
             </AnimatedButton>
             <AnimatedButton outline onPress={() => navigation.navigate('Scan')}>
-              <ButtonText outline>Scan a QR Code</ButtonText>
+              <Ionicons name="qr-code-outline" size={17} color={colors.text} />
+              <ButtonText outline>Scan a QR code</ButtonText>
             </AnimatedButton>
           </View>
         </View>
@@ -200,9 +203,9 @@ export default function HomeScreen({ navigation }: Props) {
               <View style={[styles.card, { borderColor: colors.border }]}>
                 <View style={styles.cardLeft}>
                   <View style={styles.cardThumb}>
-                    {item.cover_thumb_filename ? (
+                    {item.cover_filename || item.cover_thumb_filename ? (
                       <Image
-                        source={{ uri: photoUrl(item.cover_thumb_filename, { thumb: true }), headers: imageHeaders() }}
+                        source={{ uri: photoUrl(item.cover_filename || item.cover_thumb_filename || '', { thumb: true }), headers: imageHeaders() }}
                         style={{ width: 48, height: 48, borderRadius: 12 }}
                         resizeMode="cover"
                         accessibilityLabel={`Cover for ${item.name}`}
@@ -215,7 +218,7 @@ export default function HomeScreen({ navigation }: Props) {
                     <Text style={styles.cardTitle}>{item.name}</Text>
                     <Text style={styles.cardSub}>
                       {item.photo_count ?? 0} photo{(item.photo_count ?? 0) === 1 ? '' : 's'}
-                      {item.is_public === false ? '  ·  🔒 private' : ''}
+                      {item.is_public === false ? '  ·  private' : ''}
                       {item.role && item.role !== 'owner' ? `  ·  ${item.role}` : ''}
                     </Text>
                   </View>

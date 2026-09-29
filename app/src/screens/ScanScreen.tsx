@@ -207,7 +207,7 @@ function ScanScreenMobile({
           top: '38%',
           width: 240,
           height: 240,
-          borderWidth: 2.5,
+          borderWidth: 2,
           borderColor: colors.accent,
           borderRadius: cornerRadius,
           shadowColor: colors.accent,
@@ -404,7 +404,7 @@ function LinkResult({
             <Text style={[styles.cardTitle, { flex: 1, fontSize: 17 }]} numberOfLines={1}>
               {c.name}
             </Text>
-            <Text style={{ fontWeight: '900', fontSize: 16 }}>+</Text>
+            <Text style={{ fontWeight: '600', fontSize: 18 }}>+</Text>
           </Pressable>
         ))
       )}
@@ -432,7 +432,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
         }}
         style={s.copyBtn}
       >
-        <Text style={{ fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
+        <Text style={{ fontWeight: '600', fontSize: 12, color: colors.textMuted }}>
           {copied ? 'Copied' : 'Copy'}
         </Text>
       </Pressable>
@@ -460,34 +460,35 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: colors.surface,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 14,
     padding: 14,
     marginBottom: 12,
   },
   kvLabel: {
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '600',
     color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
     marginBottom: 3,
   },
-  kvValue: { fontSize: 16, fontWeight: '800', color: colors.text },
+  kvValue: { fontSize: 16, fontWeight: '700', color: colors.text },
   copyBtn: {
-    borderWidth: 2,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    backgroundColor: colors.surface2,
+    backgroundColor: colors.surface,
   },
   steps: { gap: 8, marginBottom: 16, marginTop: 4 },
   step: { color: colors.textMuted, fontSize: 15, lineHeight: 22 },
   footnote: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginBottom: 8 },
   vendorCard: {
     backgroundColor: colors.surface,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 16,
     ...shadows.card,
@@ -497,8 +498,9 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: colors.surface,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: 18,
     padding: 14,
     marginBottom: 10,
     ...shadows.card,

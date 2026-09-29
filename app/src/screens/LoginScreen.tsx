@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import { Alert, Pressable, Text, TextInput, View } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useAuth } from '../auth'
@@ -52,7 +53,7 @@ export default function LoginScreen({ navigation }: Props) {
       <FadeIn>
         <View style={styles.logoRow}>
           <View style={styles.logoIcon}>
-            <Text style={{ fontSize: 20 }}>📷</Text>
+            <Ionicons name="camera" size={21} color="#2a2119" />
           </View>
           <Text style={styles.logoText}>Take the shot</Text>
         </View>
