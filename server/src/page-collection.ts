@@ -20,7 +20,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     <span class="topbar-title" id="topbarTitle"></span>
     <div class="topbar-actions">
       <span class="nav-user" id="navUser"></span>
-      <a class="nav-logo" href="/" aria-label="Take the shot home"><div class="logo-icon">\ud83d\udcf8</div></a>
+      <a class="nav-logo" href="/" aria-label="Take the shot home"><div class="logo-icon"><i class="ico ico-camera"></i></div></a>
       <span id="navRight"></span>
     </div>
   </div>
@@ -59,17 +59,17 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     <button class="btn outline hidden" id="sellBtn">Sell</button>
     <button class="btn outline hidden" id="qrToggle">Share</button>
     <div class="menu-wrap">
-      <button class="btn outline icon" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More actions">\u22ef</button>
+      <button class="btn outline icon" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More actions"><i class="ico ico-dots"></i></button>
       <div class="menu" id="moreMenu" role="menu">
-        <button id="miImport" role="menuitem">\ud83d\udd17 Import from link</button>
-        <button id="miDownload" role="menuitem">\u2b07 Download all (ZIP)</button>
-        <button id="miMembers" role="menuitem">\ud83d\udc65 Members</button>
-        <button id="miSell" role="menuitem">\ud83c\udff7\ufe0f Pricing &amp; sales</button>
-        <button id="miExpiry" role="menuitem">\u23f3 Auto-delete</button>
+        <button id="miImport" role="menuitem"><i class="ico ico-link"></i>Import from link</button>
+        <button id="miDownload" role="menuitem"><i class="ico ico-download"></i>Download all (ZIP)</button>
+        <button id="miMembers" role="menuitem"><i class="ico ico-users"></i>Members</button>
+        <button id="miSell" role="menuitem"><i class="ico ico-sell"></i>Pricing &amp; sales</button>
+        <button id="miExpiry" role="menuitem"><i class="ico ico-clock"></i>Auto-delete</button>
         <div class="sep"></div>
-        <button id="miRename" role="menuitem">\u270f\ufe0f Rename collection</button>
-        <button id="miVisibility" role="menuitem">\ud83d\udd12 Make private</button>
-        <button id="miDelete" class="danger" role="menuitem">\ud83d\uddd1\ufe0f Delete collection</button>
+        <button id="miRename" role="menuitem"><i class="ico ico-edit"></i>Rename collection</button>
+        <button id="miVisibility" role="menuitem"><i class="ico ico-lock"></i>Make private</button>
+        <button id="miDelete" class="danger" role="menuitem"><i class="ico ico-trash"></i>Delete collection</button>
       </div>
     </div>
   </div>
@@ -82,7 +82,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
       <option value="name">Name (A\u2013Z)</option>
     </select>
     <button class="icon-btn" id="photoViewToggle" type="button" aria-label="Toggle grid or list view" title="Grid / list">\u25a6</button>
-    <button class="icon-btn" id="selectToggle" type="button" aria-label="Select photos" title="Select photos">\u2611</button>
+    <button class="icon-btn" id="selectToggle" type="button" aria-label="Select photos" title="Select photos"><i class="ico ico-check"></i></button>
     <span class="live-dot" title="Live updates on"></span>
   </div>
 
@@ -91,15 +91,15 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 </div>
 
 <div class="mobile-bar" id="mobileBar">
-  <button class="btn" data-act="upload"><span class="ico">\uff0b</span>Add</button>
-  <button class="btn outline hidden" data-act="sell"><span class="ico">\ud83c\udff7\ufe0f</span>Sell</button>
-  <button class="btn outline hidden" data-act="share"><span class="ico">\ud83d\udd17</span>Share</button>
-  <button class="btn outline" data-act="more"><span class="ico">\u22ef</span>More</button>
+  <button class="btn" data-act="upload"><i class="ico ico-plus"></i>Add</button>
+  <button class="btn outline hidden" data-act="sell"><i class="ico ico-sell"></i>Sell</button>
+  <button class="btn outline hidden" data-act="share"><i class="ico ico-link"></i>Share</button>
+  <button class="btn outline" data-act="more"><i class="ico ico-dots"></i>More</button>
 </div>
 
 <div class="select-bar" id="selectBar">
   <span class="count" id="selectCount">0 selected</span>
-  <button class="btn small outline" id="selDownload">\u2b07 ZIP</button>
+  <button class="btn small outline" id="selDownload"><i class="ico ico-download"></i>ZIP</button>
   <button class="btn small danger hidden" id="selDelete">Delete</button>
   <button class="btn small outline" id="selAll">All</button>
   <button class="btn small outline" id="selClear">Cancel</button>
@@ -108,35 +108,35 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 <div class="marquee" id="marquee"></div>
 
 <div class="context-menu" id="photoMenu">
-  <button data-cmd="open">\ud83d\udd0d Open</button>
-  <button data-cmd="download">\u2b07 Download</button>
-  <button data-cmd="pick">\u2611 Select</button>
-  <button data-cmd="all">\u2b1a Select all</button>
-  <button data-cmd="delete" class="danger hidden">\ud83d\uddd1\ufe0f Delete</button>
+  <button data-cmd="open"><i class="ico ico-eye"></i>Open</button>
+  <button data-cmd="download"><i class="ico ico-download"></i>Download</button>
+  <button data-cmd="pick"><i class="ico ico-check"></i>Select</button>
+  <button data-cmd="all"><i class="ico ico-grid"></i>Select all</button>
+  <button data-cmd="delete" class="danger hidden"><i class="ico ico-trash"></i>Delete</button>
 </div>
 
 <div class="lightbox" id="lightbox">
-  <button class="lightbox-close" id="lbClose" aria-label="Close image">\u2715</button>
-  <button class="lightbox-nav prev" id="lbPrev" aria-label="Previous photo">\u2039</button>
-  <button class="lightbox-nav next" id="lbNext" aria-label="Next photo">\u203a</button>
+  <button class="lightbox-close" id="lbClose" aria-label="Close image"><i class="ico ico-x"></i></button>
+  <button class="lightbox-nav prev" id="lbPrev" aria-label="Previous photo"><i class="ico ico-chevr"></i></button>
+  <button class="lightbox-nav next" id="lbNext" aria-label="Next photo"><i class="ico ico-chevr ico-flip"></i></button>
   <img id="lightboxImg" alt="Photo preview">
 </div>
 
 <div class="modal" id="uploadModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Add photos</h2><button class="modal-close" data-close="uploadModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Add photos</h2><button class="modal-close" data-close="uploadModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
     <div class="dropzone" id="dropzone">
-      <div class="dropzone-icon">\ud83d\udce4</div>
+      <div class="dropzone-icon"><i class="ico ico-import ico-lg"></i></div>
       <div class="dropzone-text"><strong>Choose photos</strong> or drag them here</div>
       <input type="file" id="files" accept="image/*" multiple style="display:none">
       <input type="file" id="camera" accept="image/*" capture="environment" style="display:none">
       <div class="dropzone-actions">
-        <button class="btn small" id="pickFiles" type="button">\ud83d\uddbc\ufe0f Choose photos</button>
-        <button class="btn small outline" id="takePhoto" type="button">\ud83d\udcf7 Take photo</button>
+        <button class="btn small" id="pickFiles" type="button"><i class="ico ico-image"></i>Choose photos</button>
+        <button class="btn small outline" id="takePhoto" type="button"><i class="ico ico-camera"></i>Take photo</button>
       </div>
     </div>
     <div id="uploadProgress" class="hidden" style="margin-top:14px">
-      <div class="progress" style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div class="progress-bar" id="progressBar" style="height:100%;width:0;background:var(--grad);transition:width .3s"></div></div>
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
       <p class="hint" style="text-align:center;margin-top:10px" id="progressText">Uploading...</p>
     </div>
     <div class="note" style="margin:16px 0 0">
@@ -148,7 +148,11 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 
 <div class="modal" id="importModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Import from a link</h2><button class="modal-close" data-close="importModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Import from a link</h2><button class="modal-close" data-close="importModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
+    <div class="note">
+      <span><strong>From a camera?</strong> Scan the QR code the camera or its app shows.</span>
+      <button class="btn small" id="qrOpenBtn" type="button"><i class="ico ico-camera"></i>Scan camera QR</button>
+    </div>
     <div class="field">
       <label for="importUrls">Image links (one per line)</label>
       <textarea id="importUrls" placeholder="https://drive.google.com/file/d/FILE_ID/view&#10;https://example.com/photo.jpg"></textarea>
@@ -159,9 +163,30 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
   </div>
 </div>
 
+<div class="modal" id="qrModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Scan a camera QR</h2><button class="modal-close" data-close="qrModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
+    <div id="qrIntro">
+      <div class="hint" style="margin-bottom:14px">Point the camera at the QR shown by your camera or camera app. Camera codes carry the camera's Wi-Fi name and password, so you get copyable details plus the transfer steps. Codes that link to a photo are imported straight into this collection.</div>
+      <div class="dropzone-actions" style="margin-top:0">
+        <button class="btn" id="qrStartBtn" type="button"><i class="ico ico-camera"></i>Open camera</button>
+        <button class="btn outline" id="qrShotBtn" type="button"><i class="ico ico-image"></i>From a screenshot</button>
+      </div>
+      <input type="file" id="qrShotInput" accept="image/*" style="display:none">
+    </div>
+    <div id="qrLive" class="hidden">
+      <div class="qr-video-wrap"><video id="qrVideo" playsinline muted></video></div>
+      <div class="hint" id="qrStatus">Looking for a QR code\u2026</div>
+      <button class="btn small outline" id="qrStopBtn" type="button" style="margin-top:12px">Stop camera</button>
+    </div>
+    <div id="qrError" class="note warn hidden" style="margin-top:12px"></div>
+    <div id="qrResult" class="hidden"></div>
+  </div>
+</div>
+
 <div class="modal" id="shareModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Share collection</h2><button class="modal-close" data-close="shareModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Share collection</h2><button class="modal-close" data-close="shareModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
     <div class="qr-wrap"><img id="qrImg" alt="QR code for this collection"></div>
     <div class="share-link">
       <input id="shareUrl" readonly>
@@ -176,7 +201,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 
 <div class="modal" id="sellModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Pricing &amp; sales</h2><button class="modal-close" data-close="sellModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Pricing &amp; sales</h2><button class="modal-close" data-close="sellModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
     <div id="sellSetup" class="note warn hidden"></div>
     <div class="field">
       <label for="priceInput">Price per collection</label>
@@ -196,13 +221,14 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     </div>
     <div class="hint" style="margin-bottom:14px">Set a price to sell the original files. Buyers see the thumbnails, pay with card via Stripe, and immediately unlock downloads. Leave 0 to share for free.</div>
     <button class="btn" id="savePrice">Save pricing</button>
+    <div id="payoutsBox" class="hidden" style="margin-top:20px"></div>
     <div id="salesBox" class="hidden" style="margin-top:20px"></div>
   </div>
 </div>
 
 <div class="modal" id="expiryModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Auto-delete this collection</h2><button class="modal-close" data-close="expiryModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Auto-delete this collection</h2><button class="modal-close" data-close="expiryModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
     <div class="field">
       <label for="expirySelect">Delete after</label>
       <select id="expirySelect">
@@ -230,7 +256,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 
 <div class="modal" id="membersModal">
   <div class="modal-card">
-    <div class="modal-head"><h2>Members</h2><button class="modal-close" data-close="membersModal" aria-label="Close">\u2715</button></div>
+    <div class="modal-head"><h2>Members</h2><button class="modal-close" data-close="membersModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
     <div id="membersList"></div>
     <div class="share-link" id="inviteBox">
       <input id="inviteEmail" placeholder="teammate@email.com">
@@ -265,7 +291,7 @@ function applyPhotoView() {
   const el = document.getElementById('photos');
   if (el) el.className = 'grid' + (photoView === 'list' ? ' photo-list' : '');
   const btn = document.getElementById('photoViewToggle');
-  if (btn) btn.textContent = photoView === 'list' ? '\\u25a6' : '\\u2630';
+  if (btn) btn.innerHTML = '<i class="ico ' + (photoView === 'list' ? 'ico-grid' : 'ico-list') + '"></i>';
 }
 
 function renderMeta() {
@@ -303,7 +329,7 @@ function updateChrome() {
   document.getElementById('miRename').classList.toggle('hidden', !canManage);
   document.getElementById('miVisibility').classList.toggle('hidden', !canManage);
   document.getElementById('miDelete').classList.toggle('hidden', !canManage);
-  document.getElementById('miVisibility').textContent = isPublic ? '\ud83d\udd12 Make private' : '\ud83d\udd13 Make public';
+  document.getElementById('miVisibility').innerHTML = isPublic ? '<i class="ico ico-lock"></i>Make private' : '<i class="ico ico-unlock"></i>Make public';
   document.querySelectorAll('[data-act="sell"]').forEach((b) => b.classList.toggle('hidden', !canManage));
   document.querySelectorAll('[data-act="share"]').forEach((b) => b.classList.toggle('hidden', !canEdit && !role));
   const menu = document.getElementById('moreMenu');
@@ -333,15 +359,15 @@ function renderPhotos() {
   const el = document.getElementById('photos');
   applyPhotoView();
   if (!photos.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\ud83d\udd0c</div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Use "Add photos" to add some.' : 'Check back later.')) + '</div></div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-image"></i></div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Use "Add photos" to add some.' : 'Check back later.')) + '</div></div>';
     return;
   }
   el.innerHTML = photos.map(function (p, i) {
     const isSel = selected.has(p.id);
     return '<div class="photo-wrap' + (isSel ? ' selected' : '') + '" data-id="' + p.id + '" data-index="' + i + '" data-name="' + esc(p.original_name) + '" style="animation-delay:' + Math.min(i, 20) * 30 + 'ms" role="button" tabindex="0" aria-label="Photo ' + esc(p.original_name) + (isSel ? ' (selected)' : '') + '">' +
       '<img src="' + photoSrc(p) + '" alt="' + esc(p.original_name) + '" loading="lazy" decoding="async">' +
-      (pricing.locked ? '<span class="photo-lock">\ud83d\udd12</span>' : '') +
-      '<span class="check">\u2713</span>' +
+      (pricing.locked ? '<span class="photo-lock"><i class="ico ico-lock"></i></span>' : '') +
+      '<span class="check"><i class="ico ico-check"></i></span>' +
       '<div class="photo-overlay">' +
         '<button class="photo-btn" data-act="download" aria-label="Download ' + esc(p.original_name) + '" title="Download">\u2b07</button>' +
         (canEdit ? '<button class="photo-btn danger" data-act="delete" aria-label="Delete ' + esc(p.original_name) + '" title="Delete">\u2715</button>' : '') +
@@ -494,7 +520,7 @@ grid.addEventListener('contextmenu', function (e) {
   menuPhotoIndex = Number(wrap.dataset.index);
   const p = photos[menuPhotoIndex];
   photoMenu.querySelector('[data-cmd="delete"]').classList.toggle('hidden', !canEdit);
-  photoMenu.querySelector('[data-cmd="pick"]').textContent = selected.has(p.id) ? '\u2610 Deselect' : '\u2611 Select';
+  photoMenu.querySelector('[data-cmd="pick"]').innerHTML = '<i class="ico ico-check"></i>' + (selected.has(p.id) ? 'Deselect' : 'Select');
   photoMenu.classList.add('open');
   const menuW = 220, menuH = 260;
   photoMenu.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - menuW - 8)) + 'px';
@@ -578,7 +604,7 @@ async function load(append) {
       document.getElementById('mobileBar').classList.add('hidden');
       document.querySelector('.toolbar').classList.add('hidden');
       document.getElementById('loadMore').classList.add('hidden');
-      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\ud83d\udd12</div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
+      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-lock"></i></div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
       return;
     }
     if (res.status === 410) {
@@ -588,7 +614,7 @@ async function load(append) {
       document.getElementById('mobileBar').classList.add('hidden');
       document.querySelector('.toolbar').classList.add('hidden');
       document.getElementById('loadMore').classList.add('hidden');
-      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">\u23f3</div><div class="empty-text">This collection was set to auto-delete and is now gone.<br>Create a new collection to share more photos.</div></div>';
+      document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-clock"></i></div><div class="empty-text">This collection was set to auto-delete and is now gone.<br>Create a new collection to share more photos.</div></div>';
       return;
     }
     if (!res.ok) throw new Error();
@@ -617,7 +643,7 @@ async function load(append) {
   } catch {
     document.getElementById('title').textContent = 'Collection not found';
     document.getElementById('metaLine').textContent = '';
-    document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon">\u26a0\ufe0f</div><div class="empty-text">This collection could not be loaded.</div></div>';
+    document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon"><i class="ico ico-alert"></i></div><div class="empty-text">This collection could not be loaded.</div></div>';
   }
 }
 
@@ -680,6 +706,50 @@ async function loadSales() {
   } catch {}
 }
 
+async function loadPayouts() {
+  const box = document.getElementById('payoutsBox');
+  if (!pricing.stripeConfigured || !pricing.schemaReady) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML = '<div class="hint">Checking payout account\u2026</div>';
+  try {
+    const res = await fetch(BASE + '/api/stripe/connect', { credentials: 'include' });
+    if (res.status === 401) { box.classList.add('hidden'); return; }
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok) {
+      box.innerHTML = '<div class="note warn"><span>' + esc(data.hint || data.error || 'Payouts are unavailable right now.') + '</span></div>';
+      return;
+    }
+    if (data.payoutsEnabled) {
+      box.innerHTML = '<div class="note"><span><strong>Payouts active.</strong> Sales transfer to your Stripe account automatically.</span></div>';
+    } else if (data.accountId) {
+      box.innerHTML = '<div class="note warn"><span><strong>Finish payout setup.</strong> Stripe needs a few more details before money can reach your bank.</span><button class="btn small" id="connectPayoutsBtn">Finish setup</button></div>';
+    } else {
+      box.innerHTML = '<div class="note warn"><span><strong>Get paid directly.</strong> Connect a Stripe account so buyers\u2019 payments land in your bank instead of the platform account.</span><button class="btn small" id="connectPayoutsBtn">Connect Stripe</button></div>';
+    }
+    const btn = document.getElementById('connectPayoutsBtn');
+    if (btn) btn.addEventListener('click', connectPayouts);
+  } catch {
+    box.classList.add('hidden');
+  }
+}
+
+async function connectPayouts() {
+  const btn = document.getElementById('connectPayoutsBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+  try {
+    const res = await fetch(BASE + '/api/stripe/connect', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ collection_id: CID }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (data.url) { window.location.href = data.url; return; }
+    throw new Error(data.hint || data.error || 'Could not open Stripe onboarding');
+  } catch (err) {
+    toast(err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect Stripe'; }
+  }
+}
+
 function openSell() {
   document.getElementById('priceInput').value = pricing.price_cents ? (pricing.price_cents / 100).toFixed(2) : '';
   document.getElementById('currencySelect').value = pricing.currency || 'usd';
@@ -695,6 +765,7 @@ function openSell() {
   }
   openModal('sellModal');
   loadSales();
+  loadPayouts();
 }
 
 async function savePrice() {
@@ -1003,6 +1074,244 @@ async function pollNew() {
   } catch {}
 }
 
+/* ------------------------------------------------------------ camera QR */
+
+let qrStream = null, qrTimer = null, qrAttempts = 0, qrDetector = null, qrFound = false;
+const QR_MAX_FRAMES = 30;
+const QR_FRAME_MS = 900;
+
+function openQrScanner() {
+  document.getElementById('moreMenu').classList.remove('open');
+  closeModal('importModal');
+  resetQr();
+  openModal('qrModal');
+}
+
+function qrError(message) {
+  const box = document.getElementById('qrError');
+  box.classList.remove('hidden');
+  box.innerHTML = '<span>' + esc(message) + '</span>';
+}
+
+function resetQr() {
+  stopQrCamera();
+  qrFound = false; qrAttempts = 0;
+  document.getElementById('qrIntro').classList.remove('hidden');
+  document.getElementById('qrLive').classList.add('hidden');
+  document.getElementById('qrResult').classList.add('hidden');
+  document.getElementById('qrResult').innerHTML = '';
+  document.getElementById('qrError').classList.add('hidden');
+  document.getElementById('qrError').innerHTML = '';
+  document.getElementById('qrStatus').textContent = 'Looking for a QR code\\u2026';
+}
+
+function stopQrCamera() {
+  if (qrTimer) { clearTimeout(qrTimer); qrTimer = null; }
+  if (qrStream) { qrStream.getTracks().forEach(function (t) { t.stop(); }); qrStream = null; }
+  const video = document.getElementById('qrVideo');
+  if (video) video.srcObject = null;
+  const live = document.getElementById('qrLive');
+  if (live) live.classList.add('hidden');
+  const intro = document.getElementById('qrIntro');
+  if (intro && !qrFound) intro.classList.remove('hidden');
+}
+
+async function startQrCamera() {
+  stopQrCamera();
+  qrFound = false;
+  document.getElementById('qrError').classList.add('hidden');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    qrError('This browser cannot open the camera. Use \\u201cFrom a screenshot\\u201d instead.');
+    return;
+  }
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+  } catch (e) {
+    qrError(e && e.name === 'NotAllowedError'
+      ? 'Camera permission was denied. Allow camera access or use a screenshot.'
+      : 'Could not start the camera. Use \\u201cFrom a screenshot\\u201d instead.');
+    return;
+  }
+  const video = document.getElementById('qrVideo');
+  video.srcObject = qrStream;
+  video.setAttribute('playsinline', 'true');
+  video.muted = true;
+  try { await video.play(); } catch (e) {}
+  document.getElementById('qrIntro').classList.add('hidden');
+  document.getElementById('qrLive').classList.remove('hidden');
+  qrAttempts = 0;
+  try { qrDetector = ('BarcodeDetector' in window) ? new window.BarcodeDetector({ formats: ['qr_code'] }) : null; } catch (e) { qrDetector = null; }
+  qrLoop();
+}
+
+async function qrLoop() {
+  if (!qrStream || qrFound) return;
+  if (qrAttempts >= QR_MAX_FRAMES) {
+    document.getElementById('qrStatus').textContent = 'Still no code. Hold steady, fill the frame, then start the camera again.';
+    return;
+  }
+  qrAttempts += 1;
+  const video = document.getElementById('qrVideo');
+  let raw = null;
+  if (qrDetector && video.readyState >= 2) {
+    try {
+      const codes = await qrDetector.detect(video);
+      raw = codes && codes[0] ? codes[0].rawValue : null;
+    } catch (e) { qrDetector = null; }
+  }
+  if (raw) {
+    const data = await qrClassifyRaw(raw);
+    if (data) { handleQrFound(data); return; }
+  } else if (video.readyState >= 2) {
+    const data = await qrDecodeVideoFrame(video);
+    if (data) { handleQrFound(data); return; }
+  }
+  document.getElementById('qrStatus').textContent = 'Looking for a QR code\\u2026';
+  qrTimer = setTimeout(qrLoop, QR_FRAME_MS);
+}
+
+function qrCanvasBlob(video) {
+  const max = 900;
+  const scale = Math.min(1, max / Math.max(video.videoWidth || 1, video.videoHeight || 1));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round((video.videoWidth || 1) * scale));
+  canvas.height = Math.max(1, Math.round((video.videoHeight || 1) * scale));
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  return new Promise(function (resolve) { canvas.toBlob(resolve, 'image/jpeg', 0.82); });
+}
+
+async function qrDecodeVideoFrame(video) {
+  const blob = await qrCanvasBlob(video);
+  if (!blob) return null;
+  return qrDecodeBlob(blob);
+}
+
+async function qrDecodeBlob(blob) {
+  try {
+    const form = new FormData();
+    form.append('photo', blob, 'qr.jpg');
+    const res = await fetch(BASE + '/api/qr/decode', { method: 'POST', credentials: 'include', body: form });
+    if (res.status === 401) { toast('Log in to scan', 'error'); return null; }
+    if (res.status === 422) { return null; }
+    if (!res.ok) { const data = await res.json().catch(function () { return {}; }); toast(data.error || 'Scan failed', 'error'); return null; }
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+async function qrClassifyRaw(raw) {
+  try {
+    const res = await fetch(BASE + '/api/qr/decode', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ raw: raw }),
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+function handleQrFound(data) {
+  if (!data || !data.payload || qrFound) return;
+  qrFound = true;
+  stopQrCamera();
+  document.getElementById('qrIntro').classList.add('hidden');
+  const box = document.getElementById('qrResult');
+  box.classList.remove('hidden');
+  box.innerHTML = qrResultHtml(data.payload);
+  if (data.payload.kind === 'url' && !data.payload.lan && !data.payload.appStore) {
+    runQrImport(data.payload.url);
+  }
+}
+
+function qrHeader(title, meta) {
+  return '<div class="modal-head" style="margin-bottom:12px"><h2 style="font-size:18px">' + esc(title) + '</h2>' +
+    (meta ? '<span class="hint">' + esc(meta) + '</span>' : '') + '</div>';
+}
+
+function qrCopyRow(label, value) {
+  return '<div class="kv-row"><span class="kv-meta"><span class="kv-label">' + esc(label) + '</span>' +
+    '<span class="kv-value">' + esc(value) + '</span></span>' +
+    '<button class="copy-btn" type="button" data-copy="' + esc(value) + '">Copy</button></div>';
+}
+
+function qrAgainButton() {
+  return '<div style="margin-top:12px"><button class="btn small outline" type="button" data-qr-again>Scan another</button></div>';
+}
+
+function qrResultHtml(p) {
+  if (p.kind === 'wifi') {
+    const app = p.app || null;
+    return qrHeader(app ? app.label + ' camera Wi-Fi' : 'Camera Wi-Fi', 'Join the network to transfer photos') +
+      qrCopyRow('Network (SSID)', p.ssid) +
+      (p.password ? qrCopyRow('Password', p.password) : '') +
+      '<ol class="qr-steps">' +
+        '<li>Copy the password and join \\u201c' + esc(p.ssid) + '\\u201d in your phone\\u2019s Wi-Fi settings.</li>' +
+        '<li>Open ' + (app ? esc(app.apps.join(' / ')) : 'your camera app') + ' and save the photos to your phone.</li>' +
+        '<li>Come back and add them with <strong>Add photos</strong>.</li>' +
+      '</ol>' +
+      (app ? '<div class="note"><span>' + esc(app.transferHint) + '</span><a class="btn small outline" href="' + esc(app.storeUrl) + '" target="_blank" rel="noopener">Get ' + esc(app.apps[0]) + '</a></div>' : '') +
+      '<div class="hint">Web pages cannot join Wi-Fi networks themselves, so the join step is manual.</div>' +
+      qrAgainButton();
+  }
+
+  if (p.kind === 'url' && p.lan) {
+    const app = p.app || null;
+    return qrHeader('Camera network address', p.host) +
+      qrCopyRow('Address', p.url) +
+      '<p class="hint" style="margin-bottom:10px">\\u201c' + esc(p.host) + '\\u201d only exists while your phone is on the camera\\u2019s own Wi-Fi, and browsers block direct camera connections. Use the camera app instead:</p>' +
+      '<ol class="qr-steps">' +
+        '<li>Join the camera\\u2019s Wi-Fi network in your phone settings.</li>' +
+        '<li>Open ' + (app ? esc(app.apps.join(' / ')) : 'the camera app') + ' and save the shots to your phone.</li>' +
+        '<li>Add them here with <strong>Add photos</strong>.</li>' +
+      '</ol>' +
+      (app ? '<div class="note"><span>' + esc(app.transferHint) + '</span><a class="btn small outline" href="' + esc(app.storeUrl) + '" target="_blank" rel="noopener">Get ' + esc(app.apps[0]) + '</a></div>' : '') +
+      qrAgainButton();
+  }
+
+  if (p.kind === 'url' && p.appStore) {
+    return qrHeader('Camera app install link') +
+      '<p class="hint">This QR installs the camera\\u2019s phone app, not photos. Install it, connect to the camera, transfer your shots to the phone, then add them here.</p>' +
+      '<div style="margin-top:12px"><a class="btn small" href="' + esc(p.url) + '" target="_blank" rel="noopener">Open store page</a></div>' +
+      qrAgainButton();
+  }
+
+  if (p.kind === 'url') {
+    return qrHeader('Photo link', p.host) +
+      qrCopyRow('Link', p.url) +
+      '<div id="qrImportBox" class="hint">Downloading the photo\\u2026</div>' +
+      '<div style="margin-top:12px"><button class="btn small outline" type="button" data-qr-again>Scan another</button></div>';
+  }
+
+  return qrHeader('QR content') +
+    qrCopyRow('Text', p.text || '') +
+    '<div class="hint">This code does not look like a camera connection or a photo link.</div>' +
+    qrAgainButton();
+}
+
+async function runQrImport(url) {
+  const box = document.getElementById('qrImportBox');
+  if (!box) return;
+  box.innerHTML = '<span class="spinner dark"></span> Downloading the photo\\u2026';
+  try {
+    const res = await fetch(BASE + '/api/collections/' + CID + '/import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ urls: [url] }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (res.status === 401) { box.innerHTML = '<strong>Log in</strong> to import into this collection.'; return; }
+    if (!res.ok) throw new Error(data.error || 'Import failed');
+    const result = (data.results || [])[0] || {};
+    if (result.photo) {
+      box.innerHTML = '<strong>Photo imported.</strong> It is in this collection now.';
+      toast('Imported 1 photo', 'success');
+      await load(false);
+    } else {
+      box.innerHTML = '<strong>Could not import that link.</strong> ' + esc(result.error || 'Try the direct image link instead.');
+    }
+  } catch (err) {
+    box.innerHTML = '<strong>Could not import that link.</strong> ' + esc(err.message || '');
+  }
+}
+
 /* ---------------------------------------------------------------- wiring */
 
 document.getElementById('uploadToggle').addEventListener('click', function () { openModal('uploadModal'); });
@@ -1020,6 +1329,28 @@ document.getElementById('expirySelect').addEventListener('change', function () {
 });
 document.getElementById('miImport').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openModal('importModal'); });
 document.getElementById('importFromUpload').addEventListener('click', function () { closeModal('uploadModal'); openModal('importModal'); });
+document.getElementById('qrOpenBtn').addEventListener('click', openQrScanner);
+document.getElementById('qrStartBtn').addEventListener('click', startQrCamera);
+document.getElementById('qrStopBtn').addEventListener('click', stopQrCamera);
+document.getElementById('qrShotBtn').addEventListener('click', function () { document.getElementById('qrShotInput').click(); });
+document.getElementById('qrShotInput').addEventListener('change', async function () {
+  const file = this.files && this.files[0];
+  this.value = '';
+  if (!file) return;
+  document.getElementById('qrError').classList.add('hidden');
+  const data = await qrDecodeBlob(file);
+  if (data && data.payload) { handleQrFound(data); return; }
+  qrError('No QR code found in that image. Try a tighter screenshot or fill the frame with the code.');
+});
+document.getElementById('qrResult').addEventListener('click', function (e) {
+  const copyBtn = e.target.closest('[data-copy]');
+  if (copyBtn) {
+    const value = copyBtn.dataset.copy;
+    navigator.clipboard.writeText(value).then(function () { toast('Copied', 'success'); }).catch(function () { toast('Copy failed', 'error'); });
+    return;
+  }
+  if (e.target.closest('[data-qr-again]')) resetQr();
+});
 document.getElementById('miDownload').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); window.location.href = BASE + '/api/collections/' + CID + '/zip'; });
 document.getElementById('miMembers').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openModal('membersModal'); loadMembers(); });
 document.getElementById('miRename').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); renameCollection(); });
@@ -1123,8 +1454,17 @@ document.getElementById('loadMore').addEventListener('click', function () { load
     toast('Checkout canceled', 'error');
     history.replaceState({}, '', location.pathname);
   }
+  const connect = params.get('connect');
   await load(false);
   setInterval(pollNew, 5000);
+  if (connect === 'done' || connect === 'refresh') {
+    toast(connect === 'done'
+      ? 'Stripe setup finished \u2014 payouts activate after Stripe verifies your details'
+      : 'Stripe setup link expired \u2014 open the payout panel to try again',
+      connect === 'done' ? 'success' : 'error');
+    if (canManage) openSell();
+    history.replaceState({}, '', location.pathname);
+  }
 })();
 `
 

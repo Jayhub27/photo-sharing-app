@@ -161,6 +161,15 @@ body.selecting .photo-overlay{display:none}
 .share-link input{flex:1;min-width:180px;background:var(--surface);border:2px solid var(--border);border-radius:0;padding:12px 14px;font-size:15px;color:var(--text)}
 .copy-btn{background:var(--surface);border:2px solid var(--border);border-radius:0;padding:12px 16px;color:var(--text);cursor:pointer;font-size:15px;font-weight:800;min-height:46px;font-family:inherit;box-shadow:3px 3px 0 var(--border)}
 .copy-btn:hover{background:var(--accent);color:#111}
+/* camera QR scanner */
+.qr-video-wrap{position:relative;aspect-ratio:1;background:#000;border:2px solid var(--border);overflow:hidden;margin-bottom:12px}
+.qr-video-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+.kv-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface2);border:2px solid var(--border);padding:12px 14px;margin-bottom:10px}
+.kv-row .kv-meta{min-width:0}
+.kv-row .kv-label{display:block;font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.kv-row .kv-value{display:block;font-weight:800;font-size:16px;word-break:break-all}
+.qr-steps{margin:0 0 12px;padding-left:20px;color:var(--muted);font-size:15px;line-height:1.55}
+.qr-steps li{margin-bottom:4px}
 /* lightbox */
 .lightbox{position:fixed;inset:0;background:rgba(17,17,17,.95);display:none;align-items:center;justify-content:center;z-index:140;animation:fadeIn .18s}
 .lightbox.open{display:flex}

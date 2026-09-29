@@ -31,6 +31,7 @@ account, uploading from your phone, and getting paid.
 | Multi-select | Click-drag marquee, right-click drag, shift-click ranges, context menu |
 | Batch actions | Download selected as ZIP, delete selected in one request |
 | Import from links | Google Drive file links, direct image URLs, any page with `og:image` |
+| Camera QR import | Scan a camera's QR for copyable Wi-Fi details + transfer steps, or a linked photo |
 | Collaboration | Invite viewers/editors by email; private collections stay member-only |
 | Live sync | New photos appear for everyone within ~5s |
 | ZIP download | Whole collection or a selection |
@@ -208,9 +209,13 @@ unlocks (including ZIP downloads).
 ### Payouts (Stripe Connect)
 
 By default payments land in the platform's Stripe account. To pay owners
-directly, set the owner's `users.stripe_account_id` to a Stripe Connect account
-and optionally `STRIPE_APPLICATION_FEE_PERCENT` to keep a platform cut. Checkout
-then uses `transfer_data.destination` and `application_fee_amount`.
+directly, each owner can connect a Stripe Express account from the collection's
+**Pricing & sales** panel (or the app's sell modal). The server creates the
+Express account, stores it in `users.stripe_account_id`, and sends the owner
+through Stripe's hosted onboarding. Checkout then uses
+`transfer_data.destination` and, when `STRIPE_APPLICATION_FEE_PERCENT` is set,
+`application_fee_amount`. Admins can still set `stripe_account_id` by hand to
+link an existing account.
 
 ## Time-limited collections
 
@@ -244,8 +249,23 @@ custom number of days. Leaving it empty keeps the collection forever.
 **From a device:** tap **Add photos** on the web or the mobile app and pick files
 (the phone picker sees Google Photos, iCloud, Drive and local storage as sources).
 
+**From a camera QR:** in a collection open **More → Import from link → Scan camera QR**.
+Camera apps (Canon Camera Connect, Panasonic LUMIX Sync, OM Image Share, Leica
+FOTOS, GoPro Quik, …) and Canon's Camera Control API display QR codes with the
+camera's connection details. Scan one with the live camera or a screenshot and
+Take the shot shows the SSID/password with copy buttons plus vendor-specific
+steps for transferring the shots. A QR that points at a photo or a share page is
+imported straight into the collection instead. Decoding runs on the server, so
+it works on Safari and Firefox too. The Expo app's **Scan** screen understands
+the same codes: Wi-Fi details get copy buttons, photo links open a collection
+picker.
+
 **From a link:** in a collection, open **More → Import from link** and paste one
 link per line. The server downloads the image and stores it like an upload.
+
+**From the Android share sheet:** install the PWA, then share photos from any
+camera app's gallery straight to Take the shot. Pick the collection and they are
+uploaded. Chrome/Android only — on iOS use **Add photos**.
 
 Supported:
 
@@ -284,6 +304,8 @@ Limitations:
 | POST | `/api/collections/:id/photos` | Upload images (multipart `photos`) |
 | POST | `/api/collections/:id/photos/delete` | Batch delete `{ ids: [] }` |
 | POST | `/api/collections/:id/import` | Import from links `{ urls: [] }` |
+| POST | `/api/qr/decode` | Decode + classify a camera QR (photo frame or `{ raw }`) |
+| POST | `/api/share/:token` | Move PWA share-target photos into `{ collectionId }` |
 | GET | `/api/collections/:id/zip` | Download ZIP (optional `?ids=a,b`) |
 | POST | `/api/collections/:id/save` | Copy a shared collection to your account |
 | GET/POST/PATCH/DELETE | `/api/collections/:id/members[/:userId]` | Collaboration |

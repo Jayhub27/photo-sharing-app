@@ -374,6 +374,42 @@ export async function importFromLinks(
   return res.json()
 }
 
+/* ------------------------------------------------------------- camera QR */
+
+export interface CameraQrAppInfo {
+  label: string
+  apps: string[]
+  storeUrl: string
+  transferHint: string
+}
+
+export interface CameraQrPayload {
+  kind: 'wifi' | 'url' | 'text'
+  vendor?: string
+  app?: CameraQrAppInfo
+  ssid?: string
+  password?: string
+  security?: string
+  url?: string
+  host?: string
+  lan?: boolean
+  imageLike?: boolean
+  appStore?: boolean
+  text?: string
+}
+
+/** Classify a decoded QR string (camera Wi-Fi, photo link, …). */
+export async function decodeCameraQr(raw: string): Promise<{ raw: string; payload: CameraQrPayload }> {
+  const res = await fetch(`${resolveBase()}/api/qr/decode`, {
+    method: 'POST',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ raw }),
+  })
+  if (res.status === 401) throw new Error('Log in to scan camera QR codes')
+  if (!res.ok) throw await errorFrom(res, 'Could not read that QR code')
+  return res.json()
+}
+
 export async function setCollectionPrice(
   collectionId: string,
   priceCents: number | null,
@@ -406,6 +442,34 @@ export async function startCheckout(
     method: 'POST',
     headers: headers(),
   })
+  return res.json()
+}
+
+/* ------------------------------------------------------- stripe connect */
+
+export interface PayoutStatus {
+  configured: boolean
+  accountId: string | null
+  chargesEnabled?: boolean
+  payoutsEnabled: boolean
+  detailsSubmitted?: boolean
+  requirementsDue?: string[]
+}
+
+export async function getPayoutStatus(): Promise<PayoutStatus> {
+  const res = await fetch(`${resolveBase()}/api/stripe/connect`, { headers: headers() })
+  if (res.status === 401) throw new Error('Not authenticated')
+  if (!res.ok) throw await errorFrom(res, 'Could not check payout status')
+  return res.json()
+}
+
+export async function startPayoutOnboarding(collectionId: string): Promise<{ url: string; accountId: string }> {
+  const res = await fetch(`${resolveBase()}/api/stripe/connect`, {
+    method: 'POST',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ collection_id: collectionId }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not start payout setup')
   return res.json()
 }
 

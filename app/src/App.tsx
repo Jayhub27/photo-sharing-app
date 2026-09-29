@@ -33,7 +33,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 const screenOptions = {
   headerStyle: { backgroundColor: colors.bg },
   headerTintColor: colors.text,
-  headerTitleStyle: { fontWeight: '900' as const, letterSpacing: 0.5 },
+  headerTitleStyle: { fontWeight: '600' as const },
   headerShadowVisible: false,
   contentStyle: { backgroundColor: colors.bg },
 }
@@ -89,7 +89,7 @@ export default function App() {
   return (
     <AuthProvider>
       <NavigationContainer theme={navTheme}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <RootNavigator />
       </NavigationContainer>
     </AuthProvider>

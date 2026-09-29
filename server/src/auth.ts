@@ -79,6 +79,11 @@ export async function optionalAuth(req: AuthedRequest, _res: Response, next: Nex
   next()
 }
 
+/** Resolve the session user without failing the request (used by HTML pages). */
+export async function resolveUser(req: AuthedRequest): Promise<{ id: string; name: string } | null> {
+  return userForToken(getToken(req))
+}
+
 router.post('/signup', authLimiter, async (req: AuthedRequest, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
   const name = String(req.body.name || '').trim()

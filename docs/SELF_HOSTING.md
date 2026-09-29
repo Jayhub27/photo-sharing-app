@@ -85,8 +85,10 @@ without an app store install.
    then put its signing secret in `STRIPE_WEBHOOK_SECRET`.
 3. Open a collection you own → **Sell** → set a price.
 
-Payments go directly to your Stripe account. Owners can connect a Stripe account
-id for destination charges (`stripe_account_id` on the collection owner); set
+Payments go directly to your Stripe account. Owners can connect their own Stripe
+account from the **Pricing & sales** panel: the server creates a Stripe Express
+account, runs hosted onboarding, and stores the account id for destination
+charges (`stripe_account_id` on the collection owner). Set
 `STRIPE_APPLICATION_FEE_PERCENT` to take a platform fee.
 
 ## 6. Operations

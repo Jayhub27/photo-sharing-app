@@ -7,9 +7,13 @@ import { generateId, publicBaseUrl } from './utils.js'
 import { createZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 import { rateLimit } from './ratelimit.js'
+import { classifyCameraQr } from './camera-qr.js'
+import { decodeQrFromImage } from './qr-decode.js'
+import { takePendingShare } from './share-store.js'
 import {
   CURRENCIES,
   applicationFeePercent,
+  connectAccountStatus,
   isStripeConfigured,
   sellingSchemaReady,
   refreshSellingSchema,
@@ -33,6 +37,14 @@ const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 120,
   message: 'Upload limit reached. Please try again later.',
+})
+
+// Camera scanning sends a frame every so often until a code is found, so this
+// has a higher budget than uploads but is still bounded.
+const qrLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 300,
+  message: 'Too many QR scans. Please wait a bit and try again.',
 })
 
 const upload = multer({
@@ -822,6 +834,55 @@ router.post('/collections/:id/import', authMiddleware, uploadLimiter, async (req
   res.json({ results, imported })
 })
 
+/* ------------------------------------------------------------- camera QR */
+
+/**
+ * Decode a QR code from a photo or a captured camera frame and classify it
+ * (camera Wi-Fi credentials, image link, app-store link, ...). Done server
+ * side with jsQR so Safari and Firefox (no BarcodeDetector) work too.
+ */
+router.post('/qr/decode', authMiddleware, qrLimiter, upload.single('photo'), async (req: AuthedRequest, res) => {
+  // Browsers with the native BarcodeDetector send the decoded string instead
+  // of a frame, so classify it without decoding again.
+  const rawText = typeof req.body?.raw === 'string' ? req.body.raw.trim() : ''
+  if (rawText) {
+    if (rawText.length > 4096) return res.status(400).json({ error: 'That QR payload is too long to read' })
+    return res.json({ raw: rawText, payload: classifyCameraQr(rawText) })
+  }
+
+  const file = req.file
+  if (!file) return res.status(400).json({ error: 'Attach a photo that contains a QR code' })
+
+  const raw = await decodeQrFromImage(file.buffer)
+  if (!raw) return res.status(422).json({ error: 'No QR code found. Fill the frame with the code and try again.' })
+
+  res.json({ raw, payload: classifyCameraQr(raw) })
+})
+
+/**
+ * Finish a PWA share-target handoff (POST /share): move the buffered photos
+ * into a collection the user can edit, then the picker page redirects there.
+ */
+router.post('/share/:token', authMiddleware, async (req: AuthedRequest, res) => {
+  const collectionId = String(req.body?.collectionId || '').trim()
+  if (!collectionId) return res.status(400).json({ error: 'Pick a collection' })
+
+  const access = await getAccess(collectionId, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (!access.canEdit) return res.status(403).json({ error: 'Not your collection' })
+
+  const share = takePendingShare(req.params.token)
+  if (!share) return res.status(410).json({ error: 'That share expired. Share the photos again.' })
+
+  let imported = 0
+  for (const file of share.files) {
+    const row = await storePhoto(collectionId, file.buffer, file.name, file.mime)
+    if (row) imported += 1
+  }
+  if (imported) await refreshCover(collectionId)
+  res.json({ id: collectionId, imported })
+})
+
 /* ------------------------------------------------------------ batch actions */
 
 router.post('/collections/:id/photos/delete', authMiddleware, async (req: AuthedRequest, res) => {
@@ -1015,6 +1076,84 @@ router.get('/collections/:id/sales', authMiddleware, async (req: AuthedRequest, 
     stripeConfigured: isStripeConfigured(),
     payoutAccount: owner?.stripe_account_id || null,
   })
+})
+
+/* ------------------------------------------------ stripe connect onboarding */
+
+/** Only allow internal collection ids in return URLs, never arbitrary redirects. */
+function connectReturnPath(value: unknown): string {
+  const id = String(value || '').trim()
+  return /^[a-zA-Z0-9_-]{4,64}$/.test(id) ? `/c/${id}` : '/'
+}
+
+router.get('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) => {
+  if (!isStripeConfigured()) {
+    return res.json({ configured: false, accountId: null, payoutsEnabled: false })
+  }
+  const { data: user } = await supabase
+    .from('users')
+    .select('stripe_account_id')
+    .eq('id', req.userId)
+    .maybeSingle()
+  const accountId = user?.stripe_account_id || null
+  if (!accountId) return res.json({ configured: true, accountId: null, payoutsEnabled: false })
+  const status = await connectAccountStatus(accountId)
+  if (!status) return res.json({ configured: true, accountId, payoutsEnabled: false })
+  res.json({ configured: true, ...status })
+})
+
+router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) => {
+  const s = stripe()
+  if (!s) {
+    return res.status(503).json({
+      error: 'Payments are not configured',
+      code: 'stripe_not_configured',
+      hint: 'Set STRIPE_SECRET_KEY on the server',
+    })
+  }
+  const { data: user, error: readErr } = await supabase
+    .from('users')
+    .select('email, stripe_account_id')
+    .eq('id', req.userId)
+    .maybeSingle()
+  if (readErr) {
+    return res.status(503).json({
+      error: 'Payout accounts are not enabled in the database yet',
+      code: 'schema_missing',
+      hint: 'Run the selling section of supabase/schema.sql in the Supabase SQL editor',
+    })
+  }
+
+  const base = publicBaseUrl(req)
+  const back = connectReturnPath(req.body?.collection_id)
+
+  try {
+    let accountId = user?.stripe_account_id || ''
+    if (!accountId) {
+      const account = await s.accounts.create({
+        type: 'express',
+        email: user?.email || undefined,
+        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+        metadata: { user_id: req.userId || '' },
+      })
+      accountId = account.id
+      const { error: saveErr } = await supabase
+        .from('users')
+        .update({ stripe_account_id: accountId })
+        .eq('id', req.userId)
+      if (saveErr) return res.status(500).json({ error: 'Could not save the payout account' })
+    }
+
+    const link = await s.accountLinks.create({
+      account: accountId,
+      type: 'account_onboarding',
+      refresh_url: `${base}${back}?connect=refresh`,
+      return_url: `${base}${back}?connect=done`,
+    })
+    res.json({ url: link.url, accountId })
+  } catch (err: any) {
+    res.status(502).json({ error: err?.message || 'Could not start Stripe onboarding' })
+  }
 })
 
 /* ------------------------------------------------------------ maintenance */

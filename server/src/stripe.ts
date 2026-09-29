@@ -32,6 +32,32 @@ export function applicationFeePercent(): number {
   return Number.isFinite(n) && n > 0 ? Math.min(50, n) : 0
 }
 
+export interface ConnectAccountStatus {
+  accountId: string
+  chargesEnabled: boolean
+  payoutsEnabled: boolean
+  detailsSubmitted: boolean
+  requirementsDue: string[]
+}
+
+/** Live status of a connected account, or null when Stripe is off or the lookup fails. */
+export async function connectAccountStatus(accountId: string): Promise<ConnectAccountStatus | null> {
+  const s = stripe()
+  if (!s || !accountId) return null
+  try {
+    const account = await s.accounts.retrieve(accountId)
+    return {
+      accountId: account.id,
+      chargesEnabled: !!account.charges_enabled,
+      payoutsEnabled: !!account.payouts_enabled,
+      detailsSubmitted: !!account.details_submitted,
+      requirementsDue: account.requirements?.currently_due || [],
+    }
+  } catch {
+    return null
+  }
+}
+
 let schemaState: boolean | null = null
 
 /**

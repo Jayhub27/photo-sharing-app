@@ -4,51 +4,46 @@ export function homePage(apiBase: string): string {
   const body = `
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="toast-container" aria-live="polite" role="status"></div>
-<div class="wrap" id="main">
-  <div class="nav topbar" style="border:none;background:transparent;margin-bottom:8px">
-    <div class="topbar-inner" style="padding:14px 0">
-      <a class="nav-logo" href="/"><div class="logo-icon">\ud83d\udcf8</div><div class="logo-text">Take the shot</div></a>
-      <div class="nav-right topbar-actions" id="navRight"></div>
-    </div>
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="nav-logo" href="/"><div class="logo-icon"><i class="ico ico-camera"></i></div><div class="logo-text">Take the shot</div></a>
+    <div class="topbar-actions" id="navRight"></div>
   </div>
+</div>
+<div class="wrap" id="main">
   <div id="authed" class="hidden">
     <div class="hero">
-      <h1>Share, <span class="grad">and sell</span>, your shots</h1>
-      <p class="sub">Create a collection, add your photos, then share a QR code — or put a price on it and get paid with Stripe when people buy your originals.</p>
+      <h1>Collections</h1>
+      <p class="sub">Add photos, share a QR code, or set a price and let Stripe handle the sale.</p>
       <form class="create-bar" id="createForm">
-        <input type="text" id="name" placeholder="Collection name (e.g. Iceland Trip)" autocomplete="off">
-        <button class="btn" type="submit">Create</button>
+        <input type="text" id="name" placeholder="Name a new collection" autocomplete="off" aria-label="New collection name">
+        <button class="btn" type="submit"><i class="ico ico-plus"></i>Create</button>
       </form>
     </div>
-    <div class="section-label">Your Collections</div>
-    <div class="search-bar controls">
-      <input type="search" id="search" placeholder="Search collections by name..." style="flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:16px;color:var(--text);min-height:46px">
-    </div>
+    <div class="section-label">Your collections</div>
     <div class="controls">
+      <input type="search" id="search" placeholder="Search collections" aria-label="Search collections" style="flex:1;min-width:170px">
       <select id="sortSelect" aria-label="Sort collections">
-        <option value="newest">Newest first</option>
-        <option value="name">Name (A\u2013Z)</option>
+        <option value="newest">Newest</option>
+        <option value="name">Name A\u2013Z</option>
       </select>
       <div class="chips" role="group" aria-label="Filter collections">
         <button class="chip active" data-filter="all" type="button">All</button>
         <button class="chip" data-filter="owned" type="button">Owned</button>
         <button class="chip" data-filter="shared" type="button">Shared</button>
       </div>
-      <button class="icon-btn" id="viewToggle" type="button" aria-label="Toggle grid or list view">\u25a6</button>
+      <button class="icon-btn" id="viewToggle" type="button" aria-label="Toggle grid or list view" style="margin-left:auto"></button>
     </div>
     <div id="list"></div>
     <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
   </div>
   <div id="guest" class="hidden">
-    <div class="hero" style="text-align:center;padding-top:clamp(40px,8vw,90px)">
-      <h1>Share a QR. <span class="grad">Sell the originals.</span></h1>
-      <p class="sub" style="margin:0 auto 32px">A simple, private alternative to subscription galleries: your photos, your server, no tracking. Share a QR code, or set a price and let Stripe handle checkout.</p>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        <a class="btn" href="/signup">Start free</a>
+    <div class="hero" style="text-align:center;margin:0 auto;padding-top:clamp(48px,9vw,96px)">
+      <h1>Your photos, shared or sold.</h1>
+      <p class="sub" style="margin:12px auto 28px">Free to share with a QR code. Add a price whenever you want to sell the originals \u2014 buyers pay by card and downloads unlock instantly.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a class="btn" href="/signup">Create an account</a>
         <a class="btn outline" href="/login">Log in</a>
-      </div>
-      <div class="note" style="max-width:600px;margin:32px auto 0;text-align:left">
-        <span><strong>Free to share, private by default.</strong> Add a price only if you want to sell your shots \u2014 buyers pay with card, downloads unlock instantly. <a href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md" target="_blank" rel="noopener">Getting started guide</a></span>
       </div>
     </div>
   </div>
@@ -72,7 +67,7 @@ async function checkAuth() {
     } else {
       document.getElementById('guest').classList.remove('hidden');
       document.getElementById('navRight').innerHTML =
-        '<a class="btn small outline" href="/login">Log in</a>' +
+        '<a class="btn small ghost" href="/login">Log in</a>' +
         '<a class="btn small" href="/signup">Sign up</a>';
     }
   } catch {
@@ -93,7 +88,7 @@ function applyView() {
   const el = document.getElementById('list');
   if (el) el.className = 'card-list' + (view === 'grid' ? ' grid' : '');
   const btn = document.getElementById('viewToggle');
-  if (btn) btn.textContent = view === 'grid' ? '\\u2630' : '\\u25a6';
+  if (btn) btn.innerHTML = '<i class="ico ' + (view === 'grid' ? 'ico-list' : 'ico-grid') + '"></i>';
 }
 async function load(append) {
   const el = document.getElementById('list');
@@ -106,40 +101,41 @@ async function load(append) {
     total = data.total;
     if (!collections.length) {
       document.getElementById('loadMore').classList.add('hidden');
-      el.innerHTML = '<div class="empty"><div class="empty-icon">\\ud83d\\udcc2</div><div class="empty-text">' + (q ? 'No collections match your search.' : filter === 'shared' ? 'No collections are shared with you yet.' : filter === 'owned' ? 'You have not created any collections yet.' : 'No collections yet.<br>Create one above to get started.') + '</div></div>';
+      const msg = q ? 'No collections match that search.' : filter === 'shared' ? 'Nothing has been shared with you yet.' : filter === 'owned' ? 'You have not made a collection yet.' : 'No collections yet. Create one above.';
+      el.innerHTML = '<div class="empty"><i class="ico ico-folder"></i><div class="empty-text">' + msg + '</div></div>';
       return;
     }
     applyView();
     const html = collections.map((c, i) =>
-      '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 60) + 'ms">' +
+      '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 40) + 'ms">' +
         '<div class="card-left">' +
-          '<div class="card-thumb">' + (c.cover_thumb_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_thumb_filename + '?thumb=1" alt="" loading="lazy">' : '\\ud83d\\udcc1') + '</div>' +
+          '<div class="card-thumb">' + (c.cover_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_filename + '?thumb=1" alt="" loading="lazy">' : '<i class="ico ico-image"></i>') + '</div>' +
           '<div class="card-info">' +
-            '<div class="card-title">' + esc(c.name) +
+            '<div class="card-title"><span class="nm">' + esc(c.name) + '</span>' +
               (c.price_cents ? '<span class="badge price">' + esc(money(c.price_cents, c.currency)) + '</span>' : '') +
-              (c.is_public === false ? '<span class="badge">\\ud83d\\udd12 private</span>' : '') +
-              (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + c.role + '</span>' : '') +
+              (c.is_public === false ? '<span class="badge"><i class="ico ico-lock"></i>Private</span>' : '') +
+              (c.role && c.role !== 'owner' ? '<span class="badge ' + c.role + '">' + esc(c.role) + '</span>' : '') +
             '</div>' +
             '<div class="card-sub">' + c.photo_count + ' photo' + (c.photo_count === 1 ? '' : 's') + '</div>' +
           '</div>' +
         '</div>' +
-        '<span class="card-arrow">\\u203a</span>' +
+        '<span class="card-arrow"><i class="ico ico-arrow"></i></span>' +
       '</a>'
     ).join('');
     if (append) el.insertAdjacentHTML('beforeend', html); else el.innerHTML = html;
     offset += collections.length;
     const lm = document.getElementById('loadMore');
     lm.classList.toggle('hidden', !data.hasMore);
-    lm.textContent = 'Load more (' + offset + '/' + total + ')';
+    lm.textContent = 'Load more (' + offset + ' of ' + total + ')';
   } catch {
-    el.innerHTML = '<div class="empty"><div class="empty-icon">\\u26a0\\ufe0f</div><div class="empty-text">Could not reach server.<br><button class="btn small" style="margin-top:16px" onclick="load()">Retry</button></div></div>';
+    el.innerHTML = '<div class="empty"><i class="ico ico-alert"></i><div class="empty-text">Could not reach the server.<br><button class="btn small outline" style="margin-top:14px" onclick="load()">Try again</button></div></div>';
   }
 }
 document.getElementById('createForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('name');
   const name = input.value.trim();
-  if (!name) { toast('Enter a collection name', 'error'); return; }
+  if (!name) { toast('Give the collection a name', 'error'); return; }
   const btn = e.target.querySelector('button');
   btn.innerHTML = '<span class="spinner"></span>';
   btn.disabled = true;
@@ -148,10 +144,10 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     if (res.status === 401) { window.location.href = '/login'; return; }
     const { id } = await res.json();
     toast('Collection created', 'success');
-    setTimeout(() => window.location.href = '/c/' + id, 400);
+    setTimeout(() => window.location.href = '/c/' + id, 350);
   } catch {
-    toast('Could not create collection', 'error');
-    btn.innerHTML = 'Create'; btn.disabled = false;
+    toast('Could not create the collection', 'error');
+    btn.innerHTML = '<i class="ico ico-plus"></i>Create'; btn.disabled = false;
   }
 });
 const searchInput = document.getElementById('search');
@@ -177,8 +173,7 @@ document.querySelectorAll('.chip').forEach((ch) => {
     load(false);
   });
 });
-const viewToggle = document.getElementById('viewToggle');
-viewToggle.addEventListener('click', () => {
+document.getElementById('viewToggle').addEventListener('click', () => {
   view = view === 'grid' ? 'list' : 'grid';
   try { localStorage.setItem('tts.view', view); } catch (e) {}
   applyView();
@@ -187,5 +182,5 @@ applyView();
 checkAuth();
 `
 
-  return layout('Take the shot \u00b7 Share and sell your photos', '', body, script)
+  return layout('Take the shot', '', body, script)
 }

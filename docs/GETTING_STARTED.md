@@ -133,10 +133,11 @@ ZIPs included. Nobody has to create an account to buy.
 - **You run your own instance** → payments go into **your** Stripe account. Stripe
   pays out to your bank on your normal schedule. Take the shot never touches the
   money and takes 0%.
-- **You run an instance for several photographers** → set the photographer's Stripe
-  Connect account id in `users.stripe_account_id`. Checkout then transfers the
-  money to them (`transfer_data.destination`), and you can keep a platform cut by
-  setting `STRIPE_APPLICATION_FEE_PERCENT=10`.
+- **You run an instance for several photographers** → each photographer opens a
+  collection they own → **Sell** → **Connect Stripe** and finishes Stripe's hosted
+  onboarding. The account id lands in `users.stripe_account_id` and checkout
+  transfers the money to them (`transfer_data.destination`). You can keep a
+  platform cut by setting `STRIPE_APPLICATION_FEE_PERCENT=10`.
 - Card processing fees are Stripe's and are charged on top of your price. There is
   no commission, no subscription and no minimum.
 

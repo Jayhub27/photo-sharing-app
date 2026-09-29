@@ -46,15 +46,15 @@ export function AnimatedButton({
         style={[
           {
             backgroundColor: outline ? colors.surface : colors.accent,
-            paddingVertical: 16,
-            paddingHorizontal: 24,
-            borderRadius: 0,
+            paddingVertical: 14,
+            paddingHorizontal: 22,
+            borderRadius: 999,
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'row',
             gap: 8,
-            borderWidth: 2,
-            borderColor: colors.border,
+            borderWidth: outline ? 1 : 0,
+            borderColor: colors.borderStrong,
           },
           style as any,
         ]}
@@ -78,11 +78,9 @@ export function ButtonText({
   return (
     <Text
       style={{
-        color: outline ? colors.text : '#111111',
+        color: outline ? colors.text : colors.onAccent,
         fontSize: 15,
-        fontWeight: '900',
-        letterSpacing: 0.5,
-        textTransform: 'uppercase',
+        fontWeight: '600',
       }}
     >
       {children}
@@ -196,7 +194,7 @@ export function SkeletonCard() {
       style={[
         {
           backgroundColor: colors.surface,
-          borderRadius: 6,
+          borderRadius: 18,
           borderWidth: 1,
           borderColor: colors.border,
           height: 72,
@@ -234,10 +232,10 @@ export function LoadingScreen() {
         style={{
           width: 32,
           height: 32,
-          borderRadius: 6,
+          borderRadius: 999,
           borderWidth: 3,
-          borderColor: colors.border,
-          borderTopColor: colors.accent,
+          borderColor: colors.surface2,
+          borderTopColor: colors.accentDark,
           transform: [{ rotate }],
         }}
       />
@@ -277,7 +275,7 @@ export function PhotoViewer({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)' }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(24,17,12,0.95)' }}>
         <Pressable
           onPress={onClose}
           accessibilityRole="button"
@@ -289,15 +287,13 @@ export function PhotoViewer({
             zIndex: 2,
             width: 44,
             height: 44,
-            borderRadius: 0,
-            backgroundColor: '#ffffff',
-            borderWidth: 2,
-            borderColor: '#111111',
+            borderRadius: 999,
+            backgroundColor: '#fffdf9',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#111111', fontSize: 22, fontWeight: '900' }}>✕</Text>
+          <Text style={{ color: '#2a2119', fontSize: 20, fontWeight: '600' }}>✕</Text>
         </Pressable>
         <FlatList
           ref={listRef}

@@ -4,20 +4,26 @@
     "slug": "photo-share",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "sdkVersion": "51.0.0",
     "scheme": "taketheshot",
     "icon": "./assets/icon.png",
     "splash": {
-      "backgroundColor": "#0b0b0b",
+      "backgroundColor": "#f9f4ec",
       "resizeMode": "contain"
     },
     "android": {
       "package": "com.photoshare.app",
-      "permissions": ["CAMERA"],
+      "permissions": [
+        "CAMERA"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0a0a0f"
+        "backgroundColor": "#f9f4ec"
+      },
+      "navigationBar": {
+        "backgroundColor": "#f9f4ec",
+        "barStyle": "dark-content"
       }
     },
     "ios": {

@@ -39,7 +39,9 @@ npm run android             # or: npm run --workspace app android
 - **Collection** — add from the library or take a photo, import from links, set a
   price, schedule auto-delete, toggle visibility, remove photos, show the QR
 - **Gallery** — full-screen swipe viewer
-- **Scan** — scan a collection QR code with the camera
+- **Scan** — scan a collection QR code, or a camera QR: Wi-Fi codes (Canon,
+  LUMIX, OI.Share, …) show copyable details, and photo links import straight
+  into a collection
 - **Members** — invite viewers/editors
 
 ## Note on versions

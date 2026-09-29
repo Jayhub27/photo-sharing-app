@@ -18,6 +18,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   deletePhoto as deletePhotoApi,
   getCollection,
+  getPayoutStatus,
   imageHeaders,
   importFromLinks,
   photoUrl,
@@ -25,8 +26,10 @@ import {
   setCollectionPrice,
   setCollectionVisibility,
   startCheckout,
+  startPayoutOnboarding,
   uploadPhoto,
   type Photo,
+  type PayoutStatus,
   type Pricing,
   type RootStackParamList,
 } from '../api'
@@ -67,6 +70,8 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [sellOpen, setSellOpen] = useState(false)
   const [priceText, setPriceText] = useState('')
   const [savingPrice, setSavingPrice] = useState(false)
+  const [payout, setPayout] = useState<PayoutStatus | null>(null)
+  const [connecting, setConnecting] = useState(false)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [expiryOpen, setExpiryOpen] = useState(false)
   const [expiryDays, setExpiryDays] = useState('')
@@ -129,6 +134,19 @@ export default function CollectionScreen({ route, navigation }: Props) {
     const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
     return () => clearTimeout(t)
   }, [query, load, photoSort])
+
+  useEffect(() => {
+    if (!sellOpen || role !== 'owner') return
+    let active = true
+    getPayoutStatus()
+      .then((s) => {
+        if (active) setPayout(s)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [sellOpen, role])
 
   const poll = useCallback(async () => {
     if (!newestRef.current) return
@@ -299,6 +317,18 @@ export default function CollectionScreen({ route, navigation }: Props) {
       Alert.alert('Could not save pricing', err instanceof Error ? err.message : 'Try again later')
     } finally {
       setSavingPrice(false)
+    }
+  }
+
+  const handleConnectPayouts = async () => {
+    setConnecting(true)
+    try {
+      const { url } = await startPayoutOnboarding(id)
+      await Linking.openURL(url)
+    } catch (err) {
+      Alert.alert('Payout setup', err instanceof Error ? err.message : 'Could not start payout setup')
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -620,6 +650,25 @@ export default function CollectionScreen({ route, navigation }: Props) {
                 </AnimatedButton>
               </View>
             </View>
+            {payout?.configured &&
+              (payout.payoutsEnabled ? (
+                <Text style={[modalStyles.hint, { marginTop: 18 }]}>
+                  Payouts active. Sales transfer to your Stripe account automatically.
+                </Text>
+              ) : (
+                <View style={{ marginTop: 18 }}>
+                  <Text style={[modalStyles.hint, { marginBottom: 10 }]}>
+                    {payout.accountId
+                      ? 'Finish Stripe setup so payouts can reach your bank.'
+                      : 'Connect Stripe to receive sales directly instead of the platform account.'}
+                  </Text>
+                  <AnimatedButton outline onPress={handleConnectPayouts} disabled={connecting}>
+                    <ButtonText outline>
+                      {connecting ? 'Opening…' : payout.accountId ? 'Finish payout setup' : 'Connect Stripe'}
+                    </ButtonText>
+                  </AnimatedButton>
+                </View>
+              ))}
           </View>
         </View>
       </Modal>
@@ -669,7 +718,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               style={[styles.input, { marginBottom: 12 }]}
             />
             {pricing?.price_cents ? (
-              <Text style={[modalStyles.hint, { color: '#fbbf24' }]}>
+              <Text style={[modalStyles.hint, { color: '#a8621f' }]}>
                 Warning: this collection is for sale. When it deletes, buyers lose access and purchase records are removed.
               </Text>
             ) : null}

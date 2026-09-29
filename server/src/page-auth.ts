@@ -4,11 +4,11 @@ export function loginPage(_apiBase: string): string {
   const body = `
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
-  <a class="auth-back" href="/">&larr; Back</a>
+  <a class="auth-back" href="/"><i class="ico ico-chevr"></i>Back</a>
   <div class="auth-card">
-    <div class="auth-logo">\ud83d\udcf8</div>
+    <div class="auth-logo"><i class="ico ico-camera"></i></div>
     <div class="auth-title">Welcome back</div>
-    <div class="auth-sub">Log in to manage and sell your photo collections</div>
+    <div class="auth-sub">Manage and sell your photo collections.</div>
     <form id="loginForm">
       <div class="auth-field">
         <label for="email">Email</label>
@@ -20,7 +20,7 @@ export function loginPage(_apiBase: string): string {
       </div>
       <button class="btn auth-btn" type="submit">Log in</button>
     </form>
-    <div class="auth-footer">New here? <a href="/signup">Create an account</a></div>
+    <div class="auth-footer">New here? <a href="/signup">Sign up</a></div>
   </div>
 </div>
 `
@@ -52,11 +52,11 @@ export function signupPage(_apiBase: string): string {
   const body = `
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
-  <a class="auth-back" href="/">&larr; Back</a>
+  <a class="auth-back" href="/"><i class="ico ico-chevr"></i>Back</a>
   <div class="auth-card">
-    <div class="auth-logo">\ud83d\udcf8</div>
+    <div class="auth-logo"><i class="ico ico-camera"></i></div>
     <div class="auth-title">Create your account</div>
-    <div class="auth-sub">Start sharing free \u2014 add a price whenever you want to sell your shots</div>
+    <div class="auth-sub">Sharing is free. Add a price whenever you want to sell.</div>
     <form id="signupForm">
       <div class="auth-field">
         <label for="name">Name</label>
