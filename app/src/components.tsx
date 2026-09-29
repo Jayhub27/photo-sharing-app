@@ -45,16 +45,16 @@ export function AnimatedButton({
       <Pressable
         style={[
           {
-            backgroundColor: outline ? 'transparent' : 'rgba(0,240,255,0.07)',
+            backgroundColor: outline ? colors.surface : colors.accent,
             paddingVertical: 16,
             paddingHorizontal: 24,
-            borderRadius: 4,
+            borderRadius: 0,
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'row',
             gap: 8,
-            borderWidth: 1,
-            borderColor: outline ? 'rgba(255,43,214,0.55)' : 'rgba(0,240,255,0.55)',
+            borderWidth: 2,
+            borderColor: colors.border,
           },
           style as any,
         ]}
@@ -78,10 +78,10 @@ export function ButtonText({
   return (
     <Text
       style={{
-        color: outline ? colors.accent3 : colors.accent,
-        fontSize: 13,
-        fontWeight: '700',
-        letterSpacing: 1.4,
+        color: outline ? colors.text : '#111111',
+        fontSize: 15,
+        fontWeight: '900',
+        letterSpacing: 0.5,
         textTransform: 'uppercase',
       }}
     >
@@ -289,15 +289,15 @@ export function PhotoViewer({
             zIndex: 2,
             width: 44,
             height: 44,
-            borderRadius: 4,
-            backgroundColor: 'rgba(0,240,255,0.14)',
-            borderWidth: 1,
-            borderColor: 'rgba(0,240,255,0.5)',
+            borderRadius: 0,
+            backgroundColor: '#ffffff',
+            borderWidth: 2,
+            borderColor: '#111111',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: colors.accent, fontSize: 22 }}>✕</Text>
+          <Text style={{ color: '#111111', fontSize: 22, fontWeight: '900' }}>✕</Text>
         </Pressable>
         <FlatList
           ref={listRef}

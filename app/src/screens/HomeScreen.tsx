@@ -138,7 +138,7 @@ export default function HomeScreen({ navigation }: Props) {
               borderRadius: 999,
               borderWidth: 1,
               borderColor: filter === f ? colors.accent : colors.border,
-              backgroundColor: filter === f ? 'rgba(0,240,255,0.15)' : 'transparent',
+              backgroundColor: filter === f ? 'rgba(255,212,59,0.5)' : 'transparent',
             }}
           >
             <Text style={{ color: filter === f ? colors.text : colors.textMuted, fontSize: 13, fontWeight: '600' }}>

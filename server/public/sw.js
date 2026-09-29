@@ -8,8 +8,6 @@ const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
-  '/fonts/orbitron-latin.woff2',
-  '/fonts/sharetechmono-latin.woff2',
 ]
 
 self.addEventListener('install', (event) => {
@@ -35,7 +33,7 @@ self.addEventListener('message', (event) => {
 })
 
 function isStaticAsset(pathname) {
-  return pathname.startsWith('/icons/') || pathname.startsWith('/fonts/') || pathname === '/manifest.webmanifest'
+  return pathname.startsWith('/icons/') || pathname === '/manifest.webmanifest'
 }
 
 self.addEventListener('fetch', (event) => {
