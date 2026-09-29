@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Take the shot — send a QR code, sell the originals</title>
+<meta name="description" content="Create a photo collection, share it as a link or QR code, and sell the original files with Stripe checkout. Free to start.">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f6f5f2">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'none'; object-src 'none'">
+<link rel="canonical" href="https://take-the-shot-site.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Take the shot — send a QR code, sell the originals">
+<meta property="og:description" content="Create a photo collection, share it as a link or QR code, and sell the original files with Stripe checkout.">
+<meta property="og:url" content="https://take-the-shot-site.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2312110f'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%23f6f5f2' stroke-width='2.5'/%3E%3C/svg%3E">
+<link rel="preload" as="image" href="images/hero-hills.jpg" imagesrcset="images/hero-hills-640.jpg 640w, images/hero-hills.jpg 1200w" imagesizes="(min-width: 60rem) 46vw, 100vw">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top" id="top">
+  <div class="top-in">
+    <a class="wordmark" href="#top">
+      <span class="wordmark-dot" aria-hidden="true"></span>
+      Take the shot
+    </a>
+    <nav class="top-nav" aria-label="Sections">
+      <a href="#selling">Selling</a>
+      <a href="#how">How it works</a>
+      <a href="#download">Download</a>
+      <a href="#questions">Questions</a>
+    </nav>
+    <a class="btn btn-small" data-link="apk" href="#download">Get the app</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title">Take the shot.<br>Then sell it.</h1>
+      <p class="lede">
+        Make a collection, drop in your photos, send the link or QR code.
+        Set a price and Stripe unlocks the original files the moment someone pays.
+      </p>
+      <div class="actions">
+        <a class="btn" data-link="apk" href="#download">Download for Android</a>
+        <a class="btn btn-quiet" href="#selling">See how selling works</a>
+      </div>
+      <p class="fineprint">Free to share. You only pay Stripe's card fee when you sell.</p>
+    </div>
+
+    <figure class="hero-shot">
+      <img
+        src="images/hero-hills.jpg"
+        srcset="images/hero-hills-640.jpg 640w, images/hero-hills.jpg 1200w"
+        sizes="(min-width: 60rem) 46vw, 100vw"
+        width="1200" height="900" fetchpriority="high" decoding="async"
+        alt="Green hills at dusk with a road running through the valley.">
+      <figcaption>
+        <span class="tag tag-price"><span aria-hidden="true">$</span>45.00</span>
+        <span class="tag">12 originals unlocked after payment</span>
+      </figcaption>
+    </figure>
+  </section>
+
+  <section class="band" aria-label="What you get">
+    <ul class="facts">
+      <li><b>No install to view</b>The gallery opens in any phone browser.</li>
+      <li><b>Originals stay locked</b>Buyers see 640px thumbnails until they pay.</li>
+      <li><b>ZIP when they buy</b>Single files and whole collections, one payment.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="selling" aria-labelledby="selling-title">
+    <div class="section-head">
+      <h2 id="selling-title">Every collection is a link and a QR code</h2>
+      <p>Scan it, and the gallery opens — no app, no account. Add a price and the same
+        page becomes a shop: thumbnails stay visible, originals unlock on payment.</p>
+    </div>
+
+    <div class="selling">
+      <div class="qr">
+        <img src="qr.svg" width="240" height="240" alt="QR code that opens the latest Android download.">
+        <p>This QR points at the Android build. A collection QR works the same way — point a
+          phone at it and the gallery opens.</p>
+      </div>
+
+      <div class="gallery">
+        <figure class="shot">
+          <img src="images/cliffside-town-640.jpg" srcset="images/cliffside-town-640.jpg 640w, images/cliffside-town.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="Cliffside town stacked above the sea at golden hour.">
+          <figcaption><span class="tag tag-price">$45.00</span><span class="shot-name">Liguria, day three</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="images/paris-640.jpg" srcset="images/paris-640.jpg 640w, images/paris.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="The Eiffel Tower in black and white, birds crossing the sky.">
+          <figcaption><span class="tag tag-price">$30.00</span><span class="shot-name">Paris, last light</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="images/above-clouds-640.jpg" srcset="images/above-clouds-640.jpg 640w, images/above-clouds.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="A summit above a floor of clouds at sunrise.">
+          <figcaption><span class="tag">Free download</span><span class="shot-name">Above the clouds</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="images/strawberries-640.jpg" srcset="images/strawberries-640.jpg 640w, images/strawberries.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="Strawberries on the vine, red against green leaves.">
+          <figcaption><span class="tag tag-price">$18.00</span><span class="shot-name">Market, early</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="images/leaves-640.jpg" srcset="images/leaves-640.jpg 640w, images/leaves.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="Backlit leaves with the sky showing through.">
+          <figcaption><span class="tag tag-price">$24.00</span><span class="shot-name">Greenhouse</span></figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="images/pink-forest-640.jpg" srcset="images/pink-forest-640.jpg 640w, images/pink-forest.jpg 1200w"
+               sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
+               alt="A forest canopy washed in violet light.">
+          <figcaption><span class="tag tag-price">$36.00</span><span class="shot-name">Trailhead, spring</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="how" aria-labelledby="how-title">
+    <div class="section-head">
+      <h2 id="how-title">How it works</h2>
+      <p>Three steps from camera roll to paid.</p>
+    </div>
+    <ol class="steps">
+      <li>
+        <h3>Make a collection</h3>
+        <p>Name it and add photos from your phone, or paste links. Thumbnails and sizes are generated for you.</p>
+      </li>
+      <li>
+        <h3>Send the QR code</h3>
+        <p>Share the link or let people scan the code. No install and no account needed to look.</p>
+      </li>
+      <li>
+        <h3>Get paid</h3>
+        <p>Set a price per collection. Stripe handles the card, and every original unlocks on payment.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section" id="download" aria-labelledby="download-title">
+    <div class="section-head">
+      <h2 id="download-title">Get the app</h2>
+      <p>One app for shooting and uploading. Everything else works in a browser.</p>
+    </div>
+
+    <ul class="downloads">
+      <li class="dl">
+        <div class="dl-main">
+          <h3>Android</h3>
+          <p>Debug build, 163 MB, signed with the debug key. Sideload it and allow unknown sources.</p>
+        </div>
+        <p class="dl-meta">Requires Android 7+</p>
+        <a class="btn" data-link="apk" href="#" rel="noopener noreferrer">Download APK</a>
+      </li>
+      <li class="dl">
+        <div class="dl-main">
+          <h3>iPhone and iPad</h3>
+          <p>No App Store listing yet. Build it to your own device with EAS, or open it in Expo Go.</p>
+        </div>
+        <p class="dl-meta">Requires iOS 14+</p>
+        <a class="btn btn-quiet" data-link="ios" href="#" rel="noopener noreferrer">iOS build guide</a>
+      </li>
+      <li class="dl">
+        <div class="dl-main">
+          <h3>Web</h3>
+          <p>The server-rendered app runs anywhere. Deploy your own copy to Vercel in one click.</p>
+        </div>
+        <p class="dl-meta">Any modern browser</p>
+        <a class="btn btn-quiet" data-link="deploy" href="#" rel="noopener noreferrer">Deploy your own</a>
+      </li>
+      <li class="dl">
+        <div class="dl-main">
+          <h3>Source code</h3>
+          <p>The Expo app, the Express API and the Supabase schema, ready to run.</p>
+        </div>
+        <p class="dl-meta">MIT-style, see the repo</p>
+        <a class="btn btn-quiet" data-link="source" href="#" rel="noopener noreferrer">Download source</a>
+      </li>
+    </ul>
+
+    <p class="install">After the APK downloads: open the file, allow <b>install from unknown sources</b>,
+      then sign up and add your first collection.</p>
+  </section>
+
+  <section class="section section-alt" id="questions" aria-labelledby="questions-title">
+    <div class="section-head">
+      <h2 id="questions-title">Questions</h2>
+      <p>The short answers.</p>
+    </div>
+    <div class="qa">
+      <details open>
+        <summary>Is it really free?</summary>
+        <p>Creating, uploading and sharing cost nothing. You only meet money if you price a
+          collection, and then it's Stripe's usual card fee.</p>
+      </details>
+      <details>
+        <summary>Do people need the app to see my photos?</summary>
+        <p>No. A link or a QR code opens the gallery in any phone browser. The app is for
+          shooting, uploading and managing.</p>
+      </details>
+      <details>
+        <summary>What happens after someone pays?</summary>
+        <p>Stripe confirms the checkout through a webhook, the purchase is recorded, and every
+          original in that collection unlocks for that buyer, ZIP downloads included.</p>
+      </details>
+      <details>
+        <summary>Which files can I import?</summary>
+        <p>Photos from your device, direct image links, Google Drive file links, and any page
+          with an og:image tag. Up to 10 links at a time, 25 MB per image.</p>
+      </details>
+      <details>
+        <summary>Is my data safe?</summary>
+        <p>Passwords are bcrypt hashed, sessions are HTTP-only cookies, and the storage bucket is
+          private: images stream through authenticated endpoints only. Row level security is on.</p>
+      </details>
+      <details>
+        <summary>Can I run it myself?</summary>
+        <p>Yes. The source includes the mobile app, the API and the database schema. Bring your
+          own Supabase project and Stripe keys.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-in">
+    <div class="foot-brand">
+      <p class="foot-word">Take<br>the shot.</p>
+      <p class="foot-note">A photo-sharing app that lets you sell the originals.</p>
+    </div>
+    <nav class="foot-cols" aria-label="Footer">
+      <div>
+        <h2>App</h2>
+        <a data-link="apk" href="#">Android APK</a>
+        <a data-link="ios" href="#">iOS build</a>
+        <a data-link="web" href="#">Web app</a>
+      </div>
+      <div>
+        <h2>Project</h2>
+        <a data-link="repo" href="#">GitHub</a>
+        <a data-link="releases" href="#">Releases</a>
+        <a data-link="source" href="#">Source zip</a>
+      </div>
+      <div>
+        <h2>Support</h2>
+        <a href="#questions">Questions</a>
+        <a data-link="repo" href="#">Report a bug</a>
+      </div>
+    </nav>
+  </div>
+  <div class="foot-bar">
+    <span>&copy; <span data-year>2026</span> Take the shot</span>
+    <span>Expo, Express, Supabase, Stripe</span>
+    <span data-status>Shipping</span>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
