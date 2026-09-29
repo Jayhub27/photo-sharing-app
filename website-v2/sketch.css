@@ -1,0 +1,259 @@
+/* Hand-drawn skin for the gallery site.
+   Activated with <html data-theme="sketch"> (header toggle or ?theme=sketch).
+   Same layout, rules and spacing as the clean theme — only the surface changes:
+   paper instead of white, pencil rules instead of hairlines, marker type,
+   wobbly frames, tape and a few pencil doodles. */
+
+html[data-theme="sketch"] {
+  --paper: #faf7f0;
+  --surface: #fffdf7;
+  --ink: #2f2a25;
+  --ink-soft: #4b443c;
+  --muted: #6f675c;
+  --line: rgba(47, 42, 37, 0.28);
+  --line-strong: rgba(47, 42, 37, 0.5);
+  --price: #d93a1f;
+  --marker: #2f6fb5;
+
+  --sans: "Architects Daughter", "Comic Sans MS", "Segoe UI", cursive;
+  --display: "Permanent Marker", "Architects Daughter", cursive;
+
+  --wob-sm: 8px 6px 10px 7px / 7px 10px 6px 9px;
+  --wob-md: 16px 12px 18px 13px / 13px 18px 12px 16px;
+  --shadow-photo: 4px 5px 0 rgba(47, 42, 37, 0.14);
+}
+
+html[data-theme="sketch"] body {
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(47, 42, 37, 0.09) 1px, transparent 1px);
+  background-size: 22px 22px;
+  font-family: var(--sans);
+  font-size: 1.09rem;
+  line-height: 1.7;
+}
+
+html[data-theme="sketch"] h1,
+html[data-theme="sketch"] h2,
+html[data-theme="sketch"] h3,
+html[data-theme="sketch"] .wordmark,
+html[data-theme="sketch"] .foot-word {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+html[data-theme="sketch"] .lede,
+html[data-theme="sketch"] .section-head p,
+html[data-theme="sketch"] .dl p,
+html[data-theme="sketch"] .qa p,
+html[data-theme="sketch"] .facts li,
+html[data-theme="sketch"] .qr p { color: var(--ink-soft); }
+
+/* header ---------------------------------------------------------------- */
+html[data-theme="sketch"] .top {
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  border-block-end: 2px dashed var(--line);
+}
+html[data-theme="sketch"] .top.is-stuck { border-block-end-style: dashed; box-shadow: none; }
+html[data-theme="sketch"] .wordmark-dot {
+  border: 2.5px solid var(--ink);
+  border-radius: 46% 54% 52% 48% / 50% 44% 56% 50%;
+  rotate: -6deg;
+}
+html[data-theme="sketch"] .top-nav a {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: color-mix(in srgb, var(--marker) 55%, transparent);
+  text-underline-offset: 4px;
+}
+
+/* toggle + buttons ------------------------------------------------------ */
+html[data-theme="sketch"] .theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--wob-sm);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+html[data-theme="sketch"] .theme-toggle-mark {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border: 2px solid var(--ink);
+  border-radius: 50% 40% 55% 45%;
+  background: var(--marker);
+}
+html[data-theme="sketch"] .theme-toggle:hover { background: #f1ece0; }
+
+html[data-theme="sketch"] .btn {
+  background: var(--surface);
+  color: var(--ink);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--wob-sm);
+  box-shadow: 3px 4px 0 rgba(47, 42, 37, 0.16);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+html[data-theme="sketch"] .btn:hover {
+  background: #fff;
+  transform: translate(1px, 2px);
+  box-shadow: 1px 1px 0 rgba(47, 42, 37, 0.16);
+}
+html[data-theme="sketch"] .btn-quiet { background: transparent; }
+html[data-theme="sketch"] .cta-row-after .btn { border-style: dashed; }
+
+/* hero ------------------------------------------------------------------ */
+html[data-theme="sketch"] .hero h1 { letter-spacing: 0; line-height: 1.02; }
+html[data-theme="sketch"] .hero h1::after {
+  content: "";
+  display: block;
+  inline-size: 11rem;
+  block-size: 12px;
+  margin-block-start: 0.6rem;
+  background-color: var(--marker);
+  -webkit-mask: var(--doodle-squiggle) repeat-x left center / 140px 10px;
+  mask: var(--doodle-squiggle) repeat-x left center / 140px 10px;
+}
+html[data-theme="sketch"] .hero-shot img {
+  border: 3px solid var(--ink);
+  border-radius: var(--wob-md);
+  box-shadow: var(--shadow-photo);
+  rotate: -0.8deg;
+}
+html[data-theme="sketch"] .hero-shot figcaption { rotate: 0.6deg; }
+
+/* labels drawn like taped paper ---------------------------------------- */
+html[data-theme="sketch"] .tag {
+  position: relative;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: var(--wob-sm);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  backdrop-filter: none;
+  padding: 0.45rem 0.75rem;
+  rotate: -1deg;
+}
+html[data-theme="sketch"] .tag::before {
+  content: "";
+  position: absolute;
+  inset-block-start: -11px;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  inline-size: 42px;
+  block-size: 14px;
+  background: rgba(215, 189, 141, 0.85);
+  rotate: -3deg;
+}
+html[data-theme="sketch"] .tag-price {
+  background: var(--price);
+  border-color: var(--ink);
+  color: #fffdf7;
+  rotate: 1.2deg;
+}
+html[data-theme="sketch"] .tag-price > span[aria-hidden] { color: #ffd9d0; }
+
+/* band ------------------------------------------------------------------ */
+html[data-theme="sketch"] .band { background: transparent; border-block-color: var(--line); }
+html[data-theme="sketch"] .facts li { border-inline-start-style: dashed; }
+html[data-theme="sketch"] .facts b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.05rem;
+}
+
+/* sections -------------------------------------------------------------- */
+html[data-theme="sketch"] .section { border-block-end: 2px dashed var(--line); }
+html[data-theme="sketch"] .section-alt { background: rgba(47, 111, 181, 0.05); }
+html[data-theme="sketch"] .section-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.6rem); }
+
+/* QR + gallery ---------------------------------------------------------- */
+html[data-theme="sketch"] .qr {
+  background: var(--surface);
+  border: 2.5px dashed var(--line-strong);
+  border-radius: var(--wob-md);
+  rotate: -0.5deg;
+}
+html[data-theme="sketch"] .qr img { rotate: 1deg; }
+html[data-theme="sketch"] .shot img {
+  border: 3px solid var(--ink);
+  border-radius: var(--wob-md);
+}
+html[data-theme="sketch"] .shot:nth-child(odd) img { rotate: -0.7deg; }
+html[data-theme="sketch"] .shot:nth-child(even) img { rotate: 0.6deg; }
+html[data-theme="sketch"] .shot:hover img { transform: translateY(-2px); }
+html[data-theme="sketch"] .shot figcaption { font-size: 0.9rem; }
+html[data-theme="sketch"] .shot .tag { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
+html[data-theme="sketch"] .shot .tag::before { inline-size: 30px; block-size: 11px; inset-block-start: -8px; }
+
+/* steps ----------------------------------------------------------------- */
+html[data-theme="sketch"] .steps li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--display);
+  font-size: 1.5rem;
+  color: var(--marker);
+  border-block-end: 2px dashed var(--line);
+  padding-block-end: var(--space-2);
+}
+
+/* downloads ------------------------------------------------------------- */
+html[data-theme="sketch"] .downloads { border-block-start-style: dashed; border-block-start-width: 2px; }
+html[data-theme="sketch"] .dl { border-block-end: 2px dashed var(--line); }
+html[data-theme="sketch"] .dl h3 { font-size: 1.25rem; }
+html[data-theme="sketch"] .install { font-size: 1rem; }
+
+/* questions ------------------------------------------------------------- */
+html[data-theme="sketch"] .qa { border-block-start: 2px dashed var(--line); }
+html[data-theme="sketch"] .qa details { border-block-end: 2px dashed var(--line); }
+html[data-theme="sketch"] .qa summary { font-family: var(--display); font-weight: 400; font-size: 1.2rem; }
+html[data-theme="sketch"] .qa summary::before { color: var(--marker); }
+
+/* footer ---------------------------------------------------------------- */
+html[data-theme="sketch"] .foot {
+  background: var(--paper);
+  color: var(--ink);
+  border-block-start: 3px solid var(--ink);
+}
+html[data-theme="sketch"] .foot-note,
+html[data-theme="sketch"] .foot-cols h2,
+html[data-theme="sketch"] .foot-bar { color: var(--muted); }
+html[data-theme="sketch"] .foot-cols h2 { font-family: var(--display); font-size: 1rem; }
+html[data-theme="sketch"] .foot-cols a { color: var(--ink); }
+html[data-theme="sketch"] .foot-cols a:hover { text-decoration-style: wavy; text-decoration-color: var(--marker); }
+html[data-theme="sketch"] .foot-bar { border-block-start: 2px dashed var(--line); }
+html[data-theme="sketch"] .foot-bar span:last-child { color: var(--marker); }
+
+/* a few pencil doodles, allowed to take the pen colour ------------------ */
+html[data-theme="sketch"] .hero-shot::after {
+  content: "";
+  position: absolute;
+  inset-block-end: -2.4rem;
+  inset-inline-start: -2.6rem;
+  inline-size: 5rem;
+  block-size: 4rem;
+  color: var(--marker);
+  background-color: currentColor;
+  -webkit-mask: var(--doodle-arrow) no-repeat center / contain;
+  mask: var(--doodle-arrow) no-repeat center / contain;
+  rotate: 8deg;
+  pointer-events: none;
+}
+html[data-theme="sketch"] .section-head h2 { position: relative; }
+
+@media (width < 60rem) {
+  html[data-theme="sketch"] .hero-shot::after { display: none; }
+}
+
+/* lines and star masks, shared by the skin */
+html[data-theme="sketch"] {
+  --doodle-squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='10' viewBox='0 0 140 10'%3E%3Cpath d='M3 6 C 25 1, 45 9, 70 5 S 115 1, 137 6' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+  --doodle-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cpath d='M3 4 C 15 5, 28 10, 35 23 M35 23 l-8.5 -3.2 M35 23 l1.4 8.6' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+}

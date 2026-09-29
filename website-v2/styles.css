@@ -157,6 +157,7 @@ a { color: inherit; }
   font: inherit;
   font-size: var(--text-sm);
   font-weight: 560;
+  white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
   transition: transform 140ms var(--ease), background-color 140ms var(--ease), border-color 140ms var(--ease);
@@ -169,6 +170,29 @@ a { color: inherit; }
   border-color: var(--line-strong);
 }
 .btn-quiet:hover { background: var(--surface); border-color: var(--ink); }
+
+/* theme toggle: quiet control next to the nav */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-frame);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: color 140ms var(--ease), border-color 140ms var(--ease);
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.theme-toggle-mark {
+  inline-size: 0.7rem;
+  block-size: 0.7rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
 
 /* ------------------------------------------------------------------ hero */
 .hero {
@@ -488,5 +512,7 @@ a { color: inherit; }
 /* ------------------------------------------------------------- small horns */
 @media (width < 40rem) {
   .top-nav { display: none; }
+  .top-in > .btn { display: none; }
+  .theme-toggle { margin-inline-start: auto; }
   .hero-shot figcaption { position: static; margin-block-start: var(--space-3); }
 }
