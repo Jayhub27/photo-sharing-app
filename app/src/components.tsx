@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
   type PressableProps,
+  type StyleProp,
   type ViewStyle,
   ActivityIndicator,
   Text,
@@ -18,7 +19,7 @@ import { colors, shadows } from './styles'
 type AnimatedButtonProps = PressableProps & {
   children: React.ReactNode
   outline?: boolean
-  style?: ViewStyle | ViewStyle[]
+  style?: StyleProp<ViewStyle>
 }
 
 export function AnimatedButton({
@@ -170,7 +171,7 @@ export function FadeIn({
   )
 }
 
-export function SkeletonCard() {
+function useShimmerOpacity() {
   const shimmer = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
@@ -184,10 +185,14 @@ export function SkeletonCard() {
     return () => loop.stop()
   }, [])
 
-  const opacity = shimmer.interpolate({
+  return shimmer.interpolate({
     inputRange: [0, 1],
     outputRange: [0.4, 0.7],
   })
+}
+
+export function SkeletonCard() {
+  const opacity = useShimmerOpacity()
 
   return (
     <Animated.View
@@ -203,6 +208,34 @@ export function SkeletonCard() {
         },
       ]}
     />
+  )
+}
+
+export function SkeletonGridCard({ width }: { width?: number }) {
+  const opacity = useShimmerOpacity()
+
+  return (
+    <Animated.View style={{ width, marginBottom: 18, opacity }}>
+      <View
+        style={{
+          width: '100%',
+          aspectRatio: 4 / 5,
+          borderRadius: 18,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        }}
+      />
+      <View
+        style={{
+          width: '68%',
+          height: 13,
+          borderRadius: 7,
+          backgroundColor: colors.surface,
+          marginTop: 10,
+        }}
+      />
+    </Animated.View>
   )
 }
 

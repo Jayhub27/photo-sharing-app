@@ -2,16 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { NavigationContainer, DefaultTheme, type Theme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StatusBar } from 'expo-status-bar'
-import HomeScreen from './screens/HomeScreen'
 import CreateCollectionScreen from './screens/CreateCollectionScreen'
 import CollectionScreen from './screens/CollectionScreen'
 import QRDisplayScreen from './screens/QRDisplayScreen'
-import ScanScreen from './screens/ScanScreen'
 import GalleryScreen from './screens/GalleryScreen'
 import LoginScreen from './screens/LoginScreen'
 import SignupScreen from './screens/SignupScreen'
 import MembersScreen from './screens/MembersScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
+import MainTabs from './MainTabs'
 import { LoadingScreen } from './components'
 import { AuthProvider, useAuth } from './auth'
 import { getValue, setValue } from './storage'
@@ -75,10 +74,10 @@ function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator initialRouteName={user ? 'Home' : startAt} screenOptions={screenOptions}>
+    <Stack.Navigator initialRouteName={user ? 'Tabs' : startAt} screenOptions={screenOptions}>
       {user ? (
         <>
-          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Tabs" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen
             name="CreateCollection"
             component={CreateCollectionScreen}
@@ -94,7 +93,6 @@ function RootNavigator() {
             component={QRDisplayScreen}
             options={{ headerShown: false }}
           />
-          <Stack.Screen name="Scan" component={ScanScreen} options={{ headerShown: false }} />
           <Stack.Screen
             name="Gallery"
             component={GalleryScreen}

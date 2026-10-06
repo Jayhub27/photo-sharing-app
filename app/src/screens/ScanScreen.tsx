@@ -14,12 +14,15 @@ import {
   View,
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
+import type { CompositeScreenProps } from '@react-navigation/native'
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   decodeCameraQr,
   importFromLinks,
   listCollections,
   parseCollectionUrl,
+  type AppTabParamList,
   type CameraQrAppInfo,
   type CameraQrPayload,
   type Collection,
@@ -28,7 +31,10 @@ import {
 import { colors, shadows, styles } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn } from '../components'
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Scan'>
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<AppTabParamList, 'Scan'>,
+  NativeStackScreenProps<RootStackParamList>
+>
 
 type Step =
   | { kind: 'scanning' }
@@ -115,7 +121,7 @@ function ScanScreenMobile({
     const collectionId = parseCollectionUrl(data)
     if (collectionId) {
       setScanned(true)
-      navigation.replace('Gallery', { collectionId })
+      navigation.navigate('Gallery', { collectionId })
       return
     }
 
@@ -183,7 +189,7 @@ function ScanScreenMobile({
         onPick={openPicker}
         onImport={importInto}
         onReset={reset}
-        onDone={() => navigation.goBack()}
+        onDone={reset}
       />
     )
   }

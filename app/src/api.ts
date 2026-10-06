@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import type { NavigatorScreenParams } from '@react-navigation/native'
 import { getValue, setValue } from './storage'
 
 const API_BASE_KEY = 'photoshare.apiBase'
@@ -134,14 +135,19 @@ export interface Page<T> {
   hasMore: boolean
 }
 
+export type AppTabParamList = {
+  Collections: undefined
+  Scan: undefined
+  Account: undefined
+}
+
 export type RootStackParamList = {
-  Home: undefined
+  Tabs: NavigatorScreenParams<AppTabParamList> | undefined
   Login: undefined
   Signup: undefined
   CreateCollection: undefined
   Collection: { id: string; name?: string }
   QRDisplay: { id: string; name?: string }
-  Scan: undefined
   Gallery: { collectionId: string }
   Members: { id: string; name?: string }
 }
