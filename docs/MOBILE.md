@@ -100,6 +100,35 @@ points at any server at runtime instead of a hardcoded LAN IP.
 5. On a phone: take a photo in a collection; the progress bar advances per file
    and the uploaded image is correctly rotated.
 
+## Cloud Android testing (Ramus)
+
+The APK can be tested without a local emulator in hosted Android emulators such
+as [Ramus](https://ramus.dev) (free during alpha) or Google Device Streaming.
+They stream a live device into the browser and let coding agents drive it over
+CLI/API. Because the device and its stream are shared with the provider, apply
+this checklist every time:
+
+1. **Test accounts only.** Never type real user, production, or personal
+   credentials into a hosted device. Session replay analytics may record the
+   emulator display.
+2. **No secrets in the build.** A cloud test build needs only
+   `EXPO_PUBLIC_API_BASE` (public by design). Never inject repo/production
+   secrets into preview builds or the APK.
+3. **Share links are bearer credentials.** Anyone with the link controls the
+   device and sees the screen. Keep them private, send only to intended
+   reviewers, and let them expire or revoke them after use.
+4. **Clean sessions.** Device state is discarded when a session ends, but
+   uploaded APKs and build logs have a 30-day storage expiry at the provider —
+   do not upload anything you would not want stored abroad (US processing).
+5. **Follow the AUP.** No VPNs, proxies, or tunnels on the device; no
+   general-purpose phone use (games, social media, streaming); no multi-account
+   farming of free tiers.
+6. **Not the only test path.** These are alpha services with no warranties and
+   can be discontinued; keep Firebase Test Lab / local checks as a fallback.
+
+For PR automation, a no-GUI Firebase Test Lab Robo run is planned as the
+continuous check; live GUI sessions are for manual/agent verification.
+
 ## Future work
 
 - Authenticated download/save of purchased originals on device
