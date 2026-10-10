@@ -34,7 +34,7 @@ import {
   type Pricing,
   type RootStackParamList,
 } from '../api'
-import { colors, styles, shadows } from '../styles'
+import { colors, styles, fonts } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, PhotoViewer } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Collection'>
@@ -372,135 +372,129 @@ export default function CollectionScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       <FadeIn>
-        <View style={styles.hero}>
-          <Text style={styles.title}>{name}</Text>
-          <Text style={styles.subtitle}>
-            {total} photo{total === 1 ? '' : 's'} in this collection
-            {!isPublic ? '  ·  private' : ''}
-            {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
+        <View style={c.head}>
+          <View style={c.topRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Back to collections"
+            >
+              <Text style={c.back}>&larr; Collections</Text>
+            </Pressable>
+            <Text style={c.topMeta}>
+              {role === 'owner' ? 'Owner' : role ? role : ''}
+            </Text>
+          </View>
+
+          <Text style={c.kicker}>
             {pricing?.price_cents
               ? pricing.purchased
-                ? `  ·  purchased`
-                : `  ·  ${formatCents(pricing.price_cents, pricing.currency)}`
-              : ''}
+                ? 'Collection — Purchased'
+                : 'Collection — For sale'
+              : 'Collection'}
+          </Text>
+          <Text style={c.title}>{name}</Text>
+          <Text style={c.meta}>
+            {total} photograph{total === 1 ? '' : 's'}
+            {!isPublic ? '  ·  private' : ''}
+            {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
             {expiresAt
               ? `  ·  ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
               : ''}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-            {canEdit && (
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <AnimatedButton onPress={handleAdd} disabled={uploading}>
-                  <ButtonText>+ Add Photos</ButtonText>
-                </AnimatedButton>
-              </View>
-            )}
-            {canEdit && (
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <AnimatedButton outline onPress={handleCamera} disabled={uploading}>
-                  <Ionicons name="camera-outline" size={17} color={colors.text} />
-                  <ButtonText outline>Camera</ButtonText>
-                </AnimatedButton>
-              </View>
-            )}
-            {canEdit && (
-              <View style={{ flex: 1, minWidth: 140 }}>
-                <AnimatedButton outline onPress={() => setImportOpen(true)}>
-                  <Ionicons name="link-outline" size={17} color={colors.text} />
-                  <ButtonText outline>Import</ButtonText>
-                </AnimatedButton>
-              </View>
-            )}
-            <View style={{ flex: 1, minWidth: 140 }}>
-              <AnimatedButton
-                outline
-                onPress={() => navigation.navigate('QRDisplay', { id, name })}
-              >
-                <ButtonText outline>Show QR</ButtonText>
-              </AnimatedButton>
+
+          {pricing?.price_cents ? (
+            <View style={c.priceRow}>
+              <Text style={c.priceLabel}>
+                Originals
+                {pricing.purchased
+                  ? ', unlocked'
+                  : `, ${formatCents(pricing.price_cents, pricing.currency)}`}
+              </Text>
+              {pricing.locked ? (
+                <Pressable onPress={handleBuy} accessibilityRole="button">
+                  <Text style={c.buy}>Buy &rarr;</Text>
+                </Pressable>
+              ) : null}
             </View>
+          ) : null}
+
+          <View style={c.actions}>
+            {canEdit ? (
+              <>
+                <Pressable onPress={handleAdd} disabled={uploading} style={c.action} accessibilityRole="button">
+                  <Text style={c.actionText}>Add photos</Text>
+                </Pressable>
+                <Pressable onPress={handleCamera} disabled={uploading} style={c.action} accessibilityRole="button">
+                  <Text style={c.actionText}>Camera</Text>
+                </Pressable>
+                <Pressable onPress={() => setImportOpen(true)} style={c.action} accessibilityRole="button">
+                  <Text style={c.actionText}>Import</Text>
+                </Pressable>
+              </>
+            ) : null}
+            <Pressable
+              onPress={() => navigation.navigate('QRDisplay', { id, name })}
+              style={c.action}
+              accessibilityRole="button"
+            >
+              <Text style={c.actionText}>Show QR</Text>
+            </Pressable>
           </View>
-          {pricing?.locked && (
-            <View style={{ marginTop: 12 }}>
-              <AnimatedButton onPress={handleBuy}>
-                <ButtonText>Buy {formatCents(pricing.price_cents || 0, pricing.currency)}</ButtonText>
-              </AnimatedButton>
-            </View>
-          )}
-          {role && (
-            <Pressable
-              onPress={() => navigation.navigate('Members', { id, name })}
-              style={{ marginTop: 12 }}
-              accessibilityRole="button"
-              accessibilityLabel="Manage members"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="people-outline" size={16} color={colors.accentDark} />
-                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>Manage members</Text>
-              </View>
-            </Pressable>
-          )}
-          {role === 'owner' && (
-            <Pressable
-              onPress={() => {
-                setPriceText(pricing?.price_cents ? String(pricing.price_cents / 100) : '')
-                setSellOpen(true)
-              }}
-              style={{ marginTop: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel="Set a price for this collection"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="pricetag-outline" size={16} color={colors.accentDark} />
-                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
-                  {pricing?.price_cents ? 'Edit price & sales' : 'Sell this collection'}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-          {role === 'owner' && (
-            <Pressable
-              onPress={() => {
-                setExpiryDays(
-                  expiresAt
-                    ? String(Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 86400000)))
-                    : ''
-                )
-                setExpiryOpen(true)
-              }}
-              style={{ marginTop: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel="Set auto-delete for this collection"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="time-outline" size={16} color={colors.accentDark} />
-                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
-                  {expiresAt ? 'Edit auto-delete' : 'Auto-delete after…'}
-                </Text>
-              </View>
-            </Pressable>
-          )}
-          {role === 'owner' && (
-            <Pressable
-              onPress={toggleVisibility}
-              style={{ marginTop: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel={isPublic ? 'Make collection private' : 'Make collection public'}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name={isPublic ? 'lock-closed-outline' : 'lock-open-outline'} size={16} color={colors.accentDark} />
-                <Text style={{ color: colors.accentDark, fontWeight: '600', fontSize: 15 }}>
-                  {isPublic ? 'Make private' : 'Make public'}
-                </Text>
-              </View>
-            </Pressable>
-          )}
+
+          <View style={c.manage}>
+            {role ? (
+              <Pressable
+                onPress={() => navigation.navigate('Members', { id, name })}
+                hitSlop={6}
+                accessibilityRole="button"
+              >
+                <Text style={c.manageText}>Members</Text>
+              </Pressable>
+            ) : null}
+            {role === 'owner' ? (
+              <Pressable
+                onPress={() => {
+                  setPriceText(pricing?.price_cents ? String(pricing.price_cents / 100) : '')
+                  setSellOpen(true)
+                }}
+                hitSlop={6}
+                accessibilityRole="button"
+              >
+                <Text style={c.manageText}>{pricing?.price_cents ? 'Edit price' : 'Sell this collection'}</Text>
+              </Pressable>
+            ) : null}
+            {role === 'owner' ? (
+              <Pressable
+                onPress={() => {
+                  setExpiryDays(
+                    expiresAt
+                      ? String(Math.max(1, Math.round((new Date(expiresAt).getTime() - Date.now()) / 86400000)))
+                      : ''
+                  )
+                  setExpiryOpen(true)
+                }}
+                hitSlop={6}
+                accessibilityRole="button"
+              >
+                <Text style={c.manageText}>{expiresAt ? 'Edit auto-delete' : 'Auto-delete'}</Text>
+              </Pressable>
+            ) : null}
+            {role === 'owner' ? (
+              <Pressable onPress={toggleVisibility} hitSlop={6} accessibilityRole="button">
+                <Text style={c.manageText}>{isPublic ? 'Make private' : 'Make public'}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+
+          <View style={c.rule} />
         </View>
       </FadeIn>
 
-      <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
+      <View style={{ paddingHorizontal: 22 }}>
         <TextInput
-          style={[styles.input, { marginBottom: 0 }]}
+          style={c.search}
           placeholder="Search photos by filename…"
           placeholderTextColor={colors.textMuted}
           value={query}
@@ -510,25 +504,19 @@ export default function CollectionScreen({ route, navigation }: Props) {
         />
       </View>
 
-      <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 24, marginBottom: 12, alignItems: 'center' }}>
+      <View style={c.filters}>
         {(['newest', 'oldest', 'name'] as const).map((s) => (
           <Pressable
             key={s}
             onPress={() => setPhotoSort(s)}
             accessibilityRole="button"
             accessibilityState={{ selected: photoSort === s }}
-            style={{
-              paddingVertical: 6,
-              paddingHorizontal: 14,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: photoSort === s ? colors.accent : colors.border,
-              backgroundColor: photoSort === s ? 'rgba(255,212,59,0.5)' : 'transparent',
-            }}
+            style={c.filterItem}
           >
-            <Text style={{ color: photoSort === s ? colors.text : colors.textMuted, fontSize: 13, fontWeight: '600' }}>
+            <Text style={[c.filterText, photoSort === s && c.filterTextOn]}>
               {s === 'newest' ? 'Newest' : s === 'oldest' ? 'Oldest' : 'A–Z'}
             </Text>
+            <View style={[c.filterLine, photoSort === s && c.filterLineOn]} />
           </Pressable>
         ))}
       </View>
@@ -566,41 +554,36 @@ export default function CollectionScreen({ route, navigation }: Props) {
               onLongPress={canEdit ? () => handleDelete(item) : undefined}
               accessibilityRole="imagebutton"
               accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
+              style={{ width: itemWidth }}
             >
               <Image
                 source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
-                style={[styles.photo, shadows.card, { width: itemWidth, height: itemWidth }]}
+                style={[c.thumb, { width: itemWidth, height: Math.round(itemWidth * 1.25) }]}
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
               />
+              <View style={c.caption}>
+                <Text style={c.captionNo}>{String(index + 1).padStart(2, '0')}</Text>
+                <Text style={c.captionName} numberOfLines={1}>
+                  {item.original_name}
+                </Text>
+              </View>
             </Pressable>
           )}
         />
       )}
 
       {uploadProgress && (
-        <View
-          accessibilityLiveRegion="polite"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: 24,
-            backgroundColor: 'rgba(255,255,255,0.97)',
-          }}
-        >
-          <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+        <View accessibilityLiveRegion="polite" style={c.progress}>
+          <Text style={c.progressText}>
             Uploading {uploadProgress.done}/{uploadProgress.total}…
           </Text>
-          <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surface2, overflow: 'hidden' }}>
+          <View style={c.progressTrack}>
             <View
-              style={{
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: colors.accent,
-                width: `${Math.round((uploadProgress.done / uploadProgress.total) * 100)}%`,
-              }}
+              style={[
+                c.progressFill,
+                { width: `${Math.round((uploadProgress.done / uploadProgress.total) * 100)}%` },
+              ]}
             />
           </View>
         </View>
@@ -706,17 +689,18 @@ export default function CollectionScreen({ route, navigation }: Props) {
                   style={{
                     paddingVertical: 8,
                     paddingHorizontal: 14,
-                    borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: expiryDays === d ? colors.accent : colors.border,
-                    backgroundColor: expiryDays === d ? 'rgba(255,212,59,0.5)' : 'transparent',
+                    borderColor: colors.ink,
+                    backgroundColor: expiryDays === d ? colors.ink : 'transparent',
                   }}
                 >
                   <Text
                     style={{
-                      color: expiryDays === d ? colors.text : colors.textMuted,
-                      fontWeight: '600',
-                      fontSize: 13,
+                      fontFamily: fonts.sansSemi,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      fontSize: 11,
+                      color: expiryDays === d ? colors.paper : colors.textMuted,
                     }}
                   >
                     {d === '' ? 'Never' : `${d}d`}
@@ -733,7 +717,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               style={[styles.input, { marginBottom: 12 }]}
             />
             {pricing?.price_cents ? (
-              <Text style={[modalStyles.hint, { color: '#a8621f' }]}>
+              <Text style={[modalStyles.hint, { color: colors.red }]}>
                 Warning: this collection is for sale. When it deletes, buyers lose access and purchase records are removed.
               </Text>
             ) : null}
@@ -768,7 +752,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
 const modalStyles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(3,3,8,0.72)',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -776,12 +760,155 @@ const modalStyles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 520,
-    backgroundColor: colors.card,
-    borderRadius: 20,
+    backgroundColor: colors.paper,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.ink,
     padding: 22,
   },
-  title: { color: colors.text, fontSize: 19, fontWeight: '700', marginBottom: 8 },
-  hint: { color: colors.textMuted, fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  title: {
+    fontFamily: fonts.serif,
+    color: colors.text,
+    fontSize: 24,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+  },
+  hint: {
+    fontFamily: fonts.sans,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+})
+
+const c = StyleSheet.create({
+  head: { paddingHorizontal: 22, paddingTop: 12 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  back: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  topMeta: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  kicker: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 9.5,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: colors.red,
+    marginTop: 16,
+  },
+  title: {
+    fontFamily: fonts.serif,
+    fontSize: 35,
+    color: colors.ink,
+    letterSpacing: -0.6,
+    marginTop: 8,
+  },
+  meta: {
+    fontFamily: fonts.sans,
+    fontSize: 11.5,
+    color: colors.textMuted,
+    marginTop: 6,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 9,
+    marginTop: 14,
+  },
+  priceLabel: { fontFamily: fonts.serifItalic, fontSize: 16, color: colors.ink },
+  buy: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: colors.red,
+  },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, marginTop: 14 },
+  action: {},
+  actionText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.ink,
+  },
+  manage: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 14 },
+  manageText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.red,
+  },
+  rule: { borderTopWidth: 1, borderTopColor: colors.ink, marginTop: 16 },
+  search: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.ink,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderStrong,
+    marginTop: 4,
+  },
+  filters: {
+    flexDirection: 'row',
+    gap: 18,
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  filterItem: { alignItems: 'center', paddingBottom: 4 },
+  filterText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  filterTextOn: { color: colors.ink },
+  filterLine: { height: 2, width: '100%', minWidth: 18, marginTop: 4, backgroundColor: 'transparent' },
+  filterLineOn: { backgroundColor: colors.red },
+  thumb: { backgroundColor: colors.surface2 },
+  caption: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 },
+  captionNo: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 9.5,
+    letterSpacing: 1.2,
+    color: colors.red,
+  },
+  captionName: { fontFamily: fonts.serifItalic, fontSize: 12.5, color: colors.textMuted, flex: 1 },
+  progress: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 22,
+    backgroundColor: colors.paper,
+    borderTopWidth: 1,
+    borderTopColor: colors.ink,
+  },
+  progressText: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    color: colors.ink,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  progressTrack: { height: 4, backgroundColor: colors.surface2 },
+  progressFill: { height: 4, backgroundColor: colors.red },
 })

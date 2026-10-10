@@ -14,7 +14,6 @@ import {
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Ionicons } from '@expo/vector-icons'
 import {
   imageHeaders,
   listCollections,
@@ -23,8 +22,8 @@ import {
   type Collection,
   type RootStackParamList,
 } from '../api'
-import { colors, radii, shadows, styles } from '../styles'
-import { AnimatedButton, AnimatedCard, FadeIn, SkeletonGridCard } from '../components'
+import { colors, fonts } from '../styles'
+import { AnimatedCard, FadeIn, SkeletonGridCard } from '../components'
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<AppTabParamList, 'Collections'>,
@@ -32,8 +31,7 @@ type Props = CompositeScreenProps<
 >
 
 const PAGE_SIZE = 12
-const GAP = 12
-const PADDING = 24
+const PADDING = 22
 
 const CURRENCY_SYMBOL: Record<string, string> = { usd: '$', eur: '€', gbp: '£' }
 
@@ -47,15 +45,13 @@ function daysLeft(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
 }
 
-function CollectionCard({
+function Plate({
   item,
   index,
-  width,
   onPress,
 }: {
   item: Collection
   index: number
-  width: number
   onPress: () => void
 }) {
   const cover = item.cover_filename || item.cover_thumb_filename
@@ -66,51 +62,46 @@ function CollectionCard({
 
   return (
     <AnimatedCard index={index} onPress={onPress}>
-      <View style={[g.card, { width }]}>
-        <View style={g.cover}>
+      <View style={g.plate}>
+        <View style={g.kickerRow}>
+          <Text style={g.kicker}>Issue {String(index + 1).padStart(2, '0')}</Text>
+          <Text style={g.kickerRight}>
+            {count} photograph{count === 1 ? '' : 's'}
+            {expires !== null ? ` · ${expires}d left` : ''}
+          </Text>
+        </View>
+
+        <View style={g.imgwrap}>
           {cover ? (
             <Image
               source={{ uri: photoUrl(cover, { thumb: true }), headers: imageHeaders() }}
-              style={g.coverImg}
+              style={g.img}
               resizeMode="cover"
               accessibilityLabel={`Cover for ${item.name}`}
             />
           ) : (
-            <View style={g.coverEmpty}>
-              <Ionicons name="images-outline" size={26} color={colors.textMuted} />
+            <View style={[g.img, g.imgEmpty]}>
+              <Text style={g.imgEmptyText}>No cover yet</Text>
             </View>
           )}
-
-          {(price || expires !== null) && (
-            <View style={g.badges}>
-              {price ? (
-                <View style={g.badge}>
-                  <Text style={g.badgeText}>{price}</Text>
-                </View>
-              ) : null}
-              {expires !== null ? (
-                <View style={[g.badge, g.badgeWarn]}>
-                  <Ionicons name="time-outline" size={11} color={colors.text} />
-                  <Text style={g.badgeText}>{expires}d</Text>
-                </View>
-              ) : null}
+          {price ? (
+            <View style={g.sticker}>
+              <Text style={g.stickerText}>{price}</Text>
             </View>
-          )}
-
+          ) : null}
           {item.is_public === false ? (
-            <View style={g.lock}>
-              <Ionicons name="lock-closed" size={12} color="#fffdf9" />
+            <View style={g.tag}>
+              <Text style={g.tagText}>Private</Text>
             </View>
           ) : null}
         </View>
 
-        <Text style={g.name} numberOfLines={1}>
-          {item.name}
+        <Text style={g.title}>{item.name}</Text>
+        <Text style={g.meta}>
+          {item.role && item.role !== 'owner' ? `You are ${item.role}` : 'Shared by link'}
+          {price ? ' · for sale' : ' · free to download'}
         </Text>
-        <Text style={g.meta} numberOfLines={1}>
-          {count} photo{count === 1 ? '' : 's'}
-          {item.role && item.role !== 'owner' ? ` · ${item.role}` : ''}
-        </Text>
+        <View style={g.hair} />
       </View>
     </AnimatedCard>
   )
@@ -118,9 +109,9 @@ function CollectionCard({
 
 export default function HomeScreen({ navigation }: Props) {
   const { width } = useWindowDimensions()
-  const cardWidth = (width - PADDING * 2 - GAP) / 2
 
   const [collections, setCollections] = useState<Collection[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -150,6 +141,7 @@ export default function HomeScreen({ navigation }: Props) {
       })
       if (id !== requestId.current) return
       setCollections(res.collections)
+      setTotal(res.total)
       setHasMore(res.hasMore)
       offsetRef.current = res.collections.length
     } catch (err) {
@@ -211,27 +203,35 @@ export default function HomeScreen({ navigation }: Props) {
     }
   }, [loading, loadingMore, hasMore, query])
 
+  const today = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+
   const header = (
-    <View style={{ paddingTop: 16 }}>
-      <View style={g.headRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Collections</Text>
-          <Text style={[styles.subtitle, { marginBottom: 0 }]}>
-            Share a link or sell the originals.
-          </Text>
-        </View>
-        <AnimatedButton
+    <View style={g.masthead}>
+      <View style={g.wordRow}>
+        <Text style={g.wordmark}>Take the shot</Text>
+        <Pressable
           onPress={() => navigation.navigate('CreateCollection')}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="New collection"
-          style={g.addButton}
         >
-          <Ionicons name="add" size={24} color={colors.onAccent} />
-        </AnimatedButton>
+          <Text style={g.newAction}>+ New</Text>
+        </Pressable>
       </View>
+      <View style={g.dateRow}>
+        <Text style={g.dateText}>{today}</Text>
+        <Text style={g.dateText}>
+          {total} edition{total === 1 ? '' : 's'}
+        </Text>
+      </View>
+      <View style={g.rule} />
 
       <TextInput
-        style={[styles.input, { marginTop: 18 }]}
+        style={[g.search]}
         placeholder="Search collections…"
         placeholderTextColor={colors.textMuted}
         value={query}
@@ -240,27 +240,29 @@ export default function HomeScreen({ navigation }: Props) {
         returnKeyType="search"
       />
 
-      <View style={g.chips}>
+      <View style={g.filters}>
         {(['all', 'owned', 'shared'] as const).map((f) => (
           <Pressable
             key={f}
             onPress={() => setFilter(f)}
             accessibilityRole="button"
             accessibilityState={{ selected: filter === f }}
-            style={[g.chip, filter === f && g.chipActive]}
+            style={g.filterItem}
           >
-            <Text style={[g.chipText, filter === f && g.chipTextActive]}>
+            <Text style={[g.filterText, filter === f && g.filterTextOn]}>
               {f[0].toUpperCase() + f.slice(1)}
             </Text>
+            <View style={[g.filterLine, filter === f && g.filterLineOn]} />
           </Pressable>
         ))}
         <Pressable
           onPress={() => setSort((s) => (s === 'newest' ? 'name' : 'newest'))}
           accessibilityRole="button"
           accessibilityLabel="Toggle sort order"
-          style={g.chip}
+          style={[g.filterItem, g.sortItem]}
         >
-          <Text style={g.chipText}>{sort === 'newest' ? '↓ Newest' : 'A–Z'}</Text>
+          <Text style={g.filterText}>{sort === 'newest' ? '↓ Newest' : 'A–Z'}</Text>
+          <View style={g.filterLine} />
         </Pressable>
       </View>
     </View>
@@ -268,14 +270,12 @@ export default function HomeScreen({ navigation }: Props) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={g.screen}>
+        <FadeIn>{header}</FadeIn>
         <View style={{ paddingHorizontal: PADDING }}>
-          <FadeIn>{header}</FadeIn>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
-            {[0, 1, 2, 3].map((i) => (
-              <SkeletonGridCard key={i} width={cardWidth} />
-            ))}
-          </View>
+          {[0, 1].map((i) => (
+            <SkeletonGridCard key={i} width={width - PADDING * 2} />
+          ))}
         </View>
       </View>
     )
@@ -283,62 +283,51 @@ export default function HomeScreen({ navigation }: Props) {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <View style={{ paddingHorizontal: PADDING, flex: 1 }}>
-          <FadeIn>{header}</FadeIn>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>⚠️</Text>
-            <Text style={styles.emptyText}>{error}</Text>
-            <View style={{ marginTop: 20, alignSelf: 'stretch' }}>
-              <AnimatedButton onPress={() => load(query.trim())}>
-                <Text style={{ color: colors.onAccent, fontSize: 15, fontWeight: '600' }}>Retry</Text>
-              </AnimatedButton>
-            </View>
-          </View>
+      <View style={g.screen}>
+        <FadeIn>{header}</FadeIn>
+        <View style={g.empty}>
+          <Text style={g.emptyText}>{error}</Text>
+          <Pressable onPress={() => load(query.trim())} style={g.retry} accessibilityRole="button">
+            <Text style={g.retryText}>Retry</Text>
+          </Pressable>
         </View>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <View style={g.screen}>
       <FlatList
         data={collections}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={{ gap: GAP }}
-        contentContainerStyle={{ paddingHorizontal: PADDING, paddingBottom: 48 }}
+        contentContainerStyle={{ paddingHorizontal: PADDING, paddingBottom: 40 }}
         ListHeaderComponent={header}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            tintColor={colors.accentDark}
-            colors={[colors.accentDark]}
+            tintColor={colors.red}
+            colors={[colors.red]}
           />
         }
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         ListFooterComponent={
-          loadingMore ? (
-            <ActivityIndicator color={colors.accentDark} style={{ marginVertical: 16 }} />
-          ) : null
+          loadingMore ? <ActivityIndicator color={colors.red} style={{ marginVertical: 16 }} /> : null
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📂</Text>
-            <Text style={styles.emptyText}>
+          <View style={g.empty}>
+            <Text style={g.emptyText}>
               {query
                 ? 'No collections match your search.'
-                : 'No collections yet.\nTap + to create your first one.'}
+                : 'No collections yet.\nCreate your first edition to begin.'}
             </Text>
           </View>
         }
         renderItem={({ item, index }) => (
-          <CollectionCard
+          <Plate
             item={item}
             index={index}
-            width={cardWidth}
             onPress={() => navigation.navigate('Collection', { id: item.id, name: item.name })}
           />
         )}
@@ -348,77 +337,156 @@ export default function HomeScreen({ navigation }: Props) {
 }
 
 const g = StyleSheet.create({
-  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  addButton: {
-    width: 48,
-    height: 48,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-  },
-  chips: {
+  screen: { flex: 1, backgroundColor: colors.bg },
+  masthead: { paddingTop: 16 },
+  wordRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  wordmark: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 24,
+    color: colors.ink,
+    letterSpacing: -0.3,
+  },
+  newAction: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.red,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 7,
+  },
+  dateText: {
+    fontFamily: fonts.sans,
+    fontSize: 9.5,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  rule: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 10 },
+  search: {
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    color: colors.ink,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderStrong,
+    marginTop: 6,
+  },
+  filters: {
+    flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    gap: 18,
+    marginTop: 14,
+    marginBottom: 6,
   },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
+  filterItem: { alignItems: 'center', paddingBottom: 4 },
+  sortItem: { marginLeft: 'auto' },
+  filterText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
   },
-  chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(233,166,58,0.22)',
+  filterTextOn: { color: colors.ink },
+  filterLine: { height: 2, width: '100%', minWidth: 18, marginTop: 4, backgroundColor: 'transparent' },
+  filterLineOn: { backgroundColor: colors.red },
+  plate: { marginTop: 18 },
+  kickerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  kicker: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 9.5,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: colors.red,
   },
-  chipText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: colors.text },
-  card: { marginBottom: 18 },
-  cover: {
+  kickerRight: {
+    fontFamily: fonts.sans,
+    fontSize: 9.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
+  imgwrap: { marginTop: 8, position: 'relative' },
+  img: {
     width: '100%',
-    aspectRatio: 4 / 5,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
+    aspectRatio: 4 / 3,
     backgroundColor: colors.surface2,
+  },
+  imgEmpty: { alignItems: 'center', justifyContent: 'center' },
+  imgEmptyText: { fontFamily: fonts.serifItalic, fontSize: 15, color: colors.textMuted },
+  sticker: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: colors.red,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  stickerText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: colors.onAccent,
+  },
+  tag: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(242,240,235,0.94)',
     borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.card,
-  },
-  coverImg: { width: '100%', height: '100%' },
-  coverEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  badges: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,253,249,0.92)',
-    borderRadius: 999,
+    borderColor: colors.ink,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    paddingHorizontal: 9,
   },
-  badgeWarn: { backgroundColor: 'rgba(233,166,58,0.95)' },
-  badgeText: { fontSize: 11, fontWeight: '700', color: colors.text },
-  lock: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    backgroundColor: 'rgba(42,33,25,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  tagText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 9.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.ink,
   },
-  name: { fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 8 },
-  meta: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
+  title: {
+    fontFamily: fonts.serif,
+    fontSize: 26,
+    color: colors.ink,
+    letterSpacing: -0.4,
+    marginTop: 10,
+  },
+  meta: {
+    fontFamily: fonts.sans,
+    fontSize: 11.5,
+    color: colors.textMuted,
+    marginTop: 3,
+  },
+  hair: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 14 },
+  empty: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
+  emptyText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 17,
+    lineHeight: 24,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  retry: {
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  retryText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.ink,
+  },
 })

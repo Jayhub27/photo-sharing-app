@@ -10,11 +10,10 @@ import {
   type PressableProps,
   type StyleProp,
   type ViewStyle,
-  ActivityIndicator,
   Text,
   View,
 } from 'react-native'
-import { colors, shadows } from './styles'
+import { colors, fonts } from './styles'
 
 type AnimatedButtonProps = PressableProps & {
   children: React.ReactNode
@@ -22,10 +21,12 @@ type AnimatedButtonProps = PressableProps & {
   style?: StyleProp<ViewStyle>
 }
 
+/** Edition button: a solid ink block or a hairline outline, uppercase label. */
 export function AnimatedButton({
   children,
   outline,
   style,
+  disabled,
   onPressIn,
   onPressOut,
   ...props
@@ -33,32 +34,32 @@ export function AnimatedButton({
   const scale = useRef(new Animated.Value(1)).current
 
   const handleIn = (e: any) => {
-    Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, friction: 8 }).start()
+    Animated.spring(scale, { toValue: 0.985, useNativeDriver: true, friction: 9 }).start()
     onPressIn?.(e)
   }
   const handleOut = (e: any) => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 6 }).start()
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, friction: 7 }).start()
     onPressOut?.(e)
   }
 
   return (
-    <Animated.View style={[{ transform: [{ scale }] }, outline ? {} : shadows.button]}>
+    <Animated.View style={{ transform: [{ scale }], opacity: disabled ? 0.45 : 1 }}>
       <Pressable
         style={[
           {
-            backgroundColor: outline ? colors.surface : colors.accent,
-            paddingVertical: 14,
+            backgroundColor: outline ? 'transparent' : colors.ink,
+            paddingVertical: 15,
             paddingHorizontal: 22,
-            borderRadius: 999,
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'row',
             gap: 8,
             borderWidth: outline ? 1 : 0,
-            borderColor: colors.borderStrong,
+            borderColor: colors.ink,
           },
           style as any,
         ]}
+        disabled={disabled}
         onPressIn={handleIn}
         onPressOut={handleOut}
         {...props}
@@ -79,9 +80,11 @@ export function ButtonText({
   return (
     <Text
       style={{
+        fontFamily: fonts.sansSemi,
         color: outline ? colors.text : colors.onAccent,
-        fontSize: 15,
-        fontWeight: '600',
+        fontSize: 12.5,
+        letterSpacing: 1.4,
+        textTransform: 'uppercase',
       }}
     >
       {children}
@@ -99,21 +102,21 @@ export function AnimatedCard({
   onPress: () => void
 }) {
   const fade = useRef(new Animated.Value(0)).current
-  const slide = useRef(new Animated.Value(24)).current
+  const slide = useRef(new Animated.Value(14)).current
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 400,
-        delay: index * 60,
+        duration: 420,
+        delay: Math.min(index, 8) * 45,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(slide, {
         toValue: 0,
-        duration: 400,
-        delay: index * 60,
+        duration: 420,
+        delay: Math.min(index, 8) * 45,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -125,7 +128,7 @@ export function AnimatedCard({
   return (
     <Animated.View style={{ opacity: fade, transform: [{ translateY: slide }, { scale }] }}>
       <Pressable
-        onPressIn={() => Animated.spring(scale, { toValue: 0.98, useNativeDriver: true }).start()}
+        onPressIn={() => Animated.spring(scale, { toValue: 0.99, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
         onPress={onPress}
       >
@@ -143,20 +146,20 @@ export function FadeIn({
   delay?: number
 }) {
   const fade = useRef(new Animated.Value(0)).current
-  const slide = useRef(new Animated.Value(20)).current
+  const slide = useRef(new Animated.Value(10)).current
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 500,
+        duration: 460,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(slide, {
         toValue: 0,
-        duration: 500,
+        duration: 460,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
@@ -177,18 +180,15 @@ function useShimmerOpacity() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 1000, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 1, duration: 1100, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 1100, useNativeDriver: true }),
       ])
     )
     loop.start()
     return () => loop.stop()
   }, [])
 
-  return shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.4, 0.7],
-  })
+  return shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.7] })
 }
 
 export function SkeletonCard() {
@@ -196,17 +196,14 @@ export function SkeletonCard() {
 
   return (
     <Animated.View
-      style={[
-        {
-          backgroundColor: colors.surface,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: colors.border,
-          height: 72,
-          marginBottom: 12,
-          opacity,
-        },
-      ]}
+      style={{
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        height: 72,
+        marginBottom: 12,
+        opacity,
+      }}
     />
   )
 }
@@ -220,7 +217,6 @@ export function SkeletonGridCard({ width }: { width?: number }) {
         style={{
           width: '100%',
           aspectRatio: 4 / 5,
-          borderRadius: 18,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
@@ -229,8 +225,7 @@ export function SkeletonGridCard({ width }: { width?: number }) {
       <View
         style={{
           width: '68%',
-          height: 13,
-          borderRadius: 7,
+          height: 12,
           backgroundColor: colors.surface,
           marginTop: 10,
         }}
@@ -244,42 +239,44 @@ export function LoadingScreen() {
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.timing(spin, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      })
+      Animated.timing(spin, { toValue: 1, duration: 900, useNativeDriver: true })
     )
     loop.start()
     return () => loop.stop()
   }, [])
 
-  const rotate = spin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  })
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
 
   return (
-    <View style={styles.center}>
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.bg,
+        gap: 16,
+      }}
+    >
       <Animated.View
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: 999,
-          borderWidth: 3,
-          borderColor: colors.surface2,
-          borderTopColor: colors.accentDark,
+          width: 26,
+          height: 26,
+          borderWidth: 2,
+          borderColor: colors.border,
+          borderTopColor: colors.red,
           transform: [{ rotate }],
         }}
       />
+      <Text style={{ fontFamily: fonts.serifItalic, fontSize: 16, color: colors.textMuted }}>
+        Take the shot
+      </Text>
     </View>
   )
 }
 
-import { styles } from './styles'
-
 type ViewerPhoto = { id: string; filename: string; original_name?: string }
 
+/** Edition viewer: a photograph set as a plate on paper, caption beneath. */
 export function PhotoViewer({
   visible,
   photos,
@@ -308,26 +305,39 @@ export function PhotoViewer({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(24,17,12,0.95)' }}>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="Close image"
+      <View style={{ flex: 1, backgroundColor: colors.paper }}>
+        <View
           style={{
-            position: 'absolute',
-            top: 48,
-            right: 20,
-            zIndex: 2,
-            width: 44,
-            height: 44,
-            borderRadius: 999,
-            backgroundColor: '#fffdf9',
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
+            paddingTop: 52,
+            paddingHorizontal: 22,
           }}
         >
-          <Text style={{ color: '#2a2119', fontSize: 20, fontWeight: '600' }}>✕</Text>
-        </Pressable>
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Close viewer"
+          >
+            <Text style={{ fontFamily: fonts.sansSemi, fontSize: 13, letterSpacing: 1.4, color: colors.ink }}>
+              CLOSE
+            </Text>
+          </Pressable>
+          <Text
+            style={{
+              fontFamily: fonts.sansSemi,
+              fontSize: 11,
+              letterSpacing: 1.8,
+              textTransform: 'uppercase',
+              color: colors.textMuted,
+            }}
+          >
+            Plate {String(Math.max(0, initialIndex) + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+          </Text>
+        </View>
+
         <FlatList
           ref={listRef}
           data={photos}
@@ -339,13 +349,39 @@ export function PhotoViewer({
           getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
           onScrollToIndexFailed={() => {}}
           renderItem={({ item }) => (
-            <View style={{ width, flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Image
-                source={{ uri: urlFor(item.filename), headers }}
-                style={{ width, height: height * 0.8 }}
-                resizeMode="contain"
-                accessibilityLabel={item.original_name ? `Photo: ${item.original_name}` : 'Photo'}
-              />
+            <View style={{ width, flex: 1, paddingHorizontal: 22 }}>
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <Image
+                  source={{ uri: urlFor(item.filename), headers }}
+                  style={{ width: '100%', height: Math.min(height * 0.72, 560) }}
+                  resizeMode="contain"
+                  accessibilityLabel={item.original_name ? `Photo: ${item.original_name}` : 'Photo'}
+                />
+              </View>
+              <Text
+                style={{
+                  fontFamily: fonts.serifItalic,
+                  fontSize: 18,
+                  color: colors.ink,
+                  paddingBottom: 8,
+                }}
+                numberOfLines={1}
+              >
+                {item.original_name || 'Photograph'}
+              </Text>
+              <View style={{ borderTopWidth: 1, borderTopColor: colors.ink, paddingVertical: 12 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.sansSemi,
+                    fontSize: 10,
+                    letterSpacing: 1.8,
+                    textTransform: 'uppercase',
+                    color: colors.textMuted,
+                  }}
+                >
+                  Swipe to browse the issue
+                </Text>
+              </View>
             </View>
           )}
         />

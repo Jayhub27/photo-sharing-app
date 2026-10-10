@@ -41,7 +41,7 @@ export default function SignupScreen({ navigation }: Props) {
       <FadeIn>
         <View style={styles.logoRow}>
           <View style={styles.logoIcon}>
-            <Ionicons name="camera" size={21} color="#2a2119" />
+            <Ionicons name="camera" size={19} color={colors.onAccent} />
           </View>
           <Text style={styles.logoText}>Take the shot</Text>
         </View>

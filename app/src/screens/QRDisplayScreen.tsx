@@ -74,21 +74,15 @@ export default function QRDisplayScreen({ route }: Props) {
       >
         <Animated.View
           style={{
-            padding: 12,
-            borderRadius: 28,
+            padding: 14,
             backgroundColor: colors.card,
             borderWidth: 1,
-            borderColor: colors.border,
-            shadowColor: colors.accent,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: glowOpacity,
-            shadowRadius: 30,
-            elevation: 8,
+            borderColor: colors.ink,
           }}
         >
           <Image
             source={{ uri }}
-            style={{ width: qrSize, height: qrSize, borderRadius: 20 }}
+            style={{ width: qrSize, height: qrSize }}
             resizeMode="contain"
           />
         </Animated.View>

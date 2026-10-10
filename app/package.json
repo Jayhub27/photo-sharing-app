@@ -10,6 +10,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/instrument-sans": "^0.4.2",
+    "@expo-google-fonts/newsreader": "^0.4.1",
     "@expo/metro-runtime": "~3.2.1",
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/bottom-tabs": "^6.6.1",

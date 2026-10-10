@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { ActivityIndicator, FlatList, Image, Pressable, Text, useWindowDimensions, View } from 'react-native'
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   getCollection,
@@ -9,8 +18,8 @@ import {
   type Photo,
   type RootStackParamList,
 } from '../api'
-import { colors, styles, shadows } from '../styles'
-import { AnimatedButton, ButtonText, FadeIn, LoadingScreen, PhotoViewer } from '../components'
+import { colors, fonts } from '../styles'
+import { FadeIn, LoadingScreen, PhotoViewer } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Gallery'>
 
@@ -30,7 +39,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
   const { width } = useWindowDimensions()
   const columns = width >= 1000 ? 4 : width >= 700 ? 3 : 2
   const gutter = width >= 700 ? 16 : 12
-  const hPadding = width >= 700 ? 32 : 24
+  const hPadding = width >= 700 ? 32 : 22
   const itemWidth = Math.floor((width - hPadding * 2 - gutter * (columns - 1)) / columns)
 
   const load = useCallback(async () => {
@@ -73,26 +82,25 @@ export default function GalleryScreen({ route, navigation }: Props) {
 
   if (error) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyIcon}>⚠️</Text>
-        <Text style={styles.emptyText}>{error}</Text>
-        <View style={{ marginTop: 20, alignSelf: 'stretch' }}>
-          <AnimatedButton onPress={load}>
-            <ButtonText>Retry</ButtonText>
-          </AnimatedButton>
-        </View>
+      <View style={g.empty}>
+        <Text style={g.emptyText}>{error}</Text>
+        <Pressable onPress={load} style={g.retry} accessibilityRole="button">
+          <Text style={g.retryText}>Retry</Text>
+        </Pressable>
       </View>
     )
   }
 
   return (
-    <View style={styles.container}>
+    <View style={g.screen}>
       <FadeIn>
-        <View style={styles.hero}>
-          <Text style={styles.title}>{name}</Text>
-          <Text style={styles.subtitle}>
-            {total} photo{total === 1 ? '' : 's'} in this collection
+        <View style={g.head}>
+          <Text style={g.kicker}>Shared with you</Text>
+          <Text style={g.title}>{name}</Text>
+          <Text style={g.meta}>
+            {total} photograph{total === 1 ? '' : 's'} · tap a plate to view
           </Text>
+          <View style={g.rule} />
         </View>
       </FadeIn>
 
@@ -106,12 +114,12 @@ export default function GalleryScreen({ route, navigation }: Props) {
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         ListFooterComponent={
-          loadingMore ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 16 }} /> : null
+          loadingMore ? <ActivityIndicator color={colors.red} style={{ marginVertical: 16 }} /> : null
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="images-outline" size={40} color={colors.textMuted} style={{ marginBottom: 14, opacity: 0.6 }} />
-            <Text style={styles.emptyText}>This collection has no photos yet.</Text>
+          <View style={g.empty}>
+            <Ionicons name="images-outline" size={34} color={colors.textMuted} style={{ marginBottom: 12, opacity: 0.5 }} />
+            <Text style={g.emptyText}>This collection has no photographs yet.</Text>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -119,13 +127,20 @@ export default function GalleryScreen({ route, navigation }: Props) {
             onPress={() => setViewerIndex(index)}
             accessibilityRole="imagebutton"
             accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
+            style={{ width: itemWidth }}
           >
             <Image
               source={{ uri: photoUrl(item.filename, { thumb: true }), headers: imageHeaders() }}
-              style={[styles.photo, shadows.card, { width: itemWidth, height: itemWidth }]}
+              style={[g.thumb, { width: itemWidth, height: Math.round(itemWidth * 1.25) }]}
               resizeMode="cover"
               accessibilityIgnoresInvertColors
             />
+            <View style={g.caption}>
+              <Text style={g.captionNo}>{String(index + 1).padStart(2, '0')}</Text>
+              <Text style={g.captionName} numberOfLines={1}>
+                {item.original_name}
+              </Text>
+            </View>
           </Pressable>
         )}
       />
@@ -141,3 +156,50 @@ export default function GalleryScreen({ route, navigation }: Props) {
     </View>
   )
 }
+
+const g = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
+  head: { paddingHorizontal: 22, paddingTop: 16 },
+  kicker: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 9.5,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: colors.red,
+  },
+  title: {
+    fontFamily: fonts.serif,
+    fontSize: 34,
+    color: colors.ink,
+    letterSpacing: -0.6,
+    marginTop: 8,
+  },
+  meta: { fontFamily: fonts.sans, fontSize: 11.5, color: colors.textMuted, marginTop: 6 },
+  rule: { borderTopWidth: 1, borderTopColor: colors.ink, marginTop: 16, marginBottom: 16 },
+  thumb: { backgroundColor: colors.surface2 },
+  caption: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 },
+  captionNo: { fontFamily: fonts.sansSemi, fontSize: 9.5, letterSpacing: 1.2, color: colors.red },
+  captionName: { fontFamily: fonts.serifItalic, fontSize: 12.5, color: colors.textMuted, flex: 1 },
+  empty: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
+  emptyText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 17,
+    lineHeight: 24,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  retry: {
+    marginTop: 18,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  retryText: {
+    fontFamily: fonts.sansSemi,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: colors.ink,
+  },
+})

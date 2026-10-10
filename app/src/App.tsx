@@ -2,6 +2,17 @@ import React, { useEffect, useState } from 'react'
 import { NavigationContainer, DefaultTheme, type Theme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StatusBar } from 'expo-status-bar'
+import { useFonts } from 'expo-font'
+import {
+  Newsreader_400Regular,
+  Newsreader_400Regular_Italic,
+  Newsreader_500Medium,
+} from '@expo-google-fonts/newsreader'
+import {
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold,
+} from '@expo-google-fonts/instrument-sans'
 import CreateCollectionScreen from './screens/CreateCollectionScreen'
 import CollectionScreen from './screens/CollectionScreen'
 import QRDisplayScreen from './screens/QRDisplayScreen'
@@ -115,6 +126,17 @@ function RootNavigator() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Newsreader_400Regular,
+    Newsreader_400Regular_Italic,
+    Newsreader_500Medium,
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+  })
+
+  if (!fontsLoaded) return <LoadingScreen />
+
   return (
     <AuthProvider>
       <NavigationContainer theme={navTheme}>

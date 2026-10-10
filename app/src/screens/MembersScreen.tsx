@@ -10,7 +10,7 @@ import {
   type MemberRole,
   type RootStackParamList,
 } from '../api'
-import { colors, styles } from '../styles'
+import { colors, fonts, styles } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn, LoadingScreen } from '../components'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Members'>
@@ -102,14 +102,21 @@ export default function MembersScreen({ route }: Props) {
                     style={{
                       flex: 1,
                       paddingVertical: 12,
-                      borderRadius: 12,
                       alignItems: 'center',
-                      borderWidth: 1.5,
-                      borderColor: role === r ? colors.accent : colors.border,
-                      backgroundColor: role === r ? 'rgba(255,212,59,0.5)' : 'transparent',
+                      borderWidth: 1,
+                      borderColor: colors.ink,
+                      backgroundColor: role === r ? colors.ink : 'transparent',
                     }}
                   >
-                    <Text style={{ color: role === r ? colors.text : colors.textMuted, fontWeight: '600' }}>
+                    <Text
+                      style={{
+                        fontFamily: fonts.sansSemi,
+                        letterSpacing: 1.4,
+                        textTransform: 'uppercase',
+                        fontSize: 11,
+                        color: role === r ? colors.paper : colors.textMuted,
+                      }}
+                    >
                       {r === 'editor' ? 'Editor' : 'Viewer'}
                     </Text>
                   </Pressable>
@@ -136,7 +143,9 @@ export default function MembersScreen({ route }: Props) {
           >
             <View style={styles.cardLeft}>
               <View style={styles.cardThumb}>
-                <Text style={{ fontSize: 18 }}>{item.role === 'owner' ? '👑' : '👤'}</Text>
+                <Text style={{ fontFamily: fonts.serif, fontSize: 20, color: colors.ink }}>
+                  {(item.name || '?').trim().charAt(0).toUpperCase()}
+                </Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{item.name}</Text>
