@@ -126,7 +126,7 @@ function RootNavigator() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Newsreader_400Regular,
     Newsreader_400Regular_Italic,
     Newsreader_500Medium,
@@ -134,8 +134,16 @@ export default function App() {
     InstrumentSans_500Medium,
     InstrumentSans_600SemiBold,
   })
+  const [fontWaitOver, setFontWaitOver] = useState(false)
 
-  if (!fontsLoaded) return <LoadingScreen />
+  useEffect(() => {
+    const t = setTimeout(() => setFontWaitOver(true), 4000)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Never block the app forever on fonts: render with the fallback faces if the
+  // font files are slow or fail to load (the gate below times out after 4s).
+  if (!fontsLoaded && !fontError && !fontWaitOver) return <LoadingScreen />
 
   return (
     <AuthProvider>
