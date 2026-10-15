@@ -252,6 +252,12 @@ html[data-theme="sketch"] .section-head h2 { position: relative; }
   html[data-theme="sketch"] .hero-shot::after { display: none; }
 }
 
+/* background camera doodles: a touch more present on the paper skin ------ */
+html[data-theme="sketch"] .bg-camera {
+  opacity: 0.45;
+  filter: blur(1.2px);
+}
+
 /* lines and star masks, shared by the skin */
 html[data-theme="sketch"] {
   --doodle-squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='10' viewBox='0 0 140 10'%3E%3Cpath d='M3 6 C 25 1, 45 9, 70 5 S 115 1, 137 6' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");

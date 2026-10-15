@@ -500,6 +500,39 @@ a { color: inherit; }
 }
 .foot-bar span:last-child { margin-inline-start: auto; color: #f2f0ec; }
 
+/* --------------------------------------------- floating camera doodles */
+/* Hand-drawn cameras pinned to the viewport, blurred into the paper.
+   The stylesheet lays out the starting scatter; app.js then takes over
+   with a small drift-and-bounce loop (off the edges and off each other).
+   Sections with their own surface (band, section-alt, footer) cover them,
+   so the sketches drift in and out as the page scrolls. */
+.bg-cameras {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bg-camera {
+  position: absolute;
+  block-size: auto;
+  opacity: 0.3;
+  filter: blur(1.5px);
+}
+.bg-camera:nth-child(1) { right: 4%; top: -14%; inline-size: clamp(180px, 20vw, 330px); rotate: 8deg; }
+.bg-camera:nth-child(2) { left: -7%; top: 10%; inline-size: clamp(240px, 27vw, 440px); rotate: -7deg; }
+.bg-camera:nth-child(3) { right: -8%; top: 34%; inline-size: clamp(220px, 25vw, 400px); rotate: 6deg; }
+.bg-camera:nth-child(4) { left: -4%; bottom: 4%; inline-size: clamp(200px, 22vw, 360px); rotate: 5deg; }
+.bg-camera:nth-child(5) { right: 2%; bottom: 2%; inline-size: clamp(170px, 19vw, 300px); rotate: -6deg; }
+.bg-camera:nth-child(6) { left: 32%; bottom: -16%; inline-size: clamp(190px, 21vw, 340px); rotate: -3deg; }
+
+@media (width < 48rem) {
+  .bg-camera:nth-child(3),
+  .bg-camera:nth-child(5),
+  .bg-camera:nth-child(6) { display: none; }
+  .bg-camera { opacity: 0.22; }
+}
+
 /* -------------------------------------------------------------- motion off */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

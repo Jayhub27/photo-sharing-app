@@ -135,3 +135,120 @@
     })
     .catch(function () {})
 })()
+
+/* Floating camera doodles: each sketch drifts in any direction, bounces off
+   the viewport edges and off the other cameras. The stylesheet owns the
+   starting scatter and the tilt; here transform takes over once the images
+   are loaded. CSSOM writes are used on purpose: the Content-Security-Policy
+   allows no inline styles or scripts. */
+;(function () {
+  'use strict'
+
+  var layer = document.querySelector('.bg-cameras')
+  if (!layer) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  var nodes = [].slice.call(layer.querySelectorAll('.bg-camera'))
+  if (nodes.length < 2) return
+
+  var bodies = []
+  var raf = 0
+  var last = 0
+
+  function measure(el) {
+    var rect = el.getBoundingClientRect()
+    if (!rect.width) return null
+    el.style.left = '0'
+    el.style.top = '0'
+    el.style.right = 'auto'
+    el.style.bottom = 'auto'
+    el.style.willChange = 'transform'
+    var speed = 34 + Math.random() * 36
+    var angle = Math.random() * Math.PI * 2
+    return {
+      el: el,
+      x: rect.left,
+      y: rect.top,
+      w: rect.width,
+      r: rect.width * 0.36,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+    }
+  }
+
+  function tick(now) {
+    var dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016
+    last = now
+    var vw = window.innerWidth
+    var vh = window.innerHeight
+
+    var i
+    for (i = 0; i < bodies.length; i++) {
+      var b = bodies[i]
+      b.x += b.vx * dt
+      b.y += b.vy * dt
+      var minX = -b.w * 0.35
+      var maxX = vw - b.w * 0.65
+      var minY = -b.w * 0.35
+      var maxY = vh - b.w * 0.65
+      if (b.x < minX) { b.x = minX; b.vx = Math.abs(b.vx) }
+      else if (b.x > maxX) { b.x = maxX; b.vx = -Math.abs(b.vx) }
+      if (b.y < minY) { b.y = minY; b.vy = Math.abs(b.vy) }
+      else if (b.y > maxY) { b.y = maxY; b.vy = -Math.abs(b.vy) }
+    }
+
+    /* elastic two-body bounce in a circle approximation */
+    for (i = 0; i < bodies.length; i++) {
+      for (var j = i + 1; j < bodies.length; j++) {
+        var a = bodies[i]
+        var c = bodies[j]
+        var dx = c.x - a.x
+        var dy = c.y - a.y
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.001
+        var min = a.r + c.r
+        if (dist >= min) continue
+        var nx = dx / dist
+        var ny = dy / dist
+        var push = (min - dist) / 2
+        a.x -= nx * push
+        a.y -= ny * push
+        c.x += nx * push
+        c.y += ny * push
+        var rel = (c.vx - a.vx) * nx + (c.vy - a.vy) * ny
+        if (rel < 0) {
+          a.vx += rel * nx
+          a.vy += rel * ny
+          c.vx -= rel * nx
+          c.vy -= rel * ny
+        }
+      }
+    }
+
+    for (i = 0; i < bodies.length; i++) {
+      var t = bodies[i]
+      t.el.style.transform = 'translate3d(' + t.x.toFixed(1) + 'px,' + t.y.toFixed(1) + 'px,0)'
+    }
+    raf = requestAnimationFrame(tick)
+  }
+
+  function start() {
+    for (var i = 0; i < nodes.length; i++) {
+      var body = measure(nodes[i])
+      if (body) bodies.push(body)
+    }
+    if (bodies.length < 2) return
+    raf = requestAnimationFrame(tick)
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        cancelAnimationFrame(raf)
+        raf = 0
+      } else if (!raf) {
+        last = 0
+        raf = requestAnimationFrame(tick)
+      }
+    })
+  }
+
+  if (document.readyState === 'complete') start()
+  else window.addEventListener('load', start)
+})()
