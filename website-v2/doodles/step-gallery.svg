@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 140" width="170" height="140" role="img" aria-hidden="true">
+  <!-- Step 2: a gallery wall of little prints with a price tag. -->
+  <g fill="none" stroke="#2f2a25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- prints -->
+    <path d="M14 24 C 36 21, 56 21, 74 24 C 77 40, 77 58, 74 72 C 56 75, 36 75, 15 72 C 12 58, 12 39, 14 24 Z" fill="#fffdf7" stroke-width="2.6"/>
+    <path d="M20 30 C 36 28, 52 28, 68 30 C 70 42, 70 54, 68 66 C 52 68, 36 68, 21 66 C 19 54, 19 42, 20 30 Z" fill="rgba(63,125,79,0.22)" stroke="none"/>
+    <path d="M86 20 C 108 18, 130 18, 150 20 C 152 36, 152 56, 150 70 C 130 73, 108 73, 87 70 C 85 56, 85 36, 86 20 Z" fill="#fffdf7" stroke-width="2.6"/>
+    <path d="M92 26 C 110 24, 128 24, 144 26 C 146 38, 146 54, 144 64 C 128 66, 110 66, 93 64 C 91 54, 91 38, 92 26 Z" fill="rgba(47,111,181,0.20)" stroke="none"/>
+    <path d="M20 88 C 42 85, 62 85, 80 88 C 82 100, 82 112, 80 122 C 62 125, 42 125, 21 122 C 19 112, 19 100, 20 88 Z" fill="#fffdf7" stroke-width="2.6"/>
+    <path d="M26 93 C 42 91, 58 91, 74 93 C 76 101, 76 111, 74 117 C 58 119, 42 119, 27 117 C 25 111, 25 101, 26 93 Z" fill="rgba(111,79,168,0.18)" stroke="none"/>
+    <path d="M92 84 C 114 82, 136 82, 154 84 C 156 96, 156 110, 154 120 C 136 123, 114 123, 93 120 C 91 110, 91 96, 92 84 Z" fill="#fffdf7" stroke-width="2.6"/>
+    <path d="M98 89 C 114 87, 132 87, 148 89 C 150 97, 150 109, 148 115 C 132 117, 114 117, 99 115 C 97 109, 97 97, 98 89 Z" fill="rgba(192,138,30,0.22)" stroke="none"/>
+    <!-- price tag taped to the wall -->
+    <path d="M28 104 C 40 102, 52 102, 64 103 C 65 110, 65 116, 64 121 C 52 123, 40 123, 28 121 C 27 116, 27 110, 28 104 Z" fill="#d93a1f" stroke-width="2.4"/>
+    <path d="M34 108 C 42 107, 50 107, 58 108" stroke="#fffdf7" stroke-width="2.2" opacity="0.85"/>
+    <path d="M34 115 C 42 114, 50 114, 58 115" stroke="#fffdf7" stroke-width="2.2" opacity="0.85"/>
+  </g>
+</svg>

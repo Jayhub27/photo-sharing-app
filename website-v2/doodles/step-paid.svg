@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 140" width="170" height="140" role="img" aria-hidden="true">
+  <!-- Step 3: a card and a coin, drawn in pencil. -->
+  <g fill="none" stroke="#2f2a25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- card -->
+    <path d="M16 44 C 50 38, 106 38, 138 44 C 141 50, 141 84, 138 92 C 104 98, 50 98, 17 92 C 14 84, 14 50, 16 44 Z" fill="#fffdf7" stroke-width="3"/>
+    <path d="M16 58 C 50 52, 106 52, 138 58" stroke-width="2.2" opacity="0.7"/>
+    <path d="M26 70 C 38 69, 48 69, 58 70 C 60 76, 60 82, 58 86 C 48 88, 38 88, 27 86 C 25 82, 25 76, 26 70 Z" fill="rgba(192,138,30,0.30)" stroke-width="2.2"/>
+    <g stroke-width="2" opacity="0.5">
+      <path d="M76 72 C 92 71, 108 71, 124 72"/>
+      <path d="M76 82 C 92 81, 108 81, 124 82"/>
+    </g>
+    <!-- coin -->
+    <circle cx="140" cy="104" r="19" fill="rgba(192,138,30,0.35)" stroke-width="2.8"/>
+    <path d="M134 97 C 138 95, 142 95, 145 97 M138 96 L 138 112 M133 104 C 137 102, 142 102, 146 104 M134 110 C 138 112, 142 112, 146 110" stroke-width="2.4"/>
+    <!-- check mark -->
+    <path d="M22 116 C 28 122, 32 126, 36 132 C 44 118, 52 106, 62 96" stroke="#3f7d4f" stroke-width="3.2"/>
+  </g>
+</svg>

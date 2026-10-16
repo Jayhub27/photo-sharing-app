@@ -8,7 +8,7 @@
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#faf7f0">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'none'; object-src 'none'">
 <link rel="canonical" href="https://take-the-shot-site.vercel.app/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Take the shot — send a QR code, sell the originals">
@@ -77,6 +77,10 @@
         <span class="tag tag-price"><span aria-hidden="true">$</span>45.00</span>
         <span class="tag">12 originals unlocked after payment</span>
       </figcaption>
+      <div class="polaroid" aria-hidden="true">
+        <img src="images/leaves-640.jpg" alt="" width="640" height="480" loading="lazy" decoding="async">
+        <span>sold &middot; $24</span>
+      </div>
     </figure>
   </section>
 
@@ -134,6 +138,7 @@
                sizes="(min-width: 60rem) 30vw, 100vw" width="1200" height="900" loading="lazy" decoding="async"
                alt="Backlit leaves with the sky showing through.">
           <figcaption><span class="tag tag-price">$24.00</span><span class="shot-name">Greenhouse</span></figcaption>
+          <span class="stamp" aria-hidden="true">Sold</span>
         </figure>
         <figure class="shot">
           <img src="images/pink-forest-640.jpg" srcset="images/pink-forest-640.jpg 640w, images/pink-forest.jpg 1200w"
@@ -212,14 +217,17 @@
     </div>
     <ol class="steps">
       <li>
+        <img class="step-drawing" src="doodles/step-qr.svg" alt="" width="170" height="140" loading="lazy" decoding="async">
         <h3>Make a collection</h3>
         <p>Add photos from your phone, or paste links.</p>
       </li>
       <li>
+        <img class="step-drawing" src="doodles/step-gallery.svg" alt="" width="170" height="140" loading="lazy" decoding="async">
         <h3>Send the QR code</h3>
         <p>No install and no account needed to look.</p>
       </li>
       <li>
+        <img class="step-drawing" src="doodles/step-paid.svg" alt="" width="170" height="140" loading="lazy" decoding="async">
         <h3>Get paid</h3>
         <p>Set a price. Stripe takes the card, originals unlock.</p>
       </li>

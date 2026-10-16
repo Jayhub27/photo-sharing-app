@@ -4,6 +4,21 @@
    paper instead of white, pencil rules instead of hairlines, marker type,
    wobbly frames, tape and a few pencil doodles. */
 
+/* The two handwriting faces, self-hosted so no third-party request leaves the
+   page — the same rule the app follows for its own fonts. */
+@font-face {
+  font-family: "Architects Daughter";
+  src: url("fonts/architects-daughter-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Permanent Marker";
+  src: url("fonts/permanent-marker-latin.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
 html[data-theme="sketch"] {
   --paper: #faf7f0;
   --surface: #fffdf7;
@@ -308,7 +323,6 @@ html[data-theme="sketch"] body::after {
   background:
     radial-gradient(58rem 40rem at 10% 6%, rgba(47, 111, 181, 0.13), transparent 62%),
     radial-gradient(46rem 34rem at 90% 22%, rgba(192, 138, 30, 0.12), transparent 60%),
-    radial-gradient(52rem 38rem at 18% 78%, rgba(63, 125, 79, 0.11), transparent 60%),
     radial-gradient(44rem 32rem at 88% 94%, rgba(111, 79, 168, 0.11), transparent 62%);
 }
 @media (width < 48rem) {
@@ -394,3 +408,100 @@ html[data-theme="sketch"] .more summary {
 }
 html[data-theme="sketch"] .more summary::before { color: var(--pencil-gold); }
 html[data-theme="sketch"] .more details[open] summary::before { color: var(--pencil-red); }
+
+/* ======================================================================
+   Notebook props: a pinned instant print, a sold stamp, drawn step cards
+   and wavy rules between sections.
+   ====================================================================== */
+
+/* the sold print, pinned over the hero photo */
+.polaroid { display: none; }
+html[data-theme="sketch"] .polaroid {
+  display: block;
+  position: absolute;
+  inset-block-end: -1.6rem;
+  inset-inline-start: -1.9rem;
+  z-index: 2;
+  inline-size: clamp(7rem, 11vw, 9.5rem);
+  padding: 0.45rem 0.45rem 1.7rem;
+  background: var(--surface);
+  border: 2.5px solid var(--ink);
+  border-radius: var(--wob-sm);
+  rotate: -6deg;
+  box-shadow: 4px 5px 0 rgba(47, 42, 37, 0.16);
+}
+html[data-theme="sketch"] .polaroid::before {
+  content: "";
+  position: absolute;
+  inset-block-start: -10px;
+  inset-inline-start: 50%;
+  translate: -50% 0;
+  inline-size: 46px;
+  block-size: 14px;
+  background: rgba(215, 189, 141, 0.85);
+  rotate: 4deg;
+}
+html[data-theme="sketch"] .polaroid img {
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 2px solid var(--ink);
+}
+html[data-theme="sketch"] .polaroid span {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0.35rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+@media (width < 60rem) {
+  html[data-theme="sketch"] .polaroid { display: none; }
+}
+
+/* a stamped sold mark on one print in the gallery */
+.stamp { display: none; }
+html[data-theme="sketch"] .stamp {
+  display: block;
+  position: absolute;
+  inset-block-start: 12%;
+  inset-inline-start: 7%;
+  padding: 0.2rem 0.65rem;
+  border: 3px solid var(--price);
+  color: var(--price);
+  border-radius: 8px 12px 9px 13px / 12px 8px 14px 9px;
+  font-family: var(--display);
+  font-size: clamp(1rem, 1.7vw, 1.45rem);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  rotate: -13deg;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* one drawn card per step, so the sequence reads like a storyboard */
+.step-drawing { display: none; }
+html[data-theme="sketch"] .step-drawing {
+  display: block;
+  inline-size: clamp(6.5rem, 10vw, 9rem);
+  block-size: auto;
+  rotate: -2.5deg;
+}
+html[data-theme="sketch"] .steps li:nth-child(2) .step-drawing { rotate: 2deg; }
+html[data-theme="sketch"] .steps li:nth-child(3) .step-drawing { rotate: -1deg; }
+
+/* sections are separated by a wavy pencil rule instead of a straight one */
+html[data-theme="sketch"] .section { border-block-end: none; }
+html[data-theme="sketch"] .section::after {
+  content: "";
+  position: absolute;
+  inset-inline: clamp(1rem, 4vw, 2.5rem);
+  inset-block-end: 0;
+  block-size: 10px;
+  background-color: color-mix(in srgb, var(--ink) 40%, transparent);
+  -webkit-mask: var(--doodle-squiggle) repeat-x center / 170px 10px;
+  mask: var(--doodle-squiggle) repeat-x center / 170px 10px;
+  pointer-events: none;
+}
+html[data-theme="sketch"] .section { position: relative; }

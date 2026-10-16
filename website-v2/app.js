@@ -43,26 +43,8 @@
   if (CONFIG.webAppUrl) setLink('web', CONFIG.webAppUrl)
 
   /* Hand-drawn skin: the header toggle swaps the surface without changing the
-     layout. The handwriting fonts are fetched only when the skin is on. */
+     layout. The handwriting fonts are self-hosted and load with the stylesheet. */
   var THEME_KEY = 'tts.theme'
-  var FONTS = 'https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Permanent+Marker&display=swap'
-  var fontsLoaded = false
-
-  function loadHandwriting() {
-    if (fontsLoaded) return
-    fontsLoaded = true
-    ;['https://fonts.googleapis.com', 'https://fonts.gstatic.com'].forEach(function (href, i) {
-      var pre = document.createElement('link')
-      pre.rel = 'preconnect'
-      pre.href = href
-      if (i === 1) pre.crossOrigin = 'anonymous'
-      document.head.appendChild(pre)
-    })
-    var css = document.createElement('link')
-    css.rel = 'stylesheet'
-    css.href = FONTS
-    document.head.appendChild(css)
-  }
 
   var toggle = document.getElementById('themeToggle')
   var toggleLabel = document.getElementById('themeToggleLabel')
@@ -71,7 +53,6 @@
     var sketch = name === 'sketch'
     if (sketch) {
       document.documentElement.dataset.theme = 'sketch'
-      loadHandwriting()
     } else {
       delete document.documentElement.dataset.theme
     }

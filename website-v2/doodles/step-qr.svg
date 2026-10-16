@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 140" width="170" height="140" role="img" aria-hidden="true">
+  <!-- Step 1: a phone showing a QR code, drawn in pencil. -->
+  <g fill="none" stroke="#2f2a25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- phone -->
+    <path d="M46 12 C 66 9, 88 9, 106 12 C 110 16, 111 116, 106 126 C 88 130, 66 130, 47 126 C 42 120, 41 18, 46 12 Z" fill="#fffdf7" stroke-width="3"/>
+    <path d="M68 18 C 76 17, 82 17, 88 18" stroke-width="2" opacity="0.55"/>
+    <!-- screen -->
+    <path d="M52 28 C 70 26, 86 26, 100 28 C 102 46, 102 84, 100 104 C 86 106, 70 106, 53 104 C 51 86, 51 46, 52 28 Z" fill="rgba(47,111,181,0.10)" stroke-width="2.2"/>
+    <!-- QR blocks -->
+    <g stroke="none" fill="#2f2a25">
+      <rect x="60" y="38" width="14" height="14" rx="1.5"/>
+      <rect x="80" y="38" width="14" height="14" rx="1.5"/>
+      <rect x="60" y="58" width="14" height="14" rx="1.5"/>
+      <rect x="80" y="58" width="6" height="6" rx="1"/>
+      <rect x="90" y="66" width="6" height="6" rx="1"/>
+      <rect x="80" y="76" width="14" height="7" rx="1"/>
+      <rect x="60" y="80" width="7" height="7" rx="1"/>
+    </g>
+    <!-- scan line -->
+    <path d="M56 70 C 72 68, 88 68, 98 70" stroke="#d93a1f" stroke-width="2.4" opacity="0.75"/>
+    <!-- little motion ticks -->
+    <g stroke-width="2" opacity="0.4">
+      <path d="M118 40 C 124 38, 128 38, 133 38"/>
+      <path d="M118 50 C 126 49, 132 49, 139 49"/>
+      <path d="M118 60 C 124 60, 128 60, 133 61"/>
+    </g>
+  </g>
+</svg>
