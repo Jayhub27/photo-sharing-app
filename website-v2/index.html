@@ -58,10 +58,7 @@
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-copy">
       <h1 id="hero-title">Take the shot.<br>Then sell it.</h1>
-      <p class="lede">
-        Make a collection, drop in your photos, send the link or QR code.
-        Set a price and Stripe unlocks the original files the moment someone pays.
-      </p>
+      <p class="lede">Make a collection. Send a QR code. Get paid for the originals.</p>
       <div class="actions">
         <a class="btn" data-link="apk" href="#download">Download for Android</a>
         <a class="btn btn-quiet" href="#selling">See how selling works</a>
@@ -87,22 +84,20 @@
     <ul class="facts">
       <li><b>No install to view</b>The gallery opens in any phone browser.</li>
       <li><b>Originals stay locked</b>Buyers see 640px thumbnails until they pay.</li>
-      <li><b>ZIP when they buy</b>Single files and whole collections, one payment.</li>
+      <li><b>ZIP when they buy</b>Single files or the whole collection.</li>
     </ul>
   </section>
 
   <section class="section" id="selling" aria-labelledby="selling-title">
     <div class="section-head">
       <h2 id="selling-title">Every collection is a link and a QR code</h2>
-      <p>Scan it, and the gallery opens — no app, no account. Add a price and the same
-        page becomes a shop: thumbnails stay visible, originals unlock on payment.</p>
+      <p>Scan it and the gallery opens. Add a price and the same page becomes a shop.</p>
     </div>
 
     <div class="selling">
       <div class="qr">
         <img src="qr.svg" width="240" height="240" alt="QR code that opens the latest Android download.">
-        <p>This QR points at the Android build. A collection QR works the same way — point a
-          phone at it and the gallery opens.</p>
+        <p>Points at the Android build. Collection QRs work exactly the same.</p>
       </div>
 
       <div class="doodle doodle-album" aria-hidden="true">
@@ -148,37 +143,58 @@
         </figure>
       </div>
     </div>
+
+    <div class="more">
+      <details>
+        <summary>What buyers see, and when files unlock</summary>
+        <ul>
+          <li>Anyone with the link sees the 640px thumbnails. No account, no app.</li>
+          <li>Originals, single downloads and ZIPs stay locked until payment.</li>
+          <li>Checkout is Stripe's own page: card, Apple Pay or Google Pay.</li>
+          <li>The webhook records the purchase, and the originals unlock for that buyer on any device.</li>
+          <li>Owners and invited editors always have full access.</li>
+        </ul>
+      </details>
+    </div>
   </section>
 
   <section class="section" id="privacy" aria-labelledby="privacy-title">
     <div class="section-head">
       <h2 id="privacy-title">Private by default</h2>
-      <p>Run it on your own server and nothing about your photos — or the people who look
-        at them — leaves your infrastructure.</p>
+      <p>Your server, your photos, no trackers.</p>
     </div>
 
     <ul class="claims">
       <li>
         <h3>Your storage, not ours</h3>
-        <p>The bucket is private and every image streams through an access check. There is
-          no public URL to your originals.</p>
+        <p>A private bucket, streamed through an access check.</p>
       </li>
       <li>
-        <h3>No trackers on the gallery</h3>
-        <p>No analytics, no pixels, no ads, no third-party scripts or fonts. A gallery load
-          talks to one server: yours.</p>
+        <h3>No trackers</h3>
+        <p>No analytics, pixels, ads or third-party scripts.</p>
       </li>
       <li>
         <h3>Buyers stay anonymous</h3>
-        <p>Viewing and buying never needs an account, and the buyer's email goes to Stripe
-          for the receipt and nowhere else.</p>
+        <p>No account, and their email only goes to Stripe.</p>
       </li>
       <li>
         <h3>Deletes on a schedule</h3>
-        <p>Collections can remove themselves after 1 to 3650 days, storage included. You
-          pick the date, not a vendor.</p>
+        <p>1 to 3650 days, storage included.</p>
       </li>
     </ul>
+
+    <div class="more">
+      <details>
+        <summary>What the server actually stores</summary>
+        <ul>
+          <li>Accounts: name, email and a bcrypt password hash.</li>
+          <li>Photos and metadata, in a private bucket — originals only ever stream through an access check.</li>
+          <li>Sessions as HTTP-only cookies, collection membership, and purchase records from Stripe.</li>
+          <li>Nothing else. No analytics, no third-party fonts or scripts, no ad tech.</li>
+          <li>Scheduled deletion removes the storage objects, photo rows, members and purchase records within the hour.</li>
+        </ul>
+      </details>
+    </div>
 
     <div class="doodle doodle-picture" aria-hidden="true">
       <img src="doodles/picture.svg" alt="" width="190" height="160" loading="lazy" decoding="async">
@@ -197,15 +213,15 @@
     <ol class="steps">
       <li>
         <h3>Make a collection</h3>
-        <p>Name it and add photos from your phone, or paste links. Thumbnails and sizes are generated for you.</p>
+        <p>Add photos from your phone, or paste links.</p>
       </li>
       <li>
         <h3>Send the QR code</h3>
-        <p>Share the link or let people scan the code. No install and no account needed to look.</p>
+        <p>No install and no account needed to look.</p>
       </li>
       <li>
         <h3>Get paid</h3>
-        <p>Set a price per collection. Stripe handles the card, and every original unlocks on payment.</p>
+        <p>Set a price. Stripe takes the card, originals unlock.</p>
       </li>
     </ol>
   </section>
@@ -220,7 +236,7 @@
       <li class="dl">
         <div class="dl-main">
           <h3>Android</h3>
-          <p>Debug build, 163 MB, signed with the debug key. Sideload it and allow unknown sources.</p>
+          <p>About 33 MB. Sideload it and allow unknown sources.</p>
         </div>
         <p class="dl-meta">Requires Android 7+</p>
         <a class="btn" data-link="apk" href="#" rel="noopener noreferrer">Download APK</a>
@@ -228,7 +244,7 @@
       <li class="dl">
         <div class="dl-main">
           <h3>iPhone and iPad</h3>
-          <p>No App Store listing yet. Build it to your own device with EAS, or open it in Expo Go.</p>
+          <p>No App Store listing. Build it to your device with EAS.</p>
         </div>
         <p class="dl-meta">Requires iOS 14+</p>
         <a class="btn btn-quiet" data-link="ios" href="#" rel="noopener noreferrer">iOS build guide</a>
@@ -236,7 +252,7 @@
       <li class="dl">
         <div class="dl-main">
           <h3>Web</h3>
-          <p>The server-rendered app runs anywhere. Deploy your own copy to Vercel in one click.</p>
+          <p>Runs anywhere. Deploy your own copy in one click.</p>
         </div>
         <p class="dl-meta">Any modern browser</p>
         <a class="btn btn-quiet" data-link="deploy" href="#" rel="noopener noreferrer">Deploy your own</a>
@@ -244,15 +260,25 @@
       <li class="dl">
         <div class="dl-main">
           <h3>Source code</h3>
-          <p>The Expo app, the Express API and the Supabase schema, ready to run.</p>
+          <p>Expo app, Express API and Supabase schema.</p>
         </div>
         <p class="dl-meta">MIT-style, see the repo</p>
         <a class="btn btn-quiet" data-link="source" href="#" rel="noopener noreferrer">Download source</a>
       </li>
     </ul>
 
-    <p class="install">After the APK downloads: open the file, allow <b>install from unknown sources</b>,
-      then sign up and add your first collection.</p>
+    <p class="install">Open the file, allow <b>install from unknown sources</b>, then sign up.</p>
+
+    <div class="more">
+      <details>
+        <summary>Which one should I pick?</summary>
+        <ul>
+          <li>Shooting on Android? Sideload the APK.</li>
+          <li>On iPhone? Deploy the web app and add it to your home screen. No build needed.</li>
+          <li>Want both apps plus the API? Take the source.</li>
+        </ul>
+      </details>
+    </div>
 
     <div class="doodle doodle-prints" aria-hidden="true">
       <img src="doodles/prints.svg" alt="" width="200" height="150" loading="lazy" decoding="async">
@@ -268,32 +294,30 @@
       <details open>
         <summary>Is it really free?</summary>
         <p>Creating, uploading and sharing cost nothing. You only meet money if you price a
-          collection, and then it's Stripe's usual card fee.</p>
+          collection — then it's Stripe's card fee.</p>
       </details>
       <details>
         <summary>Do people need the app to see my photos?</summary>
-        <p>No. A link or a QR code opens the gallery in any phone browser. The app is for
-          shooting, uploading and managing.</p>
+        <p>No. A link or QR code opens the gallery in any phone browser.</p>
       </details>
       <details>
         <summary>What happens after someone pays?</summary>
-        <p>Stripe confirms the checkout through a webhook, the purchase is recorded, and every
-          original in that collection unlocks for that buyer, ZIP downloads included.</p>
+        <p>Stripe confirms the checkout, the purchase is recorded, and every original unlocks
+          for that buyer — ZIPs included.</p>
       </details>
       <details>
         <summary>Which files can I import?</summary>
-        <p>Photos from your device, direct image links, Google Drive file links, and any page
-          with an og:image tag. Up to 10 links at a time, 25 MB per image.</p>
+        <p>Your device's photos, direct image links, Google Drive links, or any page with an
+          og:image tag. Ten at a time, 25 MB each.</p>
       </details>
       <details>
         <summary>Is my data safe?</summary>
-        <p>Passwords are bcrypt hashed, sessions are HTTP-only cookies, and the storage bucket is
-          private: images stream through authenticated endpoints only. Row level security is on.</p>
+        <p>Private bucket, bcrypt password hashes, HTTP-only sessions, and row level security
+          on every table.</p>
       </details>
       <details>
         <summary>Can I run it myself?</summary>
-        <p>Yes. The source includes the mobile app, the API and the database schema. Bring your
-          own Supabase project and Stripe keys.</p>
+        <p>Yes. Bring your own Supabase project and Stripe keys.</p>
       </details>
     </div>
   </section>

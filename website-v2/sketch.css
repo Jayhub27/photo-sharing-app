@@ -383,3 +383,14 @@ html[data-theme="sketch"] .doodle-prints { margin-inline: auto; margin-block-sta
 @media (width < 60rem) {
   html[data-theme="sketch"] .doodle { display: none; }
 }
+
+/* ------------------------------------------------------- inline disclosure */
+html[data-theme="sketch"] .more { border-block-start: 2px dashed var(--line); }
+html[data-theme="sketch"] .more details { border-block-end: 2px dashed var(--line); }
+html[data-theme="sketch"] .more summary {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.15rem;
+}
+html[data-theme="sketch"] .more summary::before { color: var(--pencil-gold); }
+html[data-theme="sketch"] .more details[open] summary::before { color: var(--pencil-red); }

@@ -618,3 +618,36 @@ a { color: inherit; }
 /* The privacy statement reads best on clean paper: an opaque band keeps the
    text off any decorative print that sits behind the page. */
 #privacy { background: var(--paper); }
+
+/* ------------------------------------------------------- inline disclosure */
+.more {
+  max-inline-size: var(--wrap);
+  margin-inline: auto;
+  margin-block-start: var(--space-6);
+  border-block-start: 1px solid var(--line);
+}
+.more details { border-block-end: 1px solid var(--line); }
+.more summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  font-size: var(--text-md);
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+.more summary::-webkit-details-marker { display: none; }
+.more summary::before { content: "+"; color: var(--muted); font-weight: 400; }
+.more details[open] summary::before { content: "–"; }
+.more summary:hover { color: var(--price); }
+.more p,
+.more ul {
+  padding: 0 0 var(--space-5) calc(1ch + var(--space-3));
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  max-inline-size: 68ch;
+}
+.more ul { padding-inline-start: calc(2ch + var(--space-3)); }
+.more li + li { margin-block-start: var(--space-2); }
