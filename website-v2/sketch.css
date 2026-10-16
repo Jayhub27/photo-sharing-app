@@ -276,6 +276,9 @@ html[data-theme="sketch"] .bg-camera {
 /* lines and star masks, shared by the skin */
 html[data-theme="sketch"] {
   --doodle-squiggle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='10' viewBox='0 0 140 10'%3E%3Cpath d='M3 6 C 25 1, 45 9, 70 5 S 115 1, 137 6' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+  /* two more wave shapes so the section rules do not repeat one rhythm */
+  --doodle-wave-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='230' height='10' viewBox='0 0 230 10'%3E%3Cpath d='M4 6 C 40 2, 74 9, 112 5 S 190 1, 226 6' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
+  --doodle-wave-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='10' viewBox='0 0 140 10'%3E%3Cpath d='M2 5 C 16 1, 30 9, 46 6 S 74 1, 92 6 S 122 9, 138 4' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E");
   --doodle-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 30'%3E%3Cpath d='M3 4 C 15 5, 28 10, 35 23 M35 23 l-8.5 -3.2 M35 23 l1.4 8.6' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
 }
 
@@ -460,13 +463,13 @@ html[data-theme="sketch"] .polaroid span {
   html[data-theme="sketch"] .polaroid { display: none; }
 }
 
-/* a stamped sold mark on one print in the gallery */
+/* a stamped sold mark on one print in the gallery.
+   Place it with a corner modifier so it lands away from the subject:
+   --tl / --tr sit in the top band over the sky, --ml / --mr beside it. */
 .stamp { display: none; }
 html[data-theme="sketch"] .stamp {
   display: block;
   position: absolute;
-  inset-block-start: 12%;
-  inset-inline-start: 7%;
   padding: 0.2rem 0.65rem;
   border: 3px solid var(--price);
   color: var(--price);
@@ -476,9 +479,13 @@ html[data-theme="sketch"] .stamp {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   rotate: -13deg;
-  opacity: 0.85;
+  opacity: 0.82;
   pointer-events: none;
 }
+html[data-theme="sketch"] .stamp--tl { inset-block-start: 10%; inset-inline-start: 7%; }
+html[data-theme="sketch"] .stamp--tr { inset-block-start: 10%; inset-inline-end: 7%; rotate: 11deg; }
+html[data-theme="sketch"] .stamp--ml { inset-block-start: 36%; inset-inline-start: 5%; }
+html[data-theme="sketch"] .stamp--mr { inset-block-start: 36%; inset-inline-end: 5%; rotate: 8deg; }
 
 /* one drawn card per step, so the sequence reads like a storyboard */
 .step-drawing { display: none; }
@@ -491,7 +498,8 @@ html[data-theme="sketch"] .step-drawing {
 html[data-theme="sketch"] .steps li:nth-child(2) .step-drawing { rotate: 2deg; }
 html[data-theme="sketch"] .steps li:nth-child(3) .step-drawing { rotate: -1deg; }
 
-/* sections are separated by a wavy pencil rule instead of a straight one */
+/* sections are separated by a wavy pencil rule; each section brings its own
+   lead colour and wave so the rules do not fall into a single rhythm */
 html[data-theme="sketch"] .section { border-block-end: none; }
 html[data-theme="sketch"] .section::after {
   content: "";
@@ -499,9 +507,14 @@ html[data-theme="sketch"] .section::after {
   inset-inline: clamp(1rem, 4vw, 2.5rem);
   inset-block-end: 0;
   block-size: 10px;
-  background-color: color-mix(in srgb, var(--ink) 40%, transparent);
-  -webkit-mask: var(--doodle-squiggle) repeat-x center / 170px 10px;
-  mask: var(--doodle-squiggle) repeat-x center / 170px 10px;
+  background-color: color-mix(in srgb, var(--lead, var(--ink)) 45%, transparent);
+  -webkit-mask: var(--rule, var(--doodle-squiggle)) repeat-x center / var(--rule-size, 170px 10px);
+  mask: var(--rule, var(--doodle-squiggle)) repeat-x center / var(--rule-size, 170px 10px);
   pointer-events: none;
 }
 html[data-theme="sketch"] .section { position: relative; }
+html[data-theme="sketch"] #selling { --lead: var(--pencil-blue); --rule: var(--doodle-wave-b); --rule-size: 230px 10px; }
+html[data-theme="sketch"] #privacy { --lead: var(--pencil-violet); --rule: var(--doodle-wave-c); --rule-size: 140px 10px; }
+html[data-theme="sketch"] #how { --lead: var(--pencil-green); --rule: var(--doodle-wave-b); --rule-size: 180px 10px; }
+html[data-theme="sketch"] #download { --lead: var(--pencil-gold); --rule: var(--doodle-squiggle); --rule-size: 200px 10px; }
+html[data-theme="sketch"] #questions { --lead: var(--pencil-red); --rule: var(--doodle-wave-c); --rule-size: 190px 10px; }

@@ -55,6 +55,25 @@ the same rule the app follows. `font-display: swap`.
 - Paper grain (SVG turbulence, multiply, off below 48rem) and three colour washes
 - Tape strips on labels, prints and the polaroid
 
+### Stamps
+
+The sold stamp goes on a print with a corner modifier, chosen so it lands away
+from the subject: `stamp--tl`, `stamp--tr` (top band, usually sky), `stamp--ml`,
+`stamp--mr` (beside the subject). Never centre it over the print.
+
+### Section rules
+
+Each section sets `--lead`, `--rule` and `--rule-size` for its wavy separator, so
+the rules alternate wave shape and colour instead of repeating one rhythm:
+
+| Section | Lead | Wave |
+| --- | --- | --- |
+| Selling | blue | `--doodle-wave-b`, 230px |
+| Privacy | violet | `--doodle-wave-c`, 140px |
+| How it works | green | `--doodle-wave-b`, 180px |
+| Downloads | gold | `--doodle-squiggle`, 200px |
+| Questions | red | `--doodle-wave-c`, 190px |
+
 ## Motion
 
 One entrance per section (rise/fade, `--ease`), hover only on things you can press,
