@@ -12,6 +12,7 @@
       'https://github.com/Jayhub27/photo-sharing-app/releases/latest/download/take-the-shot-android.apk',
     iosUrl: 'https://docs.expo.dev/build/introduction/',
     deployUrl: 'https://vercel.com/new/clone?repository-url=https://github.com/Jayhub27/photo-sharing-app',
+    guideUrl: 'https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md',
     webAppUrl: null,
   }
 
@@ -38,6 +39,7 @@
   setLink('source', CONFIG.sourceUrl)
   setLink('repo', CONFIG.repoUrl)
   setLink('releases', CONFIG.releasesUrl)
+  setLink('guide', CONFIG.guideUrl)
   if (CONFIG.webAppUrl) setLink('web', CONFIG.webAppUrl)
 
   /* Hand-drawn skin: the header toggle swaps the surface without changing the
