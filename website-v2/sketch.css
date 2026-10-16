@@ -272,3 +272,114 @@ html[data-theme="sketch"] .claims li {
 html[data-theme="sketch"] .claims h3,
 html[data-theme="sketch"] .claims-note { font-family: var(--display); font-weight: 400; }
 html[data-theme="sketch"] .claims h3 { font-size: 1.35rem; }
+
+/* ======================================================================
+   More pencil: paper grain, colour washes, coloured leads and drawn props.
+   ====================================================================== */
+
+/* dull, coloured-pencil leads */
+html[data-theme="sketch"] {
+  --pencil-blue: #2f6fb5;
+  --pencil-red: #d93a1f;
+  --pencil-gold: #c08a1e;
+  --pencil-green: #3f7d4f;
+  --pencil-violet: #6f4fa8;
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+/* grain over the paper, and a wash of coloured pencil behind everything */
+html[data-theme="sketch"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background-image: var(--paper-grain);
+  background-size: 180px 180px;
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+}
+html[data-theme="sketch"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  pointer-events: none;
+  background:
+    radial-gradient(58rem 40rem at 10% 6%, rgba(47, 111, 181, 0.13), transparent 62%),
+    radial-gradient(46rem 34rem at 90% 22%, rgba(192, 138, 30, 0.12), transparent 60%),
+    radial-gradient(52rem 38rem at 18% 78%, rgba(63, 125, 79, 0.11), transparent 60%),
+    radial-gradient(44rem 32rem at 88% 94%, rgba(111, 79, 168, 0.11), transparent 62%);
+}
+@media (width < 48rem) {
+  html[data-theme="sketch"] body::before { display: none; }
+}
+
+/* hatched shading on the raised sections */
+html[data-theme="sketch"] .section-alt {
+  background-image: repeating-linear-gradient(34deg, rgba(47, 42, 37, 0.05) 0 1px, transparent 1px 9px);
+}
+
+/* a coloured squiggle under every section heading */
+html[data-theme="sketch"] .section-head h2::after {
+  content: "";
+  display: block;
+  inline-size: min(9rem, 45%);
+  block-size: 9px;
+  margin-block-start: 0.55rem;
+  background-color: var(--pencil-blue);
+  -webkit-mask: var(--doodle-squiggle) repeat-x left center / 150px 9px;
+  mask: var(--doodle-squiggle) repeat-x left center / 150px 9px;
+  opacity: 0.7;
+}
+html[data-theme="sketch"] #privacy .section-head h2::after { background-color: var(--pencil-violet); }
+html[data-theme="sketch"] #how .section-head h2::after { background-color: var(--pencil-green); }
+html[data-theme="sketch"] #download .section-head h2::after { background-color: var(--pencil-gold); }
+html[data-theme="sketch"] #questions .section-head h2::after { background-color: var(--pencil-red); }
+
+/* numbered lists take the coloured leads too */
+html[data-theme="sketch"] .steps li:nth-child(1)::before { color: var(--pencil-blue); }
+html[data-theme="sketch"] .steps li:nth-child(2)::before { color: var(--pencil-gold); }
+html[data-theme="sketch"] .steps li:nth-child(3)::before { color: var(--pencil-green); }
+html[data-theme="sketch"] .facts li:nth-child(1) { border-inline-start-color: color-mix(in srgb, var(--pencil-blue) 60%, transparent); }
+html[data-theme="sketch"] .facts li:nth-child(2) { border-inline-start-color: color-mix(in srgb, var(--pencil-gold) 60%, transparent); }
+html[data-theme="sketch"] .facts li:nth-child(3) { border-inline-start-color: color-mix(in srgb, var(--pencil-green) 60%, transparent); }
+html[data-theme="sketch"] .claims li:nth-child(1) { border-inline-start-color: var(--pencil-blue); }
+html[data-theme="sketch"] .claims li:nth-child(2) { border-inline-start-color: var(--pencil-gold); }
+html[data-theme="sketch"] .claims li:nth-child(3) { border-inline-start-color: var(--pencil-green); }
+html[data-theme="sketch"] .claims li:nth-child(4) { border-inline-start-color: var(--pencil-violet); }
+html[data-theme="sketch"] .qa details:nth-of-type(odd) summary::before { color: var(--pencil-violet); }
+html[data-theme="sketch"] .qa details:nth-of-type(even) summary::before { color: var(--pencil-gold); }
+html[data-theme="sketch"] .dl h3 { text-decoration: underline; text-decoration-style: wavy; text-underline-offset: 5px; }
+html[data-theme="sketch"] .dl:nth-child(1) h3 { text-decoration-color: color-mix(in srgb, var(--pencil-green) 55%, transparent); }
+html[data-theme="sketch"] .dl:nth-child(2) h3 { text-decoration-color: color-mix(in srgb, var(--pencil-blue) 55%, transparent); }
+html[data-theme="sketch"] .dl:nth-child(3) h3 { text-decoration-color: color-mix(in srgb, var(--pencil-gold) 55%, transparent); }
+html[data-theme="sketch"] .dl:nth-child(4) h3 { text-decoration-color: color-mix(in srgb, var(--pencil-violet) 55%, transparent); }
+
+/* a free tag reads as green pencil, prices stay red */
+html[data-theme="sketch"] .shot .tag:not(.tag-price) {
+  background: rgba(63, 125, 79, 0.14);
+  border-color: var(--pencil-green);
+  color: #2f5f3d;
+}
+
+/* prints and frames sit on a pencil shadow */
+html[data-theme="sketch"] .shot img { box-shadow: 3px 4px 0 rgba(47, 42, 37, 0.14); }
+html[data-theme="sketch"] .qr { box-shadow: 3px 4px 0 rgba(47, 42, 37, 0.1); }
+html[data-theme="sketch"] .foot {
+  background-image: repeating-linear-gradient(34deg, rgba(47, 42, 37, 0.04) 0 1px, transparent 1px 10px);
+}
+
+/* ------------------------------------------------- three drawn props (sketch only) */
+.doodle { display: none; }
+html[data-theme="sketch"] .doodle {
+  display: block;
+  inline-size: clamp(8.5rem, 13vw, 12rem);
+}
+html[data-theme="sketch"] .doodle img { inline-size: 100%; block-size: auto; }
+html[data-theme="sketch"] .doodle-album { justify-self: center; rotate: -3deg; }
+html[data-theme="sketch"] .doodle-picture { margin-inline-start: auto; margin-block-start: var(--space-6); rotate: 2.5deg; }
+html[data-theme="sketch"] .doodle-prints { margin-inline: auto; margin-block-start: var(--space-6); rotate: -1.5deg; }
+@media (width < 60rem) {
+  html[data-theme="sketch"] .doodle { display: none; }
+}

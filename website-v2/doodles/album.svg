@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" width="200" height="170" role="img" aria-hidden="true">
+  <!-- A pencil sketch of a photo album with prints poking out of the corners. -->
+  <g fill="none" stroke="#2f2a25" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- prints peeking behind the cover -->
+    <path d="M74 21 C 92 18, 112 16, 129 15 L 131 34 C 112 36, 94 37, 76 39 Z" fill="#fffdf7" stroke-width="2.4"/>
+    <path d="M88 24 C 96 22, 104 21, 114 20 L 115 31 C 106 32, 97 33, 89 34 Z" fill="rgba(47,111,181,0.20)" stroke="none"/>
+    <path d="M172 57 L 191 53 L 193 95 L 175 99 Z" fill="#fffdf7" stroke-width="2.4"/>
+    <path d="M177 62 C 183 60, 187 59, 190 58 L 191 68 C 187 69, 183 70, 179 71 Z" fill="rgba(63,125,79,0.22)" stroke="none"/>
+
+    <!-- cover -->
+    <path d="M29 35 C 70 30, 130 30, 171 36 C 175 41, 176 62, 175 118 C 174 137, 149 142, 120 141 C 82 140, 45 141, 30 136 C 25 130, 24 70, 29 35 Z" fill="rgba(192,138,30,0.16)" stroke-width="3"/>
+    <!-- spine -->
+    <path d="M41 37 C 39 71, 39 108, 41 137" stroke-width="2.2" opacity="0.7"/>
+    <!-- label on the cover -->
+    <path d="M84 75 C 105 73, 129 72, 151 71 L 153 97 C 130 99, 106 100, 86 101 Z" fill="#fffdf7" stroke-width="2.4"/>
+    <path d="M92 82 C 108 80, 124 79, 144 78" stroke-width="1.8" opacity="0.45"/>
+    <path d="M92 91 C 110 90, 128 89, 145 88" stroke-width="1.8" opacity="0.45"/>
+    <!-- pencil hatching in the corner -->
+    <g stroke-width="1.8" opacity="0.30">
+      <path d="M42 116 L 61 103"/>
+      <path d="M44 127 L 68 110"/>
+      <path d="M48 136 L 74 118"/>
+    </g>
+  </g>
+</svg>

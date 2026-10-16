@@ -87,7 +87,8 @@
   if (!wanted) {
     try { wanted = localStorage.getItem(THEME_KEY) } catch (e) {}
   }
-  setTheme(wanted === 'sketch' ? 'sketch' : 'clean', false)
+  /* The hand-drawn skin is the default; only an explicit choice switches to clean. */
+  setTheme(wanted === 'clean' ? 'clean' : 'sketch', false)
 
   if (toggle) {
     toggle.addEventListener('click', function () {

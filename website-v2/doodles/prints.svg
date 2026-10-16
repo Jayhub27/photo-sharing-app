@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" width="200" height="150" role="img" aria-hidden="true">
+  <!-- A small stack of instant prints, sketched in pencil. -->
+  <g fill="none" stroke="#2f2a25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- back print -->
+    <path d="M34 32 C 62 26, 100 24, 126 28 L 133 120 C 106 126, 66 128, 41 124 Z" fill="#fffdf7" stroke-width="2.6" opacity="0.85"/>
+    <path d="M44 42 C 70 37, 100 36, 122 39 L 124 64 C 100 61, 70 62, 46 67 Z" fill="rgba(47,111,181,0.16)" stroke="none"/>
+    <!-- middle print -->
+    <path d="M58 22 C 88 18, 126 20, 154 26 L 146 122 C 120 128, 82 126, 54 118 Z" fill="#fffdf7" stroke-width="2.8"/>
+    <path d="M68 32 C 96 28, 122 29, 144 33 L 141 58 C 120 54, 96 53, 70 57 Z" fill="rgba(192,138,30,0.20)" stroke="none"/>
+    <!-- front print with a little scene -->
+    <path d="M76 36 C 106 32, 148 34, 172 40 L 166 132 C 140 138, 100 136, 72 128 Z" fill="#fffdf7" stroke-width="3"/>
+    <path d="M84 46 C 110 42, 144 43, 164 47 L 162 62 C 140 58, 108 57, 86 61 Z" fill="rgba(47,111,181,0.20)" stroke="none"/>
+    <circle cx="148" cy="54" r="6" fill="rgba(192,138,30,0.5)" stroke-width="2"/>
+    <path d="M84 118 C 96 100, 104 100, 116 118 Z" fill="rgba(63,125,79,0.28)" stroke-width="2.2"/>
+    <path d="M112 118 C 124 104, 138 104, 160 118 Z" fill="rgba(111,79,168,0.22)" stroke-width="2.2"/>
+    <path d="M84 119 C 110 115, 140 115, 164 119" stroke-width="1.6" opacity="0.5"/>
+    <!-- caption squiggle -->
+    <path d="M96 126 C 112 124, 128 124, 148 125" stroke-width="1.8" opacity="0.4"/>
+  </g>
+</svg>
