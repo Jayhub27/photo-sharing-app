@@ -500,6 +500,28 @@ a { color: inherit; }
 }
 .foot-bar span:last-child { margin-inline-start: auto; color: #f2f0ec; }
 
+/* ------------------------------------------------- small drawn "photos" */
+/* Four little landscape sketches pinned behind the page like prints on a
+   wall, veiled enough for the type to stay readable; the camera doodles
+   float on top of them. */
+.bg-photos {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bg-shot {
+  position: absolute;
+  block-size: auto;
+  opacity: 0.55;
+  filter: blur(0.5px);
+}
+.bg-shot:nth-child(1) { left: -7%; top: 3%; inline-size: clamp(210px, 23vw, 360px); rotate: -5deg; }
+.bg-shot:nth-child(2) { right: -4%; top: 0%; inline-size: clamp(190px, 21vw, 330px); rotate: 4deg; }
+.bg-shot:nth-child(3) { right: 1%; bottom: -2%; inline-size: clamp(180px, 19vw, 300px); rotate: -3deg; }
+.bg-shot:nth-child(4) { left: 3%; bottom: 0%; inline-size: clamp(190px, 20vw, 320px); rotate: 3deg; }
+
 /* --------------------------------------------- floating camera doodles */
 /* Hand-drawn cameras pinned to the viewport, blurred into the paper.
    The stylesheet lays out the starting scatter; app.js then takes over
@@ -531,6 +553,9 @@ a { color: inherit; }
   .bg-camera:nth-child(5),
   .bg-camera:nth-child(6) { display: none; }
   .bg-camera { opacity: 0.22; }
+  .bg-shot:nth-child(3),
+  .bg-shot:nth-child(4) { display: none; }
+  .bg-shot { opacity: 0.45; }
 }
 
 /* -------------------------------------------------------------- motion off */
@@ -589,3 +614,7 @@ a { color: inherit; }
   .top-in > .btn { display: none; }
   .top-nav { gap: var(--space-4); }
 }
+
+/* The privacy statement reads best on clean paper: an opaque band keeps the
+   text off any decorative print that sits behind the page. */
+#privacy { background: var(--paper); }
