@@ -1,6 +1,6 @@
-/* Hand-drawn skin for the gallery site.
-   Activated with <html data-theme="sketch"> (header toggle or ?theme=sketch).
-   Same layout, rules and spacing as the clean theme — only the surface changes:
+/* Hand-drawn skin for the gallery site — the only skin.
+   <html data-theme="sketch"> is set in the markup, so these rules always apply.
+   Same layout, rules and spacing as the base theme — only the surface changes:
    paper instead of white, pencil rules instead of hairlines, marker type,
    wobbly frames, tape and a few pencil doodles. */
 
@@ -82,30 +82,7 @@ html[data-theme="sketch"] .top-nav a {
   text-underline-offset: 4px;
 }
 
-/* toggle + buttons ------------------------------------------------------ */
-html[data-theme="sketch"] .theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.8rem;
-  background: var(--surface);
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  border-radius: var(--wob-sm);
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-html[data-theme="sketch"] .theme-toggle-mark {
-  inline-size: 0.75rem;
-  block-size: 0.75rem;
-  border: 2px solid var(--ink);
-  border-radius: 50% 40% 55% 45%;
-  background: var(--marker);
-}
-html[data-theme="sketch"] .theme-toggle:hover { background: #f1ece0; }
-
+/* buttons --------------------------------------------------------------- */
 html[data-theme="sketch"] .btn {
   background: var(--surface);
   color: var(--ink);

@@ -42,41 +42,6 @@
   setLink('guide', CONFIG.guideUrl)
   if (CONFIG.webAppUrl) setLink('web', CONFIG.webAppUrl)
 
-  /* Hand-drawn skin: the header toggle swaps the surface without changing the
-     layout. The handwriting fonts are self-hosted and load with the stylesheet. */
-  var THEME_KEY = 'tts.theme'
-
-  var toggle = document.getElementById('themeToggle')
-  var toggleLabel = document.getElementById('themeToggleLabel')
-
-  function setTheme(name, remember) {
-    var sketch = name === 'sketch'
-    if (sketch) {
-      document.documentElement.dataset.theme = 'sketch'
-    } else {
-      delete document.documentElement.dataset.theme
-    }
-    if (toggle) toggle.setAttribute('aria-pressed', String(sketch))
-    if (toggleLabel) toggleLabel.textContent = sketch ? 'Clean' : 'Sketch'
-    if (toggle) toggle.setAttribute('aria-label', sketch ? 'Switch to the clean look' : 'Switch to the hand-drawn look')
-    if (remember) {
-      try { localStorage.setItem(THEME_KEY, sketch ? 'sketch' : 'clean') } catch (e) {}
-    }
-  }
-
-  var wanted = new URLSearchParams(location.search).get('theme')
-  if (!wanted) {
-    try { wanted = localStorage.getItem(THEME_KEY) } catch (e) {}
-  }
-  /* The hand-drawn skin is the default; only an explicit choice switches to clean. */
-  setTheme(wanted === 'clean' ? 'clean' : 'sketch', false)
-
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      setTheme(document.documentElement.dataset.theme === 'sketch' ? 'clean' : 'sketch', true)
-    })
-  }
-
   document.querySelectorAll('[data-year]').forEach(function (el) {
     el.textContent = String(new Date().getFullYear())
   })
