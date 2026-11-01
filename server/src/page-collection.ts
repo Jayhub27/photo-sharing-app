@@ -692,16 +692,18 @@ async function loadSales() {
     const data = await res.json();
     const box = document.getElementById('salesBox');
     box.classList.remove('hidden');
+    let html = '';
     if (!data.schemaReady) {
-      box.innerHTML = '<div class="note warn"><span><strong>Database setup needed.</strong> Run the selling section of supabase/schema.sql to store prices and purchases.</span></div>';
+      html += '<div class="note warn"><span><strong>Database setup needed.</strong> Run the selling section of supabase/schema.sql to store prices and purchases.</span></div>';
     }
     if (!data.stripeConfigured) {
-      box.innerHTML += '<div class="note warn" style="margin-top:10px"><span><strong>Stripe keys missing.</strong> Set STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) to accept payments.</span></div>';
+      html += '<div class="note warn" style="margin-top:10px"><span><strong>Stripe keys missing.</strong> Set STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) to accept payments.</span></div>';
     }
     const rows = (data.sales || []).map(function (s) {
       return '<div class="sale-row"><span>' + esc(s.buyer_email || 'Buyer') + '<br><span class="hint">' + new Date(s.created_at).toLocaleDateString() + '</span></span><span class="amount">' + money(s.amount_cents, s.currency) + (s.status === 'paid' ? '' : ' \u00b7 ' + esc(s.status)) + '</span></div>';
     }).join('');
-    box.innerHTML += '<h2 style="font-size:16px;margin:18px 0 6px">' + (data.count || 0) + ' sale' + (data.count === 1 ? '' : 's') + ' \u00b7 ' + money(data.gross_cents, data.currency) + '</h2>' + (rows || '<div class="hint">No sales yet. Share the link to start selling.</div>');
+    html += '<h2 style="font-size:16px;margin:18px 0 6px">' + (data.count || 0) + ' sale' + (data.count === 1 ? '' : 's') + ' \u00b7 ' + money(data.gross_cents, data.currency) + '</h2>' + (rows || '<div class="hint">No sales yet. Share the link to start selling.</div>');
+    box.innerHTML = html;
     document.getElementById('salesSummary').innerHTML = '<strong>' + (data.count || 0) + ' sale' + (data.count === 1 ? '' : 's') + '</strong> \u00b7 ' + money(data.gross_cents, data.currency) + ' earned';
   } catch {}
 }
