@@ -191,8 +191,56 @@ function normalizeCurrency(value: unknown): Currency | undefined {
   return (CURRENCIES as readonly string[]).includes(c) ? (c as Currency) : undefined
 }
 
-async function hasPurchased(collectionId: string, userId?: string, email?: string): Promise<boolean> {
+const PURCHASE_COOKIE_PREFIX = 'tts_purchase_'
+
+function purchaseCookieName(collectionId: string): string {
+  return `${PURCHASE_COOKIE_PREFIX}${collectionId.replace(/[^a-zA-Z0-9_-]/g, '')}`
+}
+
+/** Session id remembered after a guest checkout, scoped to one collection. */
+function readPurchaseSession(req: Request, collectionId: string): string | undefined {
+  const header = String(req.headers.cookie || '')
+  const name = `${purchaseCookieName(collectionId)}=`
+  for (const part of header.split(';')) {
+    const trimmed = part.trim()
+    if (!trimmed.startsWith(name)) continue
+    try {
+      return decodeURIComponent(trimmed.slice(name.length))
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+function setPurchaseCookie(res: Response, req: Request, collectionId: string, sessionId: string) {
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim()
+  res.cookie(purchaseCookieName(collectionId), sessionId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: req.secure || proto === 'https',
+    maxAge: 1000 * 60 * 60 * 24 * 365,
+    path: '/',
+  })
+}
+
+async function hasPurchased(
+  collectionId: string,
+  userId?: string,
+  email?: string,
+  sessionId?: string
+): Promise<boolean> {
   if (!(await sellingSchemaReady())) return false
+  if (sessionId) {
+    const { data } = await supabase
+      .from('purchases')
+      .select('id')
+      .eq('collection_id', collectionId)
+      .eq('stripe_session_id', sessionId)
+      .eq('status', 'paid')
+      .limit(1)
+    if (data && data.length) return true
+  }
   if (userId) {
     const { data } = await supabase
       .from('purchases')
@@ -222,14 +270,20 @@ function isLocked(col: any, access: Access, purchased: boolean): boolean {
   return !access.canEdit && !purchased
 }
 
-async function accessState(col: any, access: Access, userId?: string, email?: string) {
+async function accessState(
+  col: any,
+  access: Access,
+  userId?: string,
+  email?: string,
+  sessionId?: string
+) {
   const price = Number.isFinite(Number(col?.price_cents)) ? Number(col.price_cents) : null
   const priced = price !== null && price > 0
   if (priced && userId && !email) {
     const { data: buyer } = await supabase.from('users').select('email').eq('id', userId).maybeSingle()
     email = buyer?.email
   }
-  const purchased = priced ? await hasPurchased(col.id, userId, email) : false
+  const purchased = priced ? await hasPurchased(col.id, userId, email, sessionId) : false
   return {
     price_cents: priced ? price : null,
     currency: (col?.currency as string) || 'usd',
@@ -421,7 +475,13 @@ router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => 
 
   const { data: photos, count } = await query.range(offset, offset + limit - 1)
 
-  const pricing = await accessState(access.col, access, req.userId)
+  const pricing = await accessState(
+    access.col,
+    access,
+    req.userId,
+    undefined,
+    readPurchaseSession(req, access.col.id)
+  )
 
   res.json({
     collection: access.col,
@@ -593,7 +653,13 @@ router.get('/collections/:id/zip', optionalAuth, async (req: AuthedRequest, res)
     return res.status(403).json({ error: 'This collection is private' })
   }
   const col = access.col
-  const pricing = await accessState(col, access, req.userId)
+  const pricing = await accessState(
+    col,
+    access,
+    req.userId,
+    undefined,
+    readPurchaseSession(req, col.id)
+  )
   if (pricing.locked) {
     return res.status(402).json({
       error: 'Purchase required',
@@ -695,7 +761,13 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
 
   let useThumb = req.query.thumb === '1' && !!photo.thumb_filename
   if (!useThumb && access.col) {
-    const pricing = await accessState(access.col, access, req.userId)
+    const pricing = await accessState(
+      access.col,
+      access,
+      req.userId,
+      undefined,
+      readPurchaseSession(req, access.col.id)
+    )
     if (pricing.locked) {
       if (!photo.thumb_filename || req.query.download === '1') {
         return res.status(402).json({
@@ -914,6 +986,9 @@ async function recordPurchase(session: any) {
   const collectionId = session?.metadata?.collection_id
   if (!collectionId) return
   const paid = session.payment_status === 'paid'
+  const buyerEmail = String(session.customer_details?.email || session.customer_email || '')
+    .trim()
+    .toLowerCase()
   const { data: existing } = await supabase
     .from('purchases')
     .select('id')
@@ -922,7 +997,7 @@ async function recordPurchase(session: any) {
   const payload = {
     status: paid ? 'paid' : 'pending',
     paid_at: paid ? new Date().toISOString() : null,
-    buyer_email: session.customer_details?.email || session.customer_email || null,
+    buyer_email: buyerEmail || null,
     stripe_payment_intent:
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
   }
@@ -974,7 +1049,9 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
     const { data: buyer } = await supabase.from('users').select('email').eq('id', req.userId).maybeSingle()
     email = buyer?.email
   }
-  if (await hasPurchased(access.col.id, req.userId, email)) return res.json({ alreadyPurchased: true })
+  if (await hasPurchased(access.col.id, req.userId, email, readPurchaseSession(req, access.col.id))) {
+    return res.json({ alreadyPurchased: true })
+  }
 
   const currency = normalizeCurrency(access.col.currency) || 'usd'
   const base = publicBaseUrl(req)
@@ -1029,6 +1106,7 @@ router.get('/collections/:id/access', optionalAuth, async (req: AuthedRequest, r
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
 
   const sessionId = String(req.query.session_id || '').trim()
+  let paidSession = ''
   if (sessionId && (await sellingSchemaReady())) {
     const s = stripe()
     if (s) {
@@ -1036,12 +1114,24 @@ router.get('/collections/:id/access', optionalAuth, async (req: AuthedRequest, r
         const session = await s.checkout.sessions.retrieve(sessionId)
         if (session.payment_status === 'paid' && session.metadata?.collection_id === req.params.id) {
           await recordPurchase(session)
+          paidSession = sessionId
         }
       } catch {}
     }
+    // The webhook may have recorded the purchase before the browser returned.
+    if (!paidSession && (await hasPurchased(req.params.id, undefined, undefined, sessionId))) {
+      paidSession = sessionId
+    }
+    if (paidSession) setPurchaseCookie(res, req, req.params.id, paidSession)
   }
 
-  const pricing = await accessState(access.col, access, req.userId)
+  const pricing = await accessState(
+    access.col,
+    access,
+    req.userId,
+    undefined,
+    paidSession || readPurchaseSession(req, access.col.id)
+  )
   res.json({ pricing, isOwner: access.isOwner, role: access.role, canEdit: access.canEdit })
 })
 

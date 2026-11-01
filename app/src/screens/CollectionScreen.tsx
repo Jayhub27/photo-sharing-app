@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  AppState,
   FlatList,
   Image,
   Linking,
@@ -90,6 +91,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const photosRef = useRef<Photo[]>([])
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const activeRef = useRef(true)
+  const checkoutRef = useRef(false)
   const sortRef = useRef(photoSort)
 
   queryRef.current = query
@@ -135,6 +137,18 @@ export default function CollectionScreen({ route, navigation }: Props) {
     const t = setTimeout(() => load(query.trim()), query ? 300 : 0)
     return () => clearTimeout(t)
   }, [query, load, photoSort])
+
+  // Stripe Checkout opens in the browser. When the buyer comes back to the app,
+  // ask the server again so the purchase (webhook or return fallback) unlocks
+  // the originals without making the user pull to refresh.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !checkoutRef.current) return
+      checkoutRef.current = false
+      load(queryRef.current.trim())
+    })
+    return () => sub.remove()
+  }, [load])
 
   useEffect(() => {
     if (!sellOpen || role !== 'owner') return
@@ -355,10 +369,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
-  const handleBuy = async () => {    try {
+  const handleBuy = async () => {
+    try {
       const res = await startCheckout(id)
-      if (res.url) Linking.openURL(res.url)
-      else if (res.alreadyPurchased) {
+      if (res.url) {
+        checkoutRef.current = true
+        await Linking.openURL(res.url)
+      } else if (res.alreadyPurchased) {
         await load(query.trim())
         Alert.alert('Purchased', 'You already own this collection.')
       } else {
