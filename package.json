@@ -11,6 +11,7 @@
     "server": "npm run dev --workspace server",
     "app": "npm run start --workspace app",
     "website": "npx --yes serve website -l 8080",
+    "website:v3": "npx --yes serve website-v3 -l 8080",
     "build": "npm run build --workspace server"
   },
   "overrides": {
