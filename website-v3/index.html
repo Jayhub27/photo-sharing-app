@@ -63,13 +63,13 @@
       <div class="hero-copy">
         <p class="kicker">A photo gallery with a price tag.</p>
         <h1 id="hero-title">Take the shot.<br><em>Then sell it.</em></h1>
-        <p class="lede">Make a collection, send a QR code, and let people buy the originals. The
-          files stay on your server — no monthly plan, no commission, no trackers.</p>
+        <p class="lede">Make a collection, send a QR code, sell the originals. The files
+          stay on your server.</p>
         <p class="actions">
           <a class="btn" data-link="apk" href="#download">Download for Android</a>
           <a class="text-link" href="#wall">See a collection wall</a>
         </p>
-        <p class="fineprint">Free to share. You only pay Stripe's card fee when you sell.</p>
+        <p class="fineprint">No subscription. No commission.</p>
       </div>
     </div>
 
@@ -86,16 +86,16 @@
     <div class="wrap">
       <ul class="facts">
         <li>
-          <span class="fact-k">Reaches any phone</span>
-          <span class="fact-v">No app and no account needed to look.</span>
+          <span class="fact-k">Any phone</span>
+          <span class="fact-v">No app, no account.</span>
         </li>
         <li>
-          <span class="fact-k">Previews stay small</span>
-          <span class="fact-v">640px thumbnails until the collection is paid.</span>
+          <span class="fact-k">Small previews</span>
+          <span class="fact-v">640px until paid.</span>
         </li>
         <li>
-          <span class="fact-k">ZIP after checkout</span>
-          <span class="fact-v">Single files or the whole collection at once.</span>
+          <span class="fact-k">ZIP download</span>
+          <span class="fact-v">Single files or all of them.</span>
         </li>
       </ul>
     </div>
@@ -106,11 +106,8 @@
       <div class="head">
         <h2 id="wall-title">Every collection is a link <br>and a QR code.</h2>
         <div class="head-aside">
-          <p>Scan it and the gallery opens in the phone's browser. One price sets the
-            whole collection — buyers see 640px previews until they pay, then every
-            original unlocks.</p>
-          <p class="note">Example collections, placeholder prices. The app, the lock and
-            the checkout are real.</p>
+          <p>One price sets the whole collection.</p>
+          <p class="note">Example prices; real checkout.</p>
         </div>
       </div>
 
@@ -208,14 +205,11 @@
 
       <div class="more">
         <details>
-          <summary>What buyers see, and when files unlock</summary>
+          <summary>Buying and unlocking</summary>
           <ul>
-            <li>Anyone with the link sees the 640px previews. No account, no app.</li>
-            <li>Originals, single downloads and ZIPs stay locked until payment.</li>
-            <li>Checkout is Stripe's own page: card, Apple Pay or Google Pay.</li>
-            <li>The webhook records the purchase, and the originals unlock for that
-              buyer on any device.</li>
-            <li>Owners and invited editors always have full access.</li>
+            <li>Anyone with the link sees 640px previews. No account.</li>
+            <li>Stripe takes the card; every original unlocks after payment.</li>
+            <li>Owners and invited editors keep full access.</li>
           </ul>
         </details>
       </div>
@@ -227,52 +221,45 @@
       <div class="head head-dark">
         <h2 id="privacy-title">Private by default.</h2>
         <div class="head-aside">
-          <p>A private bucket, an access check on every byte, and a delete date you
-            choose.</p>
+          <p>A private bucket, an access check, a delete date.</p>
         </div>
       </div>
 
       <ul class="claims">
         <li>
           <h3>Your storage, not ours</h3>
-          <p>Photos live in your own Supabase bucket. The server streams each file
-            only after an access check on the collection.</p>
+          <p>Photos live in your own Supabase bucket.</p>
         </li>
         <li>
           <h3>No trackers</h3>
-          <p>No analytics, pixels, ads or third-party fonts. This page loads only
-            from its own origin.</p>
+          <p>No analytics, pixels, or third-party fonts.</p>
         </li>
         <li>
           <h3>Buyers stay anonymous</h3>
-          <p>No account needed. Their email is passed to Stripe for the receipt and
-            nothing else.</p>
+          <p>No account. Email goes to Stripe only.</p>
         </li>
         <li>
           <h3>It deletes itself</h3>
-          <p>Pick 1 to 3650 days. The hourly sweeper removes files, photo rows,
-            members and purchase records.</p>
+          <p>Pick 1 to 3650 days. The sweeper clears everything.</p>
         </li>
       </ul>
 
       <div class="more more-dark">
         <details>
-          <summary>What the server actually stores</summary>
+          <summary>What the server stores</summary>
           <ul>
-            <li>Accounts: name, email and a bcrypt password hash.</li>
-            <li>Photos and metadata, in a private bucket — originals only ever
-              stream through an access check.</li>
-            <li>Sessions as HTTP-only cookies, collection membership, and purchase
-              records from Stripe.</li>
-            <li>Nothing else. No analytics, no third-party fonts or scripts, no ad
-              tech.</li>
+            <li>Accounts: name, email, bcrypt hash.</li>
+            <li>Photos and metadata in a private bucket.</li>
+            <li>Sessions, members, and Stripe purchase records.</li>
+            <li>Nothing else.</li>
           </ul>
         </details>
       </div>
 
-      <p class="claims-note">Open source under the MIT license —
-        <a data-link="repo" href="https://github.com/Jayhub27/photo-sharing-app" rel="noopener noreferrer">read the code</a>
-        or <a data-link="guide" href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md" rel="noopener noreferrer">follow the setup guide</a>.</p>
+      <p class="claims-note">MIT licensed.
+        <a data-link="repo" href="https://github.com/Jayhub27/photo-sharing-app" rel="noopener noreferrer">Read the code</a>
+        or <a data-link="guide" href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md" rel="noopener noreferrer">follow the setup guide</a>.
+      </p>
     </div>
   </section>
 
@@ -281,8 +268,7 @@
       <div class="head">
         <h2 id="how-title">From camera roll <br>to paid.</h2>
         <div class="head-aside">
-          <p>Shooting and uploading happen in the app. Everything after that happens
-            in a browser, on any device, with nothing to install.</p>
+          <p>Shoot in the app. Everything else runs in a browser.</p>
         </div>
       </div>
 
@@ -290,22 +276,30 @@
         <li>
           <span class="step-n" aria-hidden="true">01</span>
           <h3>Make a collection</h3>
-          <p>Upload from your phone, or paste links. Ten at a time, 25 MB each,
-            thumbnails generated on the server.</p>
+          <p>Upload from the app, or paste links.</p>
         </li>
         <li>
           <span class="step-n" aria-hidden="true">02</span>
           <h3>Send the code</h3>
-          <p>A QR for the table, a link for the group chat. Viewers need no account
-            and no app.</p>
+          <p>A QR for the table, a link for the chat.</p>
         </li>
         <li>
           <span class="step-n" aria-hidden="true">03</span>
           <h3>Get paid</h3>
-          <p>Set one price for the collection. Stripe takes the card, and the
-            originals unlock for that buyer.</p>
+          <p>One price. Stripe takes the card.</p>
         </li>
       </ol>
+
+      <div class="more">
+        <details>
+          <summary>What happens behind the scenes</summary>
+          <ul>
+            <li>Thumbnails are generated on the server at 640px.</li>
+            <li>New photos appear for everyone in about five seconds.</li>
+            <li>Buyers download single files or the whole collection as a ZIP.</li>
+          </ul>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -314,58 +308,51 @@
       <div class="head">
         <h2 id="download-title">Get the app.</h2>
         <div class="head-aside">
-          <p>The app is for shooting and uploading. Looking, buying and selling all
-            work in a browser.</p>
+          <p>For shooting and uploading. Viewing needs no install.</p>
         </div>
       </div>
 
       <ul class="dl">
         <li>
           <h3>Android</h3>
-          <p class="dl-note">Sideload the APK and allow unknown sources. About 33 MB.</p>
+          <p class="dl-note">About 33 MB. No Play Store.</p>
           <p class="dl-meta">Android 7+</p>
           <a class="btn btn-small" data-link="apk" href="https://github.com/Jayhub27/photo-sharing-app/releases/latest/download/take-the-shot-android.apk" rel="noopener noreferrer">Download APK</a>
         </li>
         <li>
           <h3>iPhone and iPad</h3>
-          <p class="dl-note">No App Store listing. Build it to your own device with EAS.</p>
+          <p class="dl-note">No App Store listing. Build with EAS.</p>
           <p class="dl-meta">iOS 14+</p>
           <a class="btn btn-small btn-ghost" data-link="ios" href="https://docs.expo.dev/build/introduction/" rel="noopener noreferrer">Build guide</a>
         </li>
         <li>
           <h3>Web</h3>
-          <p class="dl-note">Installable PWA with an offline page. Deploy your own copy.</p>
+          <p class="dl-note">Installable PWA. Deploy your own.</p>
           <p class="dl-meta">Any modern browser</p>
           <a class="btn btn-small btn-ghost" data-link="deploy" href="https://vercel.com/new/clone?repository-url=https://github.com/Jayhub27/photo-sharing-app" rel="noopener noreferrer">Deploy your own</a>
         </li>
         <li>
           <h3>Source</h3>
-          <p class="dl-note">Expo app, Express API and the Supabase schema.</p>
+          <p class="dl-note">Expo app, API and schema.</p>
           <p class="dl-meta">MIT license</p>
           <a class="btn btn-small btn-ghost" data-link="source" href="https://github.com/Jayhub27/photo-sharing-app/archive/refs/heads/main.zip" rel="noopener noreferrer">Download source</a>
         </li>
       </ul>
 
       <div class="install">
-        <p>Open the APK, allow <b>install from unknown sources</b>, then sign up. The
-          file is the same one the QR points at.</p>
+        <details class="install-help">
+          <summary>Install help</summary>
+          <ul>
+            <li>Android: open the APK and allow installs from unknown sources.</li>
+            <li>iPhone: deploy the web app and add it to your Home Screen.</li>
+            <li>Both apps plus the API: take the source.</li>
+          </ul>
+        </details>
         <div class="qr-card">
           <img src="qr.svg" width="144" height="144" loading="lazy" decoding="async"
                alt="QR code that opens the latest Android APK download.">
           <span class="qr-label">Scan for the Android build</span>
         </div>
-      </div>
-
-      <div class="more">
-        <details>
-          <summary>Which one should I pick?</summary>
-          <ul>
-            <li>Shooting on Android? Sideload the APK.</li>
-            <li>On iPhone? Deploy the web app and add it to your home screen. No
-              build needed.</li>
-            <li>Want both apps and the API? Take the source.</li>
-          </ul>
-        </details>
       </div>
     </div>
   </section>
@@ -375,43 +362,39 @@
       <div class="head">
         <h2 id="questions-title">Questions.</h2>
         <div class="head-aside">
-          <p>The short answers. The longer ones live in the repo.</p>
+          <p>The short version.</p>
         </div>
       </div>
 
       <div class="qa">
         <details open>
           <summary>Is it really free?</summary>
-          <p>Creating, uploading and sharing cost nothing. You only meet money if you
-            price a collection — then it is Stripe's card fee.</p>
+          <p>Sharing is free. Selling costs only Stripe's card fee.</p>
         </details>
         <details>
           <summary>Is there a subscription?</summary>
-          <p>No. There is no plan, no seat count and nothing to cancel.</p>
+          <p>No. Nothing to cancel.</p>
         </details>
         <details>
           <summary>Do people need the app to see my photos?</summary>
-          <p>No. A link or QR code opens the gallery in any phone browser.</p>
+          <p>No. A link opens in any browser.</p>
         </details>
         <details>
           <summary>What happens after someone pays?</summary>
-          <p>Stripe confirms the checkout, the purchase is recorded, and every
-            original unlocks for that buyer — ZIPs included.</p>
+          <p>Stripe confirms, then the originals unlock for that buyer.</p>
         </details>
         <details>
           <summary>Which files can I import?</summary>
-          <p>Your device's photos, direct image links, Google Drive links, or any page
-            with an og:image tag. Ten at a time, 25 MB each.</p>
+          <p>Device photos, direct links, Google Drive, or any page with og:image.
+            25 MB each.</p>
         </details>
         <details>
           <summary>Is my data safe?</summary>
-          <p>A private bucket, bcrypt password hashes, HTTP-only sessions, and row
-            level security on every table.</p>
+          <p>Private bucket, bcrypt hashes, HTTP-only sessions, row-level security.</p>
         </details>
         <details>
           <summary>Can I run it myself?</summary>
-          <p>Yes. Bring your own Supabase project and Stripe keys. The repo has the
-            schema, the environment list and a setup guide.</p>
+          <p>Yes. Bring your own Supabase project and Stripe keys.</p>
         </details>
       </div>
 
@@ -427,7 +410,7 @@
          sizes="100vw" width="1200" height="900" loading="lazy" decoding="async" alt="">
     <div class="wrap closer-in">
       <h2 id="closer-title">Hang your first <br><em>collection.</em></h2>
-      <p>Free to share. You only pay Stripe's card fee when you sell.</p>
+      <p>Free to share. Pay only when you sell.</p>
       <p class="actions">
         <a class="btn" data-link="apk" href="#download">Download for Android</a>
         <a class="text-link text-link-light" data-link="repo" href="https://github.com/Jayhub27/photo-sharing-app" rel="noopener noreferrer">Read the code</a>
