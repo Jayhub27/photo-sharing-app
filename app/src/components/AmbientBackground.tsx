@@ -1,5 +1,13 @@
-import React from 'react'
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  Animated,
+  AppState,
+  Easing,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { ambientCollectionUrl, ambientPhotoUrl, imageHeaders } from '../api'
@@ -90,23 +98,87 @@ export function AmbientBackground({
 }
 
 /**
- * Home blends up to four collection covers into a 2 x 2 wash. Each tile is a
- * 48 px asset, so the whole mosaic is still only a few kilobytes.
+ * Home blends up to four collection covers into a 2 x 2 wash. The mosaic
+ * rotates one cover every ten seconds with a slow crossfade, and pauses when
+ * Home is not focused, the app is in the background, or reduce motion is on.
  */
 export function AmbientMosaic({
   ids,
   variant = 'light',
   style,
+  active = true,
+  intervalMs = 10000,
 }: {
   ids: string[]
   variant?: Variant
   style?: StyleProp<ViewStyle>
+  active?: boolean
+  intervalMs?: number
 }) {
   const { settings } = useAppearance()
+  const [step, setStep] = useState(0)
+  const [baseStep, setBaseStep] = useState(0)
+  const [incoming, setIncoming] = useState<number | null>(null)
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active')
+  const fade = useRef(new Animated.Value(1)).current
+  const idsKey = ids.join('|')
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      setAppActive(state === 'active')
+    })
+    return () => sub.remove()
+  }, [])
+
+  // A new set of covers starts from the beginning rather than mid-transition.
+  useEffect(() => {
+    setStep(0)
+    setBaseStep(0)
+    setIncoming(null)
+    fade.setValue(1)
+  }, [idsKey, fade])
+
+  useEffect(() => {
+    if (!active || !appActive || !settings.adaptive || settings.reduceMotion || ids.length < 2) {
+      return
+    }
+    const timer = setInterval(() => setStep((value) => value + 1), intervalMs)
+    return () => clearInterval(timer)
+  }, [active, appActive, settings.adaptive, settings.reduceMotion, ids.length, intervalMs])
+
+  useEffect(() => {
+    if (step === baseStep) return
+    setIncoming(step)
+    fade.setValue(0)
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 900,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return
+      setBaseStep(step)
+      setIncoming(null)
+      fade.setValue(1)
+    })
+  }, [step, baseStep, fade])
+
   if (!settings.adaptive || !ids.length) return null
 
-  const slots = [ids[0], ids[1] || ids[0], ids[2] || ids[0], ids[3] || ids[0]]
-  const transition = settings.reduceMotion ? 0 : 350
+  const slotsFor = (value: number) => {
+    const count = ids.length
+    return [0, 1, 2, 3].map((offset) => ids[(value + offset) % count])
+  }
+
+  const renderMosaic = (value: number) => (
+    <View style={styles.mosaic}>
+      {slotsFor(value).map((id, index) => (
+        <View key={`${id}-${index}-${value}`} style={styles.tile}>
+          <AmbientImage uri={ambientCollectionUrl(id)} transition={0} blurRadius={22} />
+        </View>
+      ))}
+    </View>
+  )
 
   return (
     <View
@@ -115,13 +187,12 @@ export function AmbientMosaic({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <View style={styles.mosaic}>
-        {slots.map((id, index) => (
-          <View key={`${id}-${index}`} style={styles.tile}>
-            <AmbientImage uri={ambientCollectionUrl(id)} transition={transition} blurRadius={22} />
-          </View>
-        ))}
-      </View>
+      {renderMosaic(baseStep)}
+      {incoming !== null ? (
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
+          {renderMosaic(incoming)}
+        </Animated.View>
+      ) : null}
       <Wash variant={variant} intensity={settings.intensity} />
     </View>
   )

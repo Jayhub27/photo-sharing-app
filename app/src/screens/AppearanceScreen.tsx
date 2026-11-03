@@ -157,7 +157,7 @@ export default function AppearanceScreen({ navigation }: Props) {
               />
 
               <View style={s.motionRow}>
-                <Text style={s.motionText}>Reduce motion · crossfade</Text>
+                <Text style={s.motionText}>Reduce motion · static backdrop</Text>
                 <Switch
                   value={settings.reduceMotion}
                   onValueChange={(reduceMotion) => update({ reduceMotion })}
