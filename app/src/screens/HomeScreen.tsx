@@ -2,15 +2,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { Image } from 'expo-image'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { CompositeScreenProps } from '@react-navigation/native'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -22,8 +23,10 @@ import {
   type Collection,
   type RootStackParamList,
 } from '../api'
-import { colors, fonts } from '../styles'
-import { AnimatedCard, FadeIn, SkeletonGridCard } from '../components'
+import { useAuth } from '../auth'
+import { useAppearance } from '../appearance'
+import { AmbientMosaic } from '../components/AmbientBackground'
+import { wg, glassLight, type } from '../theme/warmGlass'
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<AppTabParamList, 'Collections'>,
@@ -31,7 +34,6 @@ type Props = CompositeScreenProps<
 >
 
 const PAGE_SIZE = 12
-const PADDING = 22
 
 const CURRENCY_SYMBOL: Record<string, string> = { usd: '$', eur: '€', gbp: '£' }
 
@@ -45,70 +47,118 @@ function daysLeft(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000))
 }
 
-function Plate({
+function metaFor(item: Collection) {
+  const count = item.photo_count ?? 0
+  const price = item.price_cents && item.price_cents > 0 ? formatPrice(item.price_cents, item.currency) : null
+  const expires = item.expires_at ? `${daysLeft(item.expires_at)}d left` : null
+  return [
+    `${count} photograph${count === 1 ? '' : 's'}`,
+    expires,
+    price ? 'for sale' : 'free download',
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+function Cover({
   item,
-  index,
+  style,
+}: {
+  item: Collection
+  style: any
+}) {
+  const cover = item.cover_filename || item.cover_thumb_filename
+  const source = React.useMemo(
+    () => (cover ? { uri: photoUrl(cover, { thumb: true }), headers: imageHeaders() } : null),
+    [cover]
+  )
+  if (!cover || !source) {
+    return (
+      <View style={[style, s.coverEmpty]}>
+        <Ionicons name="images-outline" size={22} color={wg.color.muted} />
+      </View>
+    )
+  }
+  return (
+    <Image
+      source={source}
+      style={style}
+      contentFit="cover"
+      accessibilityLabel={`Cover for ${item.name}`}
+    />
+  )
+}
+
+function FeatureCard({ item, onPress }: { item: Collection; onPress: () => void }) {
+  const price = item.price_cents && item.price_cents > 0 ? formatPrice(item.price_cents, item.currency) : null
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[s.feature, glassLight]}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${item.name}`}
+    >
+      <Cover item={item} style={s.featureImg} />
+      <View style={s.featureBody}>
+        <Text style={s.featureName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={s.featureMeta} numberOfLines={2}>
+          {metaFor(item)}
+        </Text>
+        {price ? (
+          <View style={s.pricePill}>
+            <Text style={s.priceText}>{price}</Text>
+          </View>
+        ) : (
+          <View style={s.freePill}>
+            <Text style={s.freeText}>Free</Text>
+          </View>
+        )}
+        <View style={s.featureBottom}>
+          <Text style={s.featureHint}>
+            {item.role && item.role !== 'owner' ? `You are ${item.role}` : 'Shared by link'}
+          </Text>
+          <Text style={s.featureOpen}>Open →</Text>
+        </View>
+      </View>
+    </Pressable>
+  )
+}
+
+function RowCard({
+  item,
   onPress,
 }: {
   item: Collection
-  index: number
   onPress: () => void
 }) {
-  const cover = item.cover_filename || item.cover_thumb_filename
-  const count = item.photo_count ?? 0
-  const price =
-    item.price_cents && item.price_cents > 0 ? formatPrice(item.price_cents, item.currency) : null
-  const expires = item.expires_at ? daysLeft(item.expires_at) : null
-
+  const price = item.price_cents && item.price_cents > 0 ? formatPrice(item.price_cents, item.currency) : null
   return (
-    <AnimatedCard index={index} onPress={onPress}>
-      <View style={g.plate}>
-        <View style={g.kickerRow}>
-          <Text style={g.kicker}>Issue {String(index + 1).padStart(2, '0')}</Text>
-          <Text style={g.kickerRight}>
-            {count} photograph{count === 1 ? '' : 's'}
-            {expires !== null ? ` · ${expires}d left` : ''}
-          </Text>
-        </View>
-
-        <View style={g.imgwrap}>
-          {cover ? (
-            <Image
-              source={{ uri: photoUrl(cover, { thumb: true }), headers: imageHeaders() }}
-              style={g.img}
-              resizeMode="cover"
-              accessibilityLabel={`Cover for ${item.name}`}
-            />
-          ) : (
-            <View style={[g.img, g.imgEmpty]}>
-              <Text style={g.imgEmptyText}>No cover yet</Text>
-            </View>
-          )}
-          {price ? (
-            <View style={g.sticker}>
-              <Text style={g.stickerText}>{price}</Text>
-            </View>
-          ) : null}
-          {item.is_public === false ? (
-            <View style={g.tag}>
-              <Text style={g.tagText}>Private</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <Text style={g.title}>{item.name}</Text>
-        <Text style={g.meta}>
-          {item.role && item.role !== 'owner' ? `You are ${item.role}` : 'Shared by link'}
-          {price ? ' · for sale' : ' · free to download'}
+    <Pressable
+      onPress={onPress}
+      style={[s.row, glassLight]}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${item.name}`}
+    >
+      <Cover item={item} style={s.rowThumb} />
+      <View style={s.rowBody}>
+        <Text style={s.rowName} numberOfLines={1}>
+          {item.name}
         </Text>
-        <View style={g.hair} />
+        <Text style={s.rowMeta} numberOfLines={1}>
+          {item.photo_count ?? 0} photographs · {price || 'free'}
+        </Text>
       </View>
-    </AnimatedCard>
+      <Ionicons name="chevron-forward" size={16} color="rgba(132,122,105,0.75)" />
+    </Pressable>
   )
 }
 
 export default function HomeScreen({ navigation }: Props) {
-  const { width } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  const { user } = useAuth()
+  const { settings } = useAppearance()
 
   const [collections, setCollections] = useState<Collection[]>([])
   const [total, setTotal] = useState(0)
@@ -149,7 +199,7 @@ export default function HomeScreen({ navigation }: Props) {
       setError(
         err instanceof Error && err.message === 'Not authenticated'
           ? 'Session expired. Please log in again.'
-          : 'Could not reach server. Is it running?'
+          : 'Could not reach the server. Is it running?'
       )
     } finally {
       if (id === requestId.current) setLoading(false)
@@ -197,85 +247,136 @@ export default function HomeScreen({ navigation }: Props) {
       setHasMore(res.hasMore)
       offsetRef.current += res.collections.length
     } catch {
-      // ignore, user can retry by scrolling
     } finally {
       setLoadingMore(false)
     }
   }, [loading, loadingMore, hasMore, query])
 
-  const today = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  const initials = (user?.name || '?')
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  // Feature the collection that is for sale; otherwise the most recent one.
+  const featured = collections.find((c) => c.price_cents && c.price_cents > 0) || collections[0]
+  const rest = featured ? collections.filter((c) => c.id !== featured.id) : collections
+  const ambientIds = collections
+    .filter((c) => c.has_ambient || c.cover_filename || c.cover_thumb_filename)
+    .slice(0, 4)
+    .map((c) => c.id)
+  const palette = featured?.ambient_colors?.length
+    ? featured.ambient_colors
+    : collections.find((c) => c.ambient_colors?.length)?.ambient_colors || []
 
   const header = (
-    <View style={g.masthead}>
-      <View style={g.wordRow}>
-        <Text style={g.wordmark}>Take the shot</Text>
+    <View style={{ paddingTop: insets.top + 10 }}>
+      <View style={[s.topbar, glassLight]}>
+        <Text style={s.wordmark}>Take the shot</Text>
+        <View style={s.topRight}>
+          <Pressable
+            onPress={() => navigation.navigate('CreateCollection')}
+            style={s.newButton}
+            accessibilityRole="button"
+            accessibilityLabel="New collection"
+          >
+            <Text style={s.newButtonText}>+ New</Text>
+          </Pressable>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{initials}</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={s.title}>Your{'\n'}collections</Text>
+      <Text style={s.subtitle}>Private galleries, your terms.</Text>
+
+      <View style={[s.search, glassLight]}>
+        <Ionicons name="search" size={15} color="rgba(132,122,105,0.9)" />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Search collections"
+          placeholderTextColor="rgba(132,122,105,0.8)"
+          value={query}
+          onChangeText={setQuery}
+          autoCapitalize="none"
+          returnKeyType="search"
+        />
+      </View>
+
+      <View style={s.chipRow}>
         <Pressable
-          onPress={() => navigation.navigate('CreateCollection')}
-          hitSlop={8}
+          onPress={() => navigation.navigate('Appearance')}
+          style={[s.adaptiveChip, glassLight]}
           accessibilityRole="button"
-          accessibilityLabel="New collection"
+          accessibilityLabel="Open appearance settings"
         >
-          <Text style={g.newAction}>+ New</Text>
+          <View style={[s.statusDot, { backgroundColor: palette[0] || wg.color.teal }]} />
+          <Text style={s.adaptiveText}>
+            {settings.adaptive ? `Adaptive · ${Math.max(1, ambientIds.length)} covers` : 'Warm paper'}
+          </Text>
+          <View style={s.dots}>
+            {(palette.length ? palette : [wg.color.teal, wg.color.bronze, wg.color.line]).slice(0, 4).map((c, i) => (
+              <View key={`${c}-${i}`} style={[s.dot, { backgroundColor: c }]} />
+            ))}
+          </View>
         </Pressable>
+        <Text style={s.liveText}>{total} live</Text>
       </View>
-      <View style={g.dateRow}>
-        <Text style={g.dateText}>{today}</Text>
-        <Text style={g.dateText}>
-          {total} edition{total === 1 ? '' : 's'}
-        </Text>
-      </View>
-      <View style={g.rule} />
 
-      <TextInput
-        style={[g.search]}
-        placeholder="Search collections…"
-        placeholderTextColor={colors.textMuted}
-        value={query}
-        onChangeText={setQuery}
-        autoCapitalize="none"
-        returnKeyType="search"
-      />
-
-      <View style={g.filters}>
+      <View style={s.filters}>
         {(['all', 'owned', 'shared'] as const).map((f) => (
           <Pressable
             key={f}
             onPress={() => setFilter(f)}
+            style={[s.filterChip, filter === f && s.filterChipOn]}
             accessibilityRole="button"
             accessibilityState={{ selected: filter === f }}
-            style={g.filterItem}
           >
-            <Text style={[g.filterText, filter === f && g.filterTextOn]}>
-              {f[0].toUpperCase() + f.slice(1)}
+            <Text style={[s.filterText, filter === f && s.filterTextOn]}>
+              {f === 'all' ? 'All' : f === 'owned' ? 'Mine' : 'Shared'}
             </Text>
-            <View style={[g.filterLine, filter === f && g.filterLineOn]} />
           </Pressable>
         ))}
         <Pressable
-          onPress={() => setSort((s) => (s === 'newest' ? 'name' : 'newest'))}
+          onPress={() => setSort((value) => (value === 'newest' ? 'name' : 'newest'))}
+          style={[s.sortChip, glassLight]}
           accessibilityRole="button"
           accessibilityLabel="Toggle sort order"
-          style={[g.filterItem, g.sortItem]}
         >
-          <Text style={g.filterText}>{sort === 'newest' ? '↓ Newest' : 'A–Z'}</Text>
-          <View style={g.filterLine} />
+          <Text style={s.sortText}>{sort === 'newest' ? 'Newest' : 'A–Z'}</Text>
+          <Ionicons name="swap-vertical" size={12} color={wg.color.muted} />
         </Pressable>
       </View>
+
+      {featured ? (
+        <FeatureCard
+          item={featured}
+          onPress={() => navigation.navigate('Collection', { id: featured.id, name: featured.name })}
+        />
+      ) : null}
+
+      {rest.length ? (
+        <View style={s.sectionRow}>
+          <Text style={s.sectionTitle}>More collections</Text>
+          <Text style={s.sectionCount}>{Math.max(0, total - 1)}</Text>
+        </View>
+      ) : null}
     </View>
   )
 
   if (loading) {
     return (
-      <View style={g.screen}>
-        <FadeIn>{header}</FadeIn>
-        <View style={{ paddingHorizontal: PADDING }}>
-          {[0, 1].map((i) => (
-            <SkeletonGridCard key={i} width={width - PADDING * 2} />
-          ))}
+      <View style={s.screen}>
+        <AmbientMosaic ids={ambientIds} />
+        <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
+          <View style={[s.topbar, glassLight]}>
+            <Text style={s.wordmark}>Take the shot</Text>
+          </View>
+          <Text style={s.title}>Your{'\n'}collections</Text>
+          <ActivityIndicator color={wg.color.bronze} style={{ marginTop: 40 }} />
         </View>
       </View>
     )
@@ -283,51 +384,58 @@ export default function HomeScreen({ navigation }: Props) {
 
   if (error) {
     return (
-      <View style={g.screen}>
-        <FadeIn>{header}</FadeIn>
-        <View style={g.empty}>
-          <Text style={g.emptyText}>{error}</Text>
-          <Pressable onPress={() => load(query.trim())} style={g.retry} accessibilityRole="button">
-            <Text style={g.retryText}>Retry</Text>
-          </Pressable>
+      <View style={s.screen}>
+        <AmbientMosaic ids={ambientIds} />
+        <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
+          <View style={[s.topbar, glassLight]}>
+            <Text style={s.wordmark}>Take the shot</Text>
+          </View>
+          <Text style={s.title}>Your{'\n'}collections</Text>
+          <View style={[s.errorCard, glassLight]}>
+            <Text style={s.errorText}>{error}</Text>
+            <Pressable onPress={() => load(query.trim())} style={s.retry} accessibilityRole="button">
+              <Text style={s.retryText}>Try again</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     )
   }
 
   return (
-    <View style={g.screen}>
+    <View style={s.screen}>
+      <AmbientMosaic ids={ambientIds} />
       <FlatList
-        data={collections}
+        data={rest}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: PADDING, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 48 }}
         ListHeaderComponent={header}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
-            tintColor={colors.red}
-            colors={[colors.red]}
+            tintColor={wg.color.bronze}
+            colors={[wg.color.bronze]}
           />
         }
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         ListFooterComponent={
-          loadingMore ? <ActivityIndicator color={colors.red} style={{ marginVertical: 16 }} /> : null
+          loadingMore ? <ActivityIndicator color={wg.color.bronze} style={{ marginVertical: 16 }} /> : null
         }
         ListEmptyComponent={
-          <View style={g.empty}>
-            <Text style={g.emptyText}>
-              {query
-                ? 'No collections match your search.'
-                : 'No collections yet.\nCreate your first edition to begin.'}
-            </Text>
-          </View>
+          collections.length === 0 ? (
+            <View style={[s.empty, glassLight]}>
+              <Ionicons name="images-outline" size={26} color={wg.color.muted} />
+              <Text style={s.emptyText}>
+                {query ? 'No collections match your search.' : 'No collections yet.\nCreate your first one to begin.'}
+              </Text>
+            </View>
+          ) : null
         }
-        renderItem={({ item, index }) => (
-          <Plate
+        renderItem={({ item }) => (
+          <RowCard
             item={item}
-            index={index}
             onPress={() => navigation.navigate('Collection', { id: item.id, name: item.name })}
           />
         )}
@@ -336,157 +444,299 @@ export default function HomeScreen({ navigation }: Props) {
   )
 }
 
-const g = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg },
-  masthead: { paddingTop: 16 },
-  wordRow: {
+const s = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: wg.color.paper },
+  topbar: {
+    height: 46,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 15,
+    paddingRight: 6,
+  },
+  wordmark: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 9,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: wg.color.inkSoft,
+  },
+  topRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  newButton: {
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: wg.color.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newButtonText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: wg.color.ivory,
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(33,28,21,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 10,
+    letterSpacing: 0.6,
+    color: wg.color.inkSoft,
+  },
+  title: {
+    ...type.display,
+    fontSize: 44,
+    lineHeight: 40,
+    marginTop: 22,
+  },
+  subtitle: {
+    fontFamily: wg.font.sans,
+    fontSize: 12,
+    color: wg.color.muted,
+    marginTop: 9,
+  },
+  search: {
+    height: 45,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: wg.font.sans,
+    fontSize: 12.5,
+    color: wg.color.ink,
+    paddingVertical: 0,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+  },
+  adaptiveChip: {
+    height: 31,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  statusDot: { width: 5, height: 5, borderRadius: 3 },
+  adaptiveText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7.5,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: wg.color.inkSoft,
+  },
+  dots: { flexDirection: 'row', gap: 3, marginLeft: 2 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  liveText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: wg.color.muted,
+  },
+  filters: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 13 },
+  filterChip: {
+    height: 28,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.1)',
+  },
+  filterChipOn: { backgroundColor: wg.color.ink, borderColor: wg.color.ink },
+  filterText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: wg.color.muted,
+  },
+  filterTextOn: { color: wg.color.ivory },
+  sortChip: {
+    marginLeft: 'auto',
+    height: 28,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  sortText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: wg.color.muted,
+  },
+  feature: {
+    marginTop: 16,
+    borderRadius: wg.radius.card,
+    padding: 9,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 158,
+  },
+  featureImg: { width: 96, height: 140, borderRadius: 17, backgroundColor: wg.color.paperDeep },
+  featureBody: { flex: 1, paddingVertical: 7, paddingRight: 4 },
+  featureName: {
+    fontFamily: wg.font.serif,
+    fontSize: 21,
+    letterSpacing: -0.4,
+    color: wg.color.ink,
+  },
+  featureMeta: {
+    fontFamily: wg.font.sans,
+    fontSize: 9.5,
+    lineHeight: 14,
+    color: wg.color.muted,
+    marginTop: 5,
+  },
+  pricePill: {
+    alignSelf: 'flex-start',
+    marginTop: 9,
+    backgroundColor: wg.color.ink,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  priceText: { fontFamily: wg.font.serif, fontSize: 16, color: wg.color.ivory },
+  freePill: {
+    alignSelf: 'flex-start',
+    marginTop: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.16)',
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  freeText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7.5,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: wg.color.inkSoft,
+  },
+  featureBottom: {
+    marginTop: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  featureHint: {
+    fontFamily: wg.font.sans,
+    fontSize: 8,
+    letterSpacing: 0.2,
+    color: 'rgba(132,122,105,0.9)',
+  },
+  featureOpen: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7.5,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: wg.color.inkSoft,
+  },
+  coverEmpty: { alignItems: 'center', justifyContent: 'center' },
+  sectionRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
+    marginTop: 19,
+    marginBottom: 8,
   },
-  wordmark: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 24,
-    color: colors.ink,
-    letterSpacing: -0.3,
-  },
-  newAction: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 11,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: colors.red,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 7,
-  },
-  dateText: {
-    fontFamily: fonts.sans,
-    fontSize: 9.5,
-    letterSpacing: 1.7,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-  },
-  rule: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 10 },
-  search: {
-    fontFamily: fonts.sans,
+  sectionTitle: {
+    fontFamily: wg.font.serifItalic,
     fontSize: 15,
-    color: colors.ink,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
-    marginTop: 6,
+    color: wg.color.ink,
   },
-  filters: {
+  sectionCount: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1.2,
+    color: wg.color.muted,
+  },
+  row: {
+    marginTop: 8,
+    minHeight: 60,
+    borderRadius: 18,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
-    marginTop: 14,
-    marginBottom: 6,
+    gap: 11,
   },
-  filterItem: { alignItems: 'center', paddingBottom: 4 },
-  sortItem: { marginLeft: 'auto' },
-  filterText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10.5,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
+  rowThumb: { width: 44, height: 44, borderRadius: 12, backgroundColor: wg.color.paperDeep },
+  rowBody: { flex: 1 },
+  rowName: {
+    fontFamily: wg.font.serif,
+    fontSize: 15,
+    color: wg.color.ink,
+    letterSpacing: -0.2,
   },
-  filterTextOn: { color: colors.ink },
-  filterLine: { height: 2, width: '100%', minWidth: 18, marginTop: 4, backgroundColor: 'transparent' },
-  filterLineOn: { backgroundColor: colors.red },
-  plate: { marginTop: 18 },
-  kickerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  kicker: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 9.5,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    color: colors.red,
-  },
-  kickerRight: {
-    fontFamily: fonts.sans,
-    fontSize: 9.5,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
-  },
-  imgwrap: { marginTop: 8, position: 'relative' },
-  img: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    backgroundColor: colors.surface2,
-  },
-  imgEmpty: { alignItems: 'center', justifyContent: 'center' },
-  imgEmptyText: { fontFamily: fonts.serifItalic, fontSize: 15, color: colors.textMuted },
-  sticker: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    backgroundColor: colors.red,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  stickerText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 11,
-    letterSpacing: 0.8,
-    color: colors.onAccent,
-  },
-  tag: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(242,240,235,0.94)',
-    borderWidth: 1,
-    borderColor: colors.ink,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  tagText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 9.5,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    color: colors.ink,
-  },
-  title: {
-    fontFamily: fonts.serif,
-    fontSize: 26,
-    color: colors.ink,
-    letterSpacing: -0.4,
-    marginTop: 10,
-  },
-  meta: {
-    fontFamily: fonts.sans,
-    fontSize: 11.5,
-    color: colors.textMuted,
+  rowMeta: {
+    fontFamily: wg.font.sans,
+    fontSize: 8.5,
+    color: wg.color.muted,
     marginTop: 3,
   },
-  hair: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 14 },
-  empty: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 24 },
+  empty: {
+    marginTop: 20,
+    borderRadius: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    gap: 10,
+  },
   emptyText: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
-    lineHeight: 24,
-    color: colors.textMuted,
+    fontFamily: wg.font.serifItalic,
+    fontSize: 16,
+    lineHeight: 22,
+    color: wg.color.muted,
+    textAlign: 'center',
+  },
+  errorCard: {
+    marginTop: 24,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    gap: 14,
+  },
+  errorText: {
+    fontFamily: wg.font.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    color: wg.color.muted,
     textAlign: 'center',
   },
   retry: {
-    marginTop: 18,
-    borderWidth: 1,
-    borderColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    borderRadius: 999,
+    backgroundColor: wg.color.ink,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
   retryText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 11,
-    letterSpacing: 1.6,
+    fontFamily: wg.font.sansSemi,
+    fontSize: 9,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: colors.ink,
+    color: wg.color.ivory,
   },
 })

@@ -37,6 +37,8 @@ import {
 } from '../api'
 import { colors, styles, fonts } from '../styles'
 import { AnimatedButton, ButtonText, FadeIn, SkeletonCard, PhotoViewer } from '../components'
+import { AmbientBackground } from '../components/AmbientBackground'
+import { glassLight, wg } from '../theme/warmGlass'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Collection'>
 
@@ -387,76 +389,107 @@ export default function CollectionScreen({ route, navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={s.screen}>
+      <AmbientBackground kind="collection" id={id} variant="light" />
+
       <FadeIn>
-        <View style={c.head}>
+        <View style={[c.head, glassLight]}>
           <View style={c.topRow}>
             <Pressable
               onPress={() => navigation.goBack()}
               hitSlop={8}
+              style={c.circle}
               accessibilityRole="button"
               accessibilityLabel="Back to collections"
             >
-              <Text style={c.back}>&larr; Collections</Text>
+              <Ionicons name="chevron-back" size={18} color={wg.color.ink} />
             </Pressable>
-            <Text style={c.topMeta}>
-              {role === 'owner' ? 'Owner' : role ? role : ''}
+            <Text style={c.kicker}>
+              {role === 'owner' ? 'Your collection' : role ? `Shared · ${role}` : 'Shared collection'}
             </Text>
+            <Pressable
+              onPress={() => navigation.navigate('QRDisplay', { id, name })}
+              hitSlop={8}
+              style={c.circle}
+              accessibilityRole="button"
+              accessibilityLabel="Show QR"
+            >
+              <Ionicons name="qr-code-outline" size={17} color={wg.color.ink} />
+            </Pressable>
           </View>
 
-          <Text style={c.kicker}>
-            {pricing?.price_cents
-              ? pricing.purchased
-                ? 'Collection — Purchased'
-                : 'Collection — For sale'
-              : 'Collection'}
-          </Text>
           <Text style={c.title}>{name}</Text>
           <Text style={c.meta}>
             {total} photograph{total === 1 ? '' : 's'}
-            {!isPublic ? '  ·  private' : ''}
-            {role && role !== 'owner' ? `  ·  you are ${role}` : ''}
+            {!isPublic ? ' · private' : ''}
+            {role && role !== 'owner' ? ` · you are ${role}` : ''}
             {expiresAt
-              ? `  ·  ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
+              ? ` · ${Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))} days left`
               : ''}
           </Text>
 
-          {pricing?.price_cents ? (
-            <View style={c.priceRow}>
-              <Text style={c.priceLabel}>
-                Originals
-                {pricing.purchased
-                  ? ', unlocked'
-                  : `, ${formatCents(pricing.price_cents, pricing.currency)}`}
-              </Text>
-              {pricing.locked ? (
-                <Pressable onPress={handleBuy} accessibilityRole="button">
-                  <Text style={c.buy}>Buy &rarr;</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
+          <View style={c.badges}>
+            {pricing?.price_cents ? (
+              <View style={[c.badge, c.badgeDark]}>
+                <Text style={c.badgeTextDark}>
+                  {pricing.purchased ? 'Purchased' : `${formatCents(pricing.price_cents, pricing.currency)} originals`}
+                </Text>
+              </View>
+            ) : (
+              <View style={[c.badge, c.badgeLight]}>
+                <Text style={c.badgeTextLight}>Free download</Text>
+              </View>
+            )}
+            {!isPublic ? (
+              <View style={[c.badge, c.badgeLight]}>
+                <Text style={c.badgeTextLight}>Private</Text>
+              </View>
+            ) : null}
+            {expiresAt ? (
+              <View style={[c.badge, c.badgeLight]}>
+                <Text style={c.badgeTextLight}>
+                  {Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000))}d left
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
           <View style={c.actions}>
             {canEdit ? (
               <>
-                <Pressable onPress={handleAdd} disabled={uploading} style={c.action} accessibilityRole="button">
-                  <Text style={c.actionText}>Add photos</Text>
+                <Pressable
+                  onPress={handleAdd}
+                  disabled={uploading}
+                  style={[c.action, c.actionDark]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[c.actionText, c.actionTextDark]}>
+                    {uploading ? 'Uploading…' : '+ Add photos'}
+                  </Text>
                 </Pressable>
-                <Pressable onPress={handleCamera} disabled={uploading} style={c.action} accessibilityRole="button">
-                  <Text style={c.actionText}>Camera</Text>
+                <Pressable
+                  onPress={handleCamera}
+                  disabled={uploading}
+                  style={[c.action, glassLight]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[c.actionText, c.actionTextLight]}>Camera</Text>
                 </Pressable>
-                <Pressable onPress={() => setImportOpen(true)} style={c.action} accessibilityRole="button">
-                  <Text style={c.actionText}>Import</Text>
+                <Pressable
+                  onPress={() => setImportOpen(true)}
+                  style={[c.action, glassLight]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[c.actionText, c.actionTextLight]}>Import</Text>
                 </Pressable>
               </>
             ) : null}
             <Pressable
               onPress={() => navigation.navigate('QRDisplay', { id, name })}
-              style={c.action}
+              style={[c.action, glassLight]}
               accessibilityRole="button"
             >
-              <Text style={c.actionText}>Show QR</Text>
+              <Text style={[c.actionText, c.actionTextLight]}>Share QR</Text>
             </Pressable>
           </View>
 
@@ -479,7 +512,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
                 hitSlop={6}
                 accessibilityRole="button"
               >
-                <Text style={c.manageText}>{pricing?.price_cents ? 'Edit price' : 'Sell this collection'}</Text>
+                <Text style={c.manageText}>{pricing?.price_cents ? 'Edit price' : 'Sell originals'}</Text>
               </Pressable>
             ) : null}
             {role === 'owner' ? (
@@ -495,7 +528,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
                 hitSlop={6}
                 accessibilityRole="button"
               >
-                <Text style={c.manageText}>{expiresAt ? 'Edit auto-delete' : 'Auto-delete'}</Text>
+                <Text style={c.manageText}>{expiresAt ? 'Edit expiry' : 'Auto-delete'}</Text>
               </Pressable>
             ) : null}
             {role === 'owner' ? (
@@ -505,40 +538,43 @@ export default function CollectionScreen({ route, navigation }: Props) {
             ) : null}
           </View>
 
-          <View style={c.rule} />
+          {pricing?.price_cents && pricing.locked ? (
+            <Pressable onPress={handleBuy} style={c.buyRow} accessibilityRole="button">
+              <Text style={c.buyLabel}>Unlock the originals</Text>
+              <Text style={c.buyPrice}>{formatCents(pricing.price_cents, pricing.currency)} →</Text>
+            </Pressable>
+          ) : null}
         </View>
       </FadeIn>
 
-      <View style={{ paddingHorizontal: 22 }}>
+      <View style={c.sheet}>
         <TextInput
           style={c.search}
           placeholder="Search photos by filename…"
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor="rgba(132,122,105,0.8)"
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"
           returnKeyType="search"
         />
-      </View>
 
-      <View style={c.filters}>
-        {(['newest', 'oldest', 'name'] as const).map((s) => (
-          <Pressable
-            key={s}
-            onPress={() => setPhotoSort(s)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: photoSort === s }}
-            style={c.filterItem}
-          >
-            <Text style={[c.filterText, photoSort === s && c.filterTextOn]}>
-              {s === 'newest' ? 'Newest' : s === 'oldest' ? 'Oldest' : 'A–Z'}
-            </Text>
-            <View style={[c.filterLine, photoSort === s && c.filterLineOn]} />
-          </Pressable>
-        ))}
-      </View>
+        <View style={c.filters}>
+          {(['newest', 'oldest', 'name'] as const).map((s) => (
+            <Pressable
+              key={s}
+              onPress={() => setPhotoSort(s)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: photoSort === s }}
+              style={[c.filterChip, photoSort === s && c.filterChipOn]}
+            >
+              <Text style={[c.filterText, photoSort === s && c.filterTextOn]}>
+                {s === 'newest' ? 'Newest' : s === 'oldest' ? 'Oldest' : 'A–Z'}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
-      {loading ? (
+        {loading ? (
         <View style={{ paddingHorizontal: 24 }}>
           {[0, 1, 2, 3].map((i) => (
             <SkeletonCard key={i} />
@@ -549,6 +585,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
           data={photos}
           key={`grid-${columns}`}
           keyExtractor={(item) => item.id}
+          style={{ flex: 1 }}
           numColumns={columns}
           contentContainerStyle={{ paddingHorizontal: hPadding, paddingBottom: 40, gap: gutter }}
           columnWrapperStyle={{ gap: gutter }}
@@ -581,14 +618,12 @@ export default function CollectionScreen({ route, navigation }: Props) {
               />
               <View style={c.caption}>
                 <Text style={c.captionNo}>{String(index + 1).padStart(2, '0')}</Text>
-                <Text style={c.captionName} numberOfLines={1}>
-                  {item.original_name}
-                </Text>
               </View>
             </Pressable>
           )}
         />
       )}
+      </View>
 
       {uploadProgress && (
         <View accessibilityLiveRegion="polite" style={c.progress}>
@@ -761,6 +796,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         onClose={() => setViewerIndex(null)}
         urlFor={(filename) => photoUrl(filename)}
         headers={imageHeaders()}
+        title={name}
       />
     </View>
   )
@@ -798,134 +834,197 @@ const modalStyles = StyleSheet.create({
   },
 })
 
+const s = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: wg.color.paper },
+})
+
 const c = StyleSheet.create({
-  head: { paddingHorizontal: 22, paddingTop: 12 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  back: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10.5,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
+  head: {
+    marginHorizontal: 14,
+    marginTop: 10,
+    borderRadius: 26,
+    padding: 16,
+    paddingTop: 13,
   },
-  topMeta: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
-    color: colors.textMuted,
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  circle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.38)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kicker: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 9.5,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    color: colors.red,
-    marginTop: 16,
-  },
-  title: {
-    fontFamily: fonts.serif,
-    fontSize: 35,
-    color: colors.ink,
-    letterSpacing: -0.6,
-    marginTop: 8,
-  },
-  meta: {
-    fontFamily: fonts.sans,
-    fontSize: 11.5,
-    color: colors.textMuted,
-    marginTop: 6,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: 9,
-    marginTop: 14,
-  },
-  priceLabel: { fontFamily: fonts.serifItalic, fontSize: 16, color: colors.ink },
-  buy: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10,
-    letterSpacing: 1.8,
-    textTransform: 'uppercase',
-    color: colors.red,
-  },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, marginTop: 14 },
-  action: {},
-  actionText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10.5,
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7.5,
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: colors.ink,
+    color: wg.color.muted,
   },
-  manage: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 14 },
-  manageText: {
-    fontFamily: fonts.sansSemi,
+  title: {
+    fontFamily: wg.font.serif,
+    fontSize: 34,
+    color: wg.color.ink,
+    letterSpacing: -0.6,
+    marginTop: 12,
+  },
+  meta: {
+    fontFamily: wg.font.sans,
     fontSize: 10.5,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    color: colors.red,
+    color: wg.color.muted,
+    marginTop: 5,
   },
-  rule: { borderTopWidth: 1, borderTopColor: colors.ink, marginTop: 16 },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  badgeDark: { backgroundColor: wg.color.ink },
+  badgeLight: {
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.14)',
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+  badgeTextDark: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: wg.color.ivory,
+  },
+  badgeTextLight: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: wg.color.inkSoft,
+  },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 13 },
+  action: {
+    height: 36,
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionDark: { backgroundColor: wg.color.ink },
+  actionText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  actionTextDark: { color: wg.color.ivory },
+  actionTextLight: { color: wg.color.ink },
+  manage: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 },
+  manageText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: wg.color.bronze,
+  },
+  buyRow: {
+    marginTop: 12,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: wg.color.ink,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+  },
+  buyLabel: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8.5,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: 'rgba(250,245,234,0.62)',
+  },
+  buyPrice: {
+    marginLeft: 'auto',
+    fontFamily: wg.font.sansSemi,
+    fontSize: 9,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: wg.color.ivory,
+  },
+  sheet: {
+    flex: 1,
+    marginTop: 10,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    backgroundColor: 'rgba(244,239,229,0.92)',
+    overflow: 'hidden',
+    paddingTop: 12,
+  },
   search: {
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: colors.ink,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
-    marginTop: 4,
+    height: 40,
+    marginHorizontal: 22,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.08)',
+    paddingHorizontal: 15,
+    fontFamily: wg.font.sans,
+    fontSize: 12,
+    color: wg.color.ink,
   },
   filters: {
     flexDirection: 'row',
-    gap: 18,
+    gap: 6,
     alignItems: 'center',
     paddingHorizontal: 22,
-    marginTop: 12,
-    marginBottom: 12,
+    marginTop: 10,
+    marginBottom: 10,
   },
-  filterItem: { alignItems: 'center', paddingBottom: 4 },
+  filterChip: {
+    height: 26,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.08)',
+  },
+  filterChipOn: { backgroundColor: wg.color.ink, borderColor: wg.color.ink },
   filterText: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 10.5,
-    letterSpacing: 1.6,
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7.5,
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    color: colors.textMuted,
+    color: wg.color.muted,
   },
-  filterTextOn: { color: colors.ink },
-  filterLine: { height: 2, width: '100%', minWidth: 18, marginTop: 4, backgroundColor: 'transparent' },
-  filterLineOn: { backgroundColor: colors.red },
-  thumb: { backgroundColor: colors.surface2 },
-  caption: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 },
+  filterTextOn: { color: wg.color.ivory },
+  thumb: { borderRadius: 14, backgroundColor: wg.color.paperDeep },
+  caption: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 5 },
   captionNo: {
-    fontFamily: fonts.sansSemi,
-    fontSize: 9.5,
-    letterSpacing: 1.2,
-    color: colors.red,
+    fontFamily: wg.font.sansSemi,
+    fontSize: 7,
+    letterSpacing: 0.8,
+    color: wg.color.bronze,
   },
-  captionName: { fontFamily: fonts.serifItalic, fontSize: 12.5, color: colors.textMuted, flex: 1 },
+  captionName: {
+    fontFamily: wg.font.sans,
+    fontSize: 8,
+    color: wg.color.muted,
+    flex: 1,
+  },
   progress: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     padding: 22,
-    backgroundColor: colors.paper,
+    backgroundColor: wg.color.paper,
     borderTopWidth: 1,
-    borderTopColor: colors.ink,
+    borderTopColor: 'rgba(33,28,21,0.12)',
   },
   progressText: {
-    fontFamily: fonts.sans,
+    fontFamily: wg.font.sans,
     fontSize: 13,
-    color: colors.ink,
+    color: wg.color.ink,
     textAlign: 'center',
     marginBottom: 10,
   },
-  progressTrack: { height: 4, backgroundColor: colors.surface2 },
-  progressFill: { height: 4, backgroundColor: colors.red },
+  progressTrack: { height: 4, backgroundColor: wg.color.paperDeep },
+  progressFill: { height: 4, backgroundColor: wg.color.bronze },
 })

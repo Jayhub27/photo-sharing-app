@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
@@ -13,7 +13,12 @@ import {
   Text,
   View,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { StatusBar } from 'expo-status-bar'
 import { colors, fonts } from './styles'
+import { AmbientBackground } from './components/AmbientBackground'
+import { useAppearance } from './appearance'
+import { glassDark, glassLight, wg } from './theme/warmGlass'
 
 type AnimatedButtonProps = PressableProps & {
   children: React.ReactNode
@@ -274,9 +279,14 @@ export function LoadingScreen() {
   )
 }
 
-type ViewerPhoto = { id: string; filename: string; original_name?: string }
+type ViewerPhoto = {
+  id: string
+  filename: string
+  original_name?: string
+  ambient_colors?: string[] | null
+}
 
-/** Edition viewer: a photograph set as a plate on paper, caption beneath. */
+/** Photo-first viewer: the current photo tints the room behind it. */
 export function PhotoViewer({
   visible,
   photos,
@@ -284,6 +294,7 @@ export function PhotoViewer({
   onClose,
   urlFor,
   headers,
+  title,
 }: {
   visible: boolean
   photos: ViewerPhoto[]
@@ -291,12 +302,21 @@ export function PhotoViewer({
   onClose: () => void
   urlFor: (filename: string) => string
   headers?: Record<string, string>
+  title?: string
 }) {
   const { width, height } = Dimensions.get('window')
   const listRef = useRef<FlatList<ViewerPhoto>>(null)
+  const { settings } = useAppearance()
+  const [index, setIndex] = useState(Math.max(0, initialIndex))
+
+  const dark = settings.adaptive
+  const current = photos[index]
+  const accent = dark ? wg.color.ivory : wg.color.ink
+  const muted = dark ? 'rgba(250,245,235,0.55)' : wg.color.muted
 
   useEffect(() => {
     if (!visible) return
+    setIndex(Math.max(0, initialIndex))
     const t = setTimeout(() => {
       if (initialIndex >= 0) listRef.current?.scrollToIndex({ index: initialIndex, animated: false })
     }, 60)
@@ -305,7 +325,10 @@ export function PhotoViewer({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: colors.paper }}>
+      <View style={{ flex: 1, backgroundColor: dark ? wg.color.dark : wg.color.paper }}>
+        <StatusBar style={dark ? 'light' : 'dark'} />
+        <AmbientBackground kind="photo" id={current?.id} variant="dark" />
+
         <View
           style={{
             flexDirection: 'row',
@@ -313,6 +336,7 @@ export function PhotoViewer({
             justifyContent: 'space-between',
             paddingTop: 52,
             paddingHorizontal: 22,
+            zIndex: 5,
           }}
         >
           <Pressable
@@ -320,22 +344,87 @@ export function PhotoViewer({
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel="Close viewer"
+            style={[
+              {
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              dark ? glassDark : glassLight,
+            ]}
           >
-            <Text style={{ fontFamily: fonts.sansSemi, fontSize: 13, letterSpacing: 1.4, color: colors.ink }}>
-              CLOSE
-            </Text>
+            <Ionicons name="close" size={18} color={accent} />
           </Pressable>
+          <View
+            style={[
+              {
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+              },
+              dark ? glassDark : glassLight,
+            ]}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.sansSemi,
+                fontSize: 8,
+                letterSpacing: 1.6,
+                textTransform: 'uppercase',
+                color: dark ? 'rgba(250,245,235,0.78)' : wg.color.muted,
+              }}
+            >
+              {String(index + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+            </Text>
+          </View>
+          <View style={{ width: 38 }} />
+        </View>
+
+        <View
+          style={[
+            {
+              alignSelf: 'flex-start',
+              marginTop: 14,
+              marginLeft: 22,
+              borderRadius: 999,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              zIndex: 4,
+            },
+            dark ? glassDark : glassLight,
+          ]}
+        >
+          <View
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: dark ? wg.color.teal : wg.color.bronze,
+            }}
+          />
           <Text
             style={{
               fontFamily: fonts.sansSemi,
-              fontSize: 11,
-              letterSpacing: 1.8,
+              fontSize: 7,
+              letterSpacing: 1.3,
               textTransform: 'uppercase',
-              color: colors.textMuted,
+              color: dark ? 'rgba(250,245,235,0.7)' : wg.color.muted,
             }}
           >
-            Plate {String(Math.max(0, initialIndex) + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
+            {settings.adaptive ? 'Adaptive · this photo' : 'Warm paper'}
           </Text>
+          {settings.adaptive && current?.ambient_colors?.length ? (
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {current.ambient_colors.slice(0, 4).map((color, i) => (
+                <View key={`${color}-${i}`} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
+              ))}
+            </View>
+          ) : null}
         </View>
 
         <FlatList
@@ -346,45 +435,102 @@ export function PhotoViewer({
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           initialScrollIndex={initialIndex >= 0 ? initialIndex : 0}
-          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           onScrollToIndexFailed={() => {}}
+          onMomentumScrollEnd={(event) => {
+            const next = Math.round(event.nativeEvent.contentOffset.x / width)
+            if (next >= 0 && next < photos.length) setIndex(next)
+          }}
           renderItem={({ item }) => (
-            <View style={{ width, flex: 1, paddingHorizontal: 22 }}>
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <Image
-                  source={{ uri: urlFor(item.filename), headers }}
-                  style={{ width: '100%', height: Math.min(height * 0.72, 560) }}
-                  resizeMode="contain"
-                  accessibilityLabel={item.original_name ? `Photo: ${item.original_name}` : 'Photo'}
-                />
-              </View>
-              <Text
+            <View
+              style={{
+                width,
+                flex: 1,
+                paddingHorizontal: 22,
+                paddingTop: 14,
+                paddingBottom: 154,
+                justifyContent: 'center',
+              }}
+            >
+              <Image
+                source={{ uri: urlFor(item.filename), headers }}
                 style={{
-                  fontFamily: fonts.serifItalic,
-                  fontSize: 18,
-                  color: colors.ink,
-                  paddingBottom: 8,
+                  width: '100%',
+                  height: Math.min(height * 0.56, 510),
+                  borderRadius: 20,
+                  backgroundColor: 'rgba(20,17,13,0.24)',
                 }}
-                numberOfLines={1}
-              >
-                {item.original_name || 'Photograph'}
-              </Text>
-              <View style={{ borderTopWidth: 1, borderTopColor: colors.ink, paddingVertical: 12 }}>
-                <Text
-                  style={{
-                    fontFamily: fonts.sansSemi,
-                    fontSize: 10,
-                    letterSpacing: 1.8,
-                    textTransform: 'uppercase',
-                    color: colors.textMuted,
-                  }}
-                >
-                  Swipe to browse the issue
-                </Text>
-              </View>
+                resizeMode="cover"
+                accessibilityLabel={item.original_name ? `Photo: ${item.original_name}` : 'Photo'}
+              />
             </View>
           )}
         />
+
+        <View
+          style={[
+            {
+              position: 'absolute',
+              left: 22,
+              right: 22,
+              bottom: 30,
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              zIndex: 5,
+            },
+            dark ? glassDark : glassLight,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: fonts.serif,
+                  fontSize: 22,
+                  letterSpacing: -0.4,
+                  color: accent,
+                }}
+              >
+                {title || current?.original_name || 'Photograph'}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: fonts.sansSemi,
+                  fontSize: 7,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  color: muted,
+                  marginTop: 4,
+                }}
+              >
+                {photos.length} photographs · swipe to browse
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 4, paddingBottom: 4 }}>
+              {photos.slice(0, 7).map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: i === index ? 15 : 4,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor:
+                      i === index
+                        ? dark
+                          ? 'rgba(250,245,235,0.92)'
+                          : wg.color.ink
+                        : dark
+                          ? 'rgba(250,245,235,0.28)'
+                          : 'rgba(33,28,21,0.2)',
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        </View>
       </View>
     </Modal>
   )

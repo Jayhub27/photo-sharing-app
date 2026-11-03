@@ -16,5 +16,8 @@
   },
   "overrides": {
     "expo-font": "~12.0.10"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
   }
 }

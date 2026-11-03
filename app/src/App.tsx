@@ -24,9 +24,11 @@ import OnboardingScreen from './screens/OnboardingScreen'
 import MainTabs from './MainTabs'
 import { LoadingScreen } from './components'
 import { AuthProvider, useAuth } from './auth'
+import { AppearanceProvider, useAppearance } from './appearance'
 import { getValue, setValue } from './storage'
 import { colors } from './styles'
 import type { RootStackParamList } from './api'
+import AppearanceScreen from './screens/AppearanceScreen'
 
 const ONBOARDED_KEY = 'tts.onboarded'
 
@@ -114,6 +116,11 @@ function RootNavigator() {
             component={MembersScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="Appearance"
+            component={AppearanceScreen}
+            options={{ headerShown: false }}
+          />
         </>
       ) : (
         <>
@@ -122,6 +129,19 @@ function RootNavigator() {
         </>
       )}
     </Stack.Navigator>
+  )
+}
+
+function AppShell() {
+  const { ready } = useAppearance()
+  if (!ready) return <LoadingScreen />
+  return (
+    <AuthProvider>
+      <NavigationContainer theme={navTheme}>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </NavigationContainer>
+    </AuthProvider>
   )
 }
 
@@ -146,11 +166,8 @@ export default function App() {
   if (!fontsLoaded && !fontError && !fontWaitOver) return <LoadingScreen />
 
   return (
-    <AuthProvider>
-      <NavigationContainer theme={navTheme}>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <AppearanceProvider>
+      <AppShell />
+    </AppearanceProvider>
   )
 }

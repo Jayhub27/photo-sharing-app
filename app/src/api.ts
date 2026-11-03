@@ -71,6 +71,7 @@ export interface Photo {
   width?: number | null
   height?: number | null
   created_at?: string
+  ambient_colors?: string[] | null
 }
 
 export interface Collection {
@@ -81,6 +82,8 @@ export interface Collection {
   is_public?: boolean
   cover_filename?: string | null
   cover_thumb_filename?: string | null
+  ambient_colors?: string[] | null
+  has_ambient?: boolean
   price_cents?: number | null
   currency?: string
   expires_at?: string | null
@@ -150,6 +153,7 @@ export type RootStackParamList = {
   QRDisplay: { id: string; name?: string }
   Gallery: { collectionId: string }
   Members: { id: string; name?: string }
+  Appearance: undefined
 }
 
 function headers(extra?: Record<string, string>): Record<string, string> {
@@ -309,6 +313,16 @@ export function photoUrl(
 
 export function qrUrl(id: string): string {
   return `${resolveBase()}/api/collections/${id}/qr`
+}
+
+/** 48 px, server-blurred derivative of the collection cover. */
+export function ambientCollectionUrl(id: string): string {
+  return `${resolveBase()}/api/collections/${id}/ambient`
+}
+
+/** 48 px, server-blurred derivative of a single photograph. */
+export function ambientPhotoUrl(id: string): string {
+  return `${resolveBase()}/api/photos/${id}/ambient`
 }
 
 export function collectionUrl(id: string): string {

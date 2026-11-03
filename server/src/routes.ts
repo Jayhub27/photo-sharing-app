@@ -55,8 +55,10 @@ const upload = multer({
 
 type Role = 'owner' | 'editor' | 'viewer'
 
-const PHOTO_FIELDS = 'id, filename, thumb_filename, original_name, mime_type, size, width, height, created_at'
+const PHOTO_FIELDS =
+  'id, filename, thumb_filename, ambient_filename, ambient_colors, original_name, mime_type, size, width, height, created_at'
 const THUMB_WIDTH = 640
+const AMBIENT_WIDTH = 48
 
 interface Access {
   col: any | null
@@ -93,7 +95,7 @@ function clampInt(value: unknown, fallback: number, min: number, max: number): n
 async function refreshCover(collectionId: string) {
   const { data: photos } = await supabase
     .from('photos')
-    .select('filename, thumb_filename')
+    .select('filename, thumb_filename, ambient_filename, ambient_colors')
     .eq('collection_id', collectionId)
     .order('created_at', { ascending: true })
     .limit(1)
@@ -103,6 +105,8 @@ async function refreshCover(collectionId: string) {
     .update({
       cover_filename: cover ? cover.filename : null,
       cover_thumb_filename: cover ? cover.thumb_filename : null,
+      ambient_filename: cover ? cover.ambient_filename : null,
+      ambient_colors: cover ? cover.ambient_colors : null,
     })
     .eq('id', collectionId)
 }
@@ -129,6 +133,95 @@ async function makeThumb(buffer: Buffer): Promise<{ thumb: Buffer; width?: numbe
   }
 }
 
+function toHex(value: number): string {
+  return Math.max(0, Math.min(255, Math.round(value))).toString(16).padStart(2, '0')
+}
+
+/**
+ * Pick four colours from the four quadrants of a tiny image. This intentionally
+ * avoids a palette dependency: four representative colours are enough for the
+ * chip dots, the settings preview and the gradient fallback.
+ */
+function sampleQuadrants(data: Buffer, channels: number, width: number, height: number): string[] {
+  const halfW = Math.max(1, Math.floor(width / 2))
+  const halfH = Math.max(1, Math.floor(height / 2))
+  const origins = [
+    [0, 0],
+    [halfW, 0],
+    [0, halfH],
+    [halfW, halfH],
+  ]
+  const colors: string[] = []
+  for (const [x0, y0] of origins) {
+    let r = 0
+    let g = 0
+    let b = 0
+    let n = 0
+    for (let y = y0; y < Math.min(y0 + halfH, height); y += 2) {
+      for (let x = x0; x < Math.min(x0 + halfW, width); x += 2) {
+        const i = (y * width + x) * channels
+        r += data[i]
+        g += data[i + 1]
+        b += data[i + 2]
+        n++
+      }
+    }
+    if (!n) continue
+    colors.push(`#${toHex(r / n)}${toHex(g / n)}${toHex(b / n)}`.toUpperCase())
+  }
+  const unique = Array.from(new Set(colors))
+  const first = unique[0] || '#2F7F79'
+  while (unique.length < 4) unique.push(first)
+  return unique.slice(0, 4)
+}
+
+async function makeAmbient(buffer: Buffer): Promise<{ ambient: Buffer; colors: string[] } | null> {
+  try {
+    const base = sharp(buffer).rotate()
+    const ambient = await base
+      .clone()
+      .resize(AMBIENT_WIDTH, AMBIENT_WIDTH, { fit: 'cover' })
+      .blur(12)
+      .jpeg({ quality: 55, mozjpeg: true })
+      .toBuffer()
+
+    const { data, info } = await base
+      .clone()
+      .resize(24, 24, { fit: 'cover' })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+
+    return { ambient, colors: sampleQuadrants(data, info.channels, info.width, info.height) }
+  } catch {
+    return null
+  }
+}
+
+/** Generate and store an ambient derivative for any image row, lazily. */
+async function ensureAmbient(photo: {
+  id: string
+  filename?: string | null
+  thumb_filename?: string | null
+}): Promise<{ key: string; colors: string[] } | null> {
+  const source = photo.thumb_filename || photo.filename
+  if (!source) return null
+  const { data: blob } = await supabase.storage.from(BUCKET).download(source)
+  if (!blob) return null
+  const made = await makeAmbient(Buffer.from(await blob.arrayBuffer()))
+  if (!made) return null
+  const key = `ambient-${photo.id}.jpg`
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(key, made.ambient, { contentType: 'image/jpeg', upsert: true })
+  if (error) return null
+  await supabase
+    .from('photos')
+    .update({ ambient_filename: key, ambient_colors: made.colors })
+    .eq('id', photo.id)
+  return { key, colors: made.colors }
+}
+
 async function storePhoto(
   collectionId: string,
   buffer: Buffer,
@@ -139,6 +232,8 @@ async function storePhoto(
   const filename = generateId() + ext
 
   let thumbFilename: string | null = null
+  let ambientFilename: string | null = null
+  let ambientColors: string[] | null = null
   let width: number | undefined
   let height: number | undefined
   const made = await makeThumb(buffer)
@@ -152,6 +247,20 @@ async function storePhoto(
     if (thumbErr) thumbFilename = null
   }
 
+  // The ambient derivative is optional: a failure must never block the upload.
+  const ambient = await makeAmbient(buffer)
+  if (ambient) {
+    ambientFilename = generateId() + '.jpg'
+    const { error: ambientErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(ambientFilename, ambient.ambient, { contentType: 'image/jpeg', upsert: true })
+    if (ambientErr) {
+      ambientFilename = null
+    } else {
+      ambientColors = ambient.colors
+    }
+  }
+
   const { error } = await supabase.storage.from(BUCKET).upload(filename, buffer, { contentType: mime, upsert: true })
   if (error) return null
 
@@ -162,6 +271,8 @@ async function storePhoto(
       collection_id: collectionId,
       filename,
       thumb_filename: thumbFilename,
+      ambient_filename: ambientFilename,
+      ambient_colors: ambientColors,
       original_name: originalName,
       mime_type: mime,
       size: buffer.length,
@@ -384,8 +495,11 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
   const memberIds = (memberships || []).map((m) => m.collection_id)
   const memberRoles = new Map((memberships || []).map((m) => [m.collection_id, m.role as Role]))
 
-  const BASE_FIELDS = 'id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename'
+  const LEGACY_BASE_FIELDS =
+    'id, name, created_at, user_id, is_public, cover_filename, cover_thumb_filename, expires_at'
+  const BASE_FIELDS = LEGACY_BASE_FIELDS + ', ambient_filename, ambient_colors'
   const SELLING_FIELDS = BASE_FIELDS + ', price_cents, currency'
+  const LEGACY_SELLING_FIELDS = LEGACY_BASE_FIELDS + ', price_cents, currency'
 
   if (filter === 'shared' && !memberIds.length) {
     return res.json({ collections: [], total: 0, hasMore: false })
@@ -409,9 +523,12 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
     return query.range(offset, offset + limit - 1)
   }
 
-  // Price columns only exist after the selling migration, so fall back when they are missing.
+  // Columns arrive through separate migrations; fall back gracefully so an
+  // install without the ambient/selling migration still lists collections.
   let result: { data: any[] | null; error: unknown; count: number | null } = await build(SELLING_FIELDS)
+  if (result.error) result = await build(LEGACY_SELLING_FIELDS)
   if (result.error) result = await build(BASE_FIELDS)
+  if (result.error) result = await build(LEGACY_BASE_FIELDS)
   if (result.error) return res.status(500).json({ error: 'Could not load collections' })
   const data = result.data
   const count = result.count
@@ -425,6 +542,9 @@ router.get('/collections', authMiddleware, async (req: AuthedRequest, res) => {
     is_public: c.is_public !== false,
     cover_filename: c.cover_filename,
     cover_thumb_filename: c.cover_thumb_filename,
+    ambient_colors: Array.isArray(c.ambient_colors) ? c.ambient_colors : null,
+    has_ambient: !!c.ambient_filename,
+    expires_at: c.expires_at || null,
     price_cents: Number.isFinite(Number(c.price_cents)) && Number(c.price_cents) > 0 ? Number(c.price_cents) : null,
     currency: c.currency || 'usd',
     photo_count: counts[c.id] || 0,
@@ -571,9 +691,12 @@ router.delete('/collections/:id', authMiddleware, async (req: AuthedRequest, res
 
   const { data: photos } = await supabase
     .from('photos')
-    .select('filename, thumb_filename')
+    .select('filename, thumb_filename, ambient_filename')
     .eq('collection_id', req.params.id)
-  const keys = (photos || []).flatMap((p) => [p.filename, p.thumb_filename]).filter(Boolean) as string[]
+  const keys = (photos || [])
+    .flatMap((p) => [p.filename, p.thumb_filename, p.ambient_filename])
+    .filter(Boolean) as string[]
+  if (access.col.ambient_filename) keys.push(access.col.ambient_filename)
   if (keys.length) await supabase.storage.from(BUCKET).remove(keys)
   await supabase.from('photos').delete().eq('collection_id', req.params.id)
   await supabase.from('collection_members').delete().eq('collection_id', req.params.id)
@@ -587,6 +710,78 @@ router.get('/collections/:id/qr', async (req, res) => {
   const url = `${publicBaseUrl(req)}/c/${req.params.id}`
   const qrPng = await QRCode.toBuffer(url, { width: 600 })
   res.type('png').send(qrPng)
+})
+
+async function ensureCollectionAmbient(col: any): Promise<{ key: string; colors: string[] } | null> {
+  if (col.ambient_filename) {
+    return {
+      key: col.ambient_filename,
+      colors: Array.isArray(col.ambient_colors) ? col.ambient_colors : [],
+    }
+  }
+  const { data: photo } = await supabase
+    .from('photos')
+    .select('id, filename, thumb_filename')
+    .eq('collection_id', col.id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (!photo) return null
+  const made = await ensureAmbient(photo)
+  if (!made) return null
+  await supabase
+    .from('collections')
+    .update({ ambient_filename: made.key, ambient_colors: made.colors })
+    .eq('id', col.id)
+  return made
+}
+
+router.get('/collections/:id/ambient', optionalAuth, async (req: AuthedRequest, res) => {
+  const access = await getAccess(req.params.id, req.userId)
+  if (!access.col) return res.status(404).json({ error: 'Collection not found' })
+  if (access.col.is_public === false && !access.role) {
+    return res.status(403).json({ error: 'This collection is private' })
+  }
+  if (isExpired(access.col.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
+
+  const ambient = await ensureCollectionAmbient(access.col)
+  if (!ambient) return res.status(404).json({ error: 'No ambient available' })
+  const { data: blob, error } = await supabase.storage.from(BUCKET).download(ambient.key)
+  if (error || !blob) return res.status(404).json({ error: 'No ambient available' })
+
+  res.setHeader('Cache-Control', 'private, max-age=86400')
+  res.setHeader('ETag', `"${ambient.key}"`)
+  res.type('image/jpeg').send(Buffer.from(await blob.arrayBuffer()))
+})
+
+router.get('/photos/:id/ambient', optionalAuth, async (req: AuthedRequest, res) => {
+  const { data: photo } = await supabase
+    .from('photos')
+    .select('id, filename, thumb_filename, ambient_filename, ambient_colors, collection_id')
+    .eq('id', req.params.id)
+    .maybeSingle()
+  if (!photo) return res.status(404).json({ error: 'Photo not found' })
+
+  const access = await getAccess(photo.collection_id, req.userId)
+  if (access.col?.is_public === false && !access.role) {
+    return res.status(403).json({ error: 'This photo is private' })
+  }
+  if (isExpired(access.col?.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
+
+  const ambient = photo.ambient_filename
+    ? { key: photo.ambient_filename }
+    : await ensureAmbient(photo)
+  if (!ambient) return res.status(404).json({ error: 'No ambient available' })
+  const { data: blob, error } = await supabase.storage.from(BUCKET).download(ambient.key)
+  if (error || !blob) return res.status(404).json({ error: 'No ambient available' })
+
+  res.setHeader('Cache-Control', 'private, max-age=86400')
+  res.setHeader('ETag', `"${ambient.key}"`)
+  res.type('image/jpeg').send(Buffer.from(await blob.arrayBuffer()))
 })
 
 router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, res) => {
@@ -737,7 +932,7 @@ router.delete('/photos/:id', authMiddleware, async (req: AuthedRequest, res) => 
   const access = await getAccess(photo.collection_id, req.userId)
   if (!access.canEdit) return res.status(403).json({ error: 'Not your photo' })
 
-  const keys = [photo.filename, photo.thumb_filename].filter(Boolean) as string[]
+  const keys = [photo.filename, photo.thumb_filename, photo.ambient_filename].filter(Boolean) as string[]
   await supabase.storage.from(BUCKET).remove(keys)
   await supabase.from('photos').delete().eq('id', req.params.id)
   await refreshCover(photo.collection_id)

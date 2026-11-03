@@ -23,6 +23,8 @@ create table if not exists collections (
   is_public           boolean not null default true,
   cover_filename      text,
   cover_thumb_filename text,
+  ambient_filename    text,
+  ambient_colors      jsonb,
   created_at          timestamptz not null default now()
 );
 
@@ -31,6 +33,8 @@ create table if not exists photos (
   collection_id text not null,
   filename      text not null,
   thumb_filename text,
+  ambient_filename text,
+  ambient_colors jsonb,
   original_name text not null,
   mime_type     text not null,
   size          integer not null,
