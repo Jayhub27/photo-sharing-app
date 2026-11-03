@@ -4,9 +4,8 @@ export interface PageMeta {
   image?: string
 }
 
-const FONTS = `<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+const FONTS = `<link rel="preload" href="/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">`
 
@@ -500,6 +499,150 @@ export function htmlEscape(value: string): string {
   ))
 }
 
+/* Warm Glass: paper, ink, Instrument Serif, frosted surfaces and a fixed
+   photo-derived backdrop. This layer sits after the base theme so the whole
+   server-rendered app picks up the same language as the Android app. */
+export const WARM_GLASS_CSS = `
+@font-face{font-family:'Instrument Sans';src:url('/fonts/instrument-sans-latin.woff2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('/fonts/instrument-serif-latin.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Instrument Serif';src:url('/fonts/instrument-serif-italic-latin.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
+:root{
+  --bg:#F4EFE5;--surface:rgba(255,252,245,.68);--surface-2:#EDE5D7;--elevated:rgba(255,252,245,.94);
+  --text:#211C15;--muted:#847A69;--border:rgba(33,28,21,.12);--border-strong:rgba(33,28,21,.28);
+  --accent:#211C15;--accent-soft:rgba(150,118,77,.14);--accent-text:#96764D;--on-accent:#FAF5EA;
+  --danger:#8C1D18;--danger-soft:rgba(140,29,24,.1);--ok:#5E6347;
+  --r-sm:12px;--r:18px;--r-lg:26px;--r-pill:999px;
+  --shadow-1:0 1px 2px rgba(60,43,22,.06);
+  --shadow-2:0 18px 40px -22px rgba(60,43,22,.3);
+  --font-ui:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-display:'Instrument Serif',Georgia,serif;
+  --ambient-wash:linear-gradient(180deg,rgba(244,239,229,.52) 0%,rgba(244,239,229,.68) 42%,rgba(244,239,229,.9) 100%);
+  --wrap:1120px;
+}
+html[data-theme="dark"]{
+  --bg:#17130F;--surface:rgba(35,29,23,.62);--surface-2:#2A221A;--elevated:rgba(35,29,23,.94);
+  --text:#FAF5EA;--muted:#B8AD9D;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.26);
+  --accent:#FAF5EA;--accent-soft:rgba(180,140,86,.16);--accent-text:#E7C08B;--on-accent:#211C15;
+  --danger:#E5795C;--danger-soft:rgba(229,121,92,.12);--ok:#9AAE82;
+  --shadow-1:0 1px 2px rgba(0,0,0,.35);--shadow-2:0 18px 44px -18px rgba(0,0,0,.6);
+  --ambient-wash:linear-gradient(180deg,rgba(23,19,15,.58) 0%,rgba(23,19,15,.72) 42%,rgba(23,19,15,.92) 100%);
+}
+html{background:var(--bg)}
+body{background:transparent;font-family:var(--font-ui);font-size:15px;line-height:1.55;font-weight:400}
+h1,h2,h3,.display{font-family:var(--font-display);font-weight:400;letter-spacing:-.02em}
+h1{font-size:clamp(38px,5.6vw,62px);line-height:.98;text-transform:none}
+h2{font-size:clamp(24px,3vw,32px);font-weight:400}
+.hero{padding:clamp(34px,6vw,72px) 0 24px;max-width:700px}
+.hero h1 em{color:var(--muted)}
+.sub{font-size:15px;line-height:1.6;max-width:620px}
+.topbar{background:rgba(244,239,229,.74);border-bottom:1px solid var(--border)}
+html[data-theme="dark"] .topbar{background:rgba(23,19,15,.76)}
+@supports (backdrop-filter:blur(18px)){.topbar{backdrop-filter:blur(20px) saturate(120%)}}
+.topbar-inner{padding:12px 20px}
+.logo-icon{background:var(--accent);color:var(--on-accent);border-radius:12px;box-shadow:none}
+.logo-text{font-family:var(--font-display);font-size:22px;font-weight:400;letter-spacing:-.01em}
+.nav-user{font-size:13px}
+.btn{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);box-shadow:0 12px 26px -16px rgba(33,28,21,.55);text-transform:none;letter-spacing:0;font-weight:600;border-radius:var(--r-pill)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 16px 30px -16px rgba(33,28,21,.55)}
+.btn.outline{background:rgba(255,255,255,.3);color:var(--text);border-color:var(--border-strong);box-shadow:none}
+html[data-theme="dark"] .btn.outline{background:rgba(255,255,255,.06)}
+.btn.ghost{background:transparent;color:var(--muted);border-color:transparent;box-shadow:none}
+.card{background:var(--surface);border:1px solid rgba(255,255,255,.62);box-shadow:var(--shadow-2);backdrop-filter:blur(18px);border-radius:var(--r-lg)}
+html[data-theme="dark"] .card{border-color:rgba(255,255,255,.1)}
+.card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.8)}
+.card-thumb{border-radius:var(--r);background:var(--surface-2)}
+.section-label{font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.create-bar input,.controls input,.controls select,.toolbar input,.toolbar select,.field input,.field select,.field textarea{background:rgba(255,252,245,.58);border:1px solid var(--border);border-radius:var(--r-pill);color:var(--text)}
+html[data-theme="dark"] .create-bar input,html[data-theme="dark"] .controls input,html[data-theme="dark"] .controls select,html[data-theme="dark"] .toolbar input,html[data-theme="dark"] .toolbar select,html[data-theme="dark"] .field input,html[data-theme="dark"] .field select,html[data-theme="dark"] .field textarea{background:rgba(255,255,255,.05)}
+.create-bar input:focus,.controls input:focus,.controls select:focus,.toolbar input:focus,.toolbar select:focus,.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent-text);box-shadow:0 0 0 3px var(--accent-soft)}
+.chip{background:rgba(255,255,255,.28);border-color:var(--border);color:var(--muted)}
+.chip.active{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.photo-wrap{border-radius:16px;border:1px solid rgba(255,255,255,.5);background:var(--surface-2)}
+.photo-btn{background:rgba(255,252,245,.92);color:var(--ink,#211C15);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(12px)}
+.photo-price{position:absolute;top:8px;right:8px;z-index:3;background:rgba(255,252,245,.92);border:1px solid rgba(255,255,255,.7);border-radius:var(--r-pill);padding:4px 8px;font-size:11px;font-weight:600;color:#211C15;pointer-events:none}
+.modal-card{background:rgba(248,243,232,.97);border:1px solid rgba(255,255,255,.7);border-radius:26px;box-shadow:var(--shadow-2)}
+html[data-theme="dark"] .modal-card{background:rgba(30,24,19,.98);border-color:rgba(255,255,255,.12)}
+.modal-head h2{font-family:var(--font-display);font-size:28px;font-weight:400}
+.menu,.context-menu,.select-bar,.note,.sales-strip,.paywall{background:var(--surface);border-color:var(--border);border-radius:var(--r);backdrop-filter:blur(18px)}
+.paywall{background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--r-lg)}
+.paywall strong{font-family:var(--font-display);font-weight:400}
+.paywall .hint{color:rgba(250,245,234,.7)}
+.paywall .btn{background:var(--on-accent);color:var(--accent);border-color:var(--on-accent);box-shadow:none}
+.theme-toggle{width:44px;height:44px;border:1px solid var(--border);background:rgba(255,252,245,.82);box-shadow:var(--shadow-2);border-radius:50%}
+.ambient-toggle{background:rgba(255,252,245,.45)}
+.ambient{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--bg)}
+.ambient-layer{position:absolute;inset:-12%;background-position:center;background-size:cover;filter:blur(28px) saturate(1.08);transform:scale(1.16);opacity:0;transition:opacity .9s var(--ease)}
+.ambient-layer.on{opacity:1}
+.ambient-wash{position:absolute;inset:0;background:var(--ambient-wash)}
+body.ambient-off .ambient-layer{opacity:0!important}
+@media(prefers-reduced-motion:reduce){.ambient-layer{transition:none}}
+.photo-wrap.selected{outline-color:var(--accent)}
+.lightbox{background:rgba(12,10,8,.94)}
+.lightbox-price{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3}
+@media(max-width:640px){
+  h1{font-size:clamp(34px,10vw,46px)}
+  .hero{padding-top:30px}
+  .card-list.grid .card-thumb{height:150px}
+}
+`
+
+function AMBIENT_JS(): string {
+  return `
+(function(){
+  var KEY='tts.ambient';
+  var root=document.getElementById('ambient');
+  if(!root) return;
+  var a=document.getElementById('ambientA'), b=document.getElementById('ambientB');
+  if(!a||!b) return;
+  var enabled=true;
+  try { if(localStorage.getItem(KEY)==='0') enabled=false; } catch(e) {}
+  var urls=[], timer=null, front='A', index=0;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function layer(name){ return name==='A'?a:b; }
+  function other(name){ return name==='A'?'B':'A'; }
+  function paint(url){
+    var next=layer(other(front)), cur=layer(front);
+    next.style.backgroundImage='url("'+url+'")';
+    next.classList.add('on');
+    cur.classList.remove('on');
+    front=other(front);
+  }
+  function start(){
+    if(timer){ clearInterval(timer); timer=null; }
+    if(!enabled||reduce||urls.length<2) return;
+    timer=setInterval(function(){ index=(index+1)%urls.length; paint(urls[index]); },10000);
+  }
+  window.setAmbient=function(list){
+    urls=(list||[]).filter(Boolean);
+    if(timer){ clearInterval(timer); timer=null; }
+    if(!urls.length){ root.classList.add('hidden'); return; }
+    root.classList.remove('hidden');
+    index=0; front='A';
+    a.classList.remove('on'); b.classList.remove('on');
+    paint(urls[0]);
+    start();
+  };
+  window.setAmbientEnabled=function(next){
+    enabled=!!next;
+    try { localStorage.setItem(KEY,enabled?'1':'0'); } catch(e) {}
+    document.body.classList.toggle('ambient-off',!enabled);
+    var btn=document.getElementById('ambientToggle');
+    if(btn) btn.setAttribute('aria-pressed',enabled?'true':'false');
+    if(enabled){ if(urls.length){ paint(urls[index]); start(); } }
+    else if(timer){ clearInterval(timer); timer=null; }
+  };
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('#ambientToggle');
+    if(!btn) return;
+    e.preventDefault();
+    window.setAmbientEnabled(!enabled);
+  });
+  document.body.classList.toggle('ambient-off',!enabled);
+  var btn=document.getElementById('ambientToggle');
+  if(btn) btn.setAttribute('aria-pressed',enabled?'true':'false');
+})();`
+}
+
 export function layout(title: string, head: string, body: string, script: string, bodyClass = ''): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -511,12 +654,12 @@ export function layout(title: string, head: string, body: string, script: string
 <title>${htmlEscape(title)}</title>
 ${FONTS}
 ${head}
-<style>${SHARED_CSS}</style>
+<style>${SHARED_CSS}${WARM_GLASS_CSS}</style>
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
 <script>
-${TOAST_JS()}${THEME_JS()}${PWA_JS()}
+${TOAST_JS()}${THEME_JS()}${AMBIENT_JS()}${PWA_JS()}
 ${script}
 </script>
 </body>

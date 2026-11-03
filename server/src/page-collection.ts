@@ -13,12 +13,14 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
   const body = `
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="toast-container" aria-live="polite" role="status"></div>
+<div class="ambient" id="ambient" aria-hidden="true"><div class="ambient-layer" id="ambientA"></div><div class="ambient-layer" id="ambientB"></div><span class="ambient-wash"></span></div>
 
 <div class="topbar">
   <div class="topbar-inner">
     <a class="back-pill" href="/" aria-label="Back to all collections">&larr; Collections</a>
     <span class="topbar-title" id="topbarTitle"></span>
     <div class="topbar-actions">
+      <button class="icon-btn ambient-toggle" id="ambientToggle" type="button" aria-label="Toggle adaptive background" aria-pressed="true" title="Adaptive background"><i class="ico ico-eye"></i></button>
       <span class="nav-user" id="navUser"></span>
       <a class="nav-logo" href="/" aria-label="Take the shot home"><div class="logo-icon"><i class="ico ico-camera"></i></div></a>
       <span id="navRight"></span>
@@ -110,6 +112,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
 <div class="context-menu" id="photoMenu">
   <button data-cmd="open"><i class="ico ico-eye"></i>Open</button>
   <button data-cmd="download"><i class="ico ico-download"></i>Download</button>
+  <button data-cmd="price" class="hidden"><i class="ico ico-tag"></i>Set photo price</button>
   <button data-cmd="pick"><i class="ico ico-check"></i>Select</button>
   <button data-cmd="all"><i class="ico ico-grid"></i>Select all</button>
   <button data-cmd="delete" class="danger hidden"><i class="ico ico-trash"></i>Delete</button>
@@ -120,6 +123,7 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
   <button class="lightbox-nav prev" id="lbPrev" aria-label="Previous photo"><i class="ico ico-chevr"></i></button>
   <button class="lightbox-nav next" id="lbNext" aria-label="Next photo"><i class="ico ico-chevr ico-flip"></i></button>
   <img id="lightboxImg" alt="Photo preview">
+  <button class="btn small lightbox-price hidden" id="lbPrice" type="button"><i class="ico ico-tag"></i>Set photo price</button>
 </div>
 
 <div class="modal" id="uploadModal">
@@ -219,10 +223,25 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
         </select>
       </div>
     </div>
-    <div class="hint" style="margin-bottom:14px">Set a price to sell the original files. Buyers see the thumbnails, pay with card via Stripe, and immediately unlock downloads. Leave 0 to share for free.</div>
+    <div class="hint" style="margin-bottom:14px">Set the bundle price for every original. You can also set an individual price on any photo from its menu. Buyers see thumbnails, pay with card via Stripe, and immediately unlock downloads. Leave 0 to share for free.</div>
     <button class="btn" id="savePrice">Save pricing</button>
     <div id="payoutsBox" class="hidden" style="margin-top:20px"></div>
     <div id="salesBox" class="hidden" style="margin-top:20px"></div>
+  </div>
+</div>
+
+<div class="modal" id="photoPriceModal">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Price this photograph</h2><button class="modal-close" data-close="photoPriceModal" aria-label="Close"><i class="ico ico-x"></i></button></div>
+    <div class="field">
+      <label for="photoPriceInput">Individual price</label>
+      <div class="price-row">
+        <input type="number" id="photoPriceInput" min="0" step="0.01" placeholder="0.00 = no individual price">
+      </div>
+    </div>
+    <div class="hint" id="photoPriceName" style="margin-bottom:12px"></div>
+    <div class="hint" style="margin-bottom:14px">Set a price for this single original. Leave empty to remove the individual price. The collection price still sells the whole bundle.</div>
+    <button class="btn" id="savePhotoPriceBtn">Save photo price</button>
   </div>
 </div>
 
@@ -303,14 +322,13 @@ function renderMeta() {
   } else {
     parts.push('<span>Free to view</span>');
   }
-  if (!isPublic) parts.push('<span>\ud83d\udd12 Private</span>');
+  if (!isPublic) parts.push('<span>Private</span>');
   if (expiresAt) {
     const ms = new Date(expiresAt).getTime() - Date.now();
     const days = Math.ceil(ms / 86400000);
-    parts.push('<span>\u23f3 ' + (days <= 0 ? 'deleting soon' : days === 1 ? 'deletes in 1 day' : 'deletes in ' + days + ' days') + '</span>');
+    parts.push('<span>' + (days <= 0 ? 'deleting soon' : days === 1 ? 'deletes in 1 day' : 'deletes in ' + days + ' days') + '</span>');
   }
   if (role && role !== 'owner') parts.push('<span>You are ' + esc(role) + '</span>');
-  if (canManage && pricing.price_cents) parts.push('<span>\ud83d\udcb0 Selling</span>');
   if (createdAt) parts.push('<span>Created ' + esc(createdAt) + '</span>');
   document.getElementById('metaLine').innerHTML = parts.join('<span class="dot">\u00b7</span>');
 }
@@ -367,9 +385,11 @@ function renderPhotos() {
     return '<div class="photo-wrap' + (isSel ? ' selected' : '') + '" data-id="' + p.id + '" data-index="' + i + '" data-name="' + esc(p.original_name) + '" style="animation-delay:' + Math.min(i, 20) * 30 + 'ms" role="button" tabindex="0" aria-label="Photo ' + esc(p.original_name) + (isSel ? ' (selected)' : '') + '">' +
       '<img src="' + photoSrc(p) + '" alt="' + esc(p.original_name) + '" loading="lazy" decoding="async">' +
       (pricing.locked ? '<span class="photo-lock"><i class="ico ico-lock"></i></span>' : '') +
+      (canManage && p.price_cents ? '<span class="photo-price">' + esc(money(p.price_cents, pricing.currency)) + '</span>' : '') +
       '<span class="check"><i class="ico ico-check"></i></span>' +
       '<div class="photo-overlay">' +
         '<button class="photo-btn" data-act="download" aria-label="Download ' + esc(p.original_name) + '" title="Download">\u2b07</button>' +
+        (canManage ? '<button class="photo-btn" data-act="price" aria-label="Set price for ' + esc(p.original_name) + '" title="Set photo price"><i class="ico ico-tag"></i></button>' : '') +
         (canEdit ? '<button class="photo-btn danger" data-act="delete" aria-label="Delete ' + esc(p.original_name) + '" title="Delete">\u2715</button>' : '') +
       '</div>' +
     '</div>';
@@ -508,6 +528,7 @@ grid.addEventListener('click', function (e) {
   const wrap = btn.closest('.photo-wrap');
   const p = photos[Number(wrap.dataset.index)];
   if (btn.dataset.act === 'download') downloadPhoto(p.filename, p.original_name);
+  if (btn.dataset.act === 'price') openPhotoPrice(p);
   if (btn.dataset.act === 'delete') deletePhoto(p.id, p.original_name);
 });
 
@@ -520,6 +541,7 @@ grid.addEventListener('contextmenu', function (e) {
   menuPhotoIndex = Number(wrap.dataset.index);
   const p = photos[menuPhotoIndex];
   photoMenu.querySelector('[data-cmd="delete"]').classList.toggle('hidden', !canEdit);
+  photoMenu.querySelector('[data-cmd="price"]').classList.toggle('hidden', !canManage);
   photoMenu.querySelector('[data-cmd="pick"]').innerHTML = '<i class="ico ico-check"></i>' + (selected.has(p.id) ? 'Deselect' : 'Select');
   photoMenu.classList.add('open');
   const menuW = 220, menuH = 260;
@@ -537,6 +559,7 @@ photoMenu.addEventListener('click', function (e) {
   photoMenu.classList.remove('open');
   if (cmd === 'open') openLightbox(menuPhotoIndex);
   if (cmd === 'download') downloadPhoto(p.filename, p.original_name);
+  if (cmd === 'price') openPhotoPrice(p);
   if (cmd === 'pick') { setSelectMode(true); togglePick(p.id, menuPhotoIndex); }
   if (cmd === 'all') { setSelectMode(true); selectAll(); }
   if (cmd === 'delete') deletePhoto(p.id, p.original_name);
@@ -577,6 +600,7 @@ function openLightbox(i) {
   const img = document.getElementById('lightboxImg');
   img.src = photoSrc(p);
   img.alt = 'Photo: ' + p.original_name;
+  document.getElementById('lbPrice').classList.toggle('hidden', !canManage);
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
@@ -630,6 +654,9 @@ async function load(append) {
     isPublic = data.collection.is_public !== false;
     expiresAt = data.collection.expires_at || null;
     pricing = data.pricing || pricing;
+    if (!append && window.setAmbient) {
+      window.setAmbient([BASE + '/api/collections/' + CID + '/ambient']);
+    }
     photos = append ? photos.concat(data.photos) : data.photos;
     offset = photos.length;
     newestTs = photos.reduce(function (m, p) { return p.created_at > m ? p.created_at : m; }, '');
@@ -750,6 +777,44 @@ async function connectPayouts() {
     toast(err.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Connect Stripe'; }
   }
+}
+
+let photoPriceTarget = null;
+function openPhotoPrice(p) {
+  photoPriceTarget = p;
+  document.getElementById('photoPriceInput').value = p.price_cents ? (p.price_cents / 100).toFixed(2) : '';
+  document.getElementById('photoPriceName').textContent = p.original_name || 'Photograph';
+  openModal('photoPriceModal');
+}
+async function savePhotoPrice() {
+  if (!photoPriceTarget) return;
+  const raw = document.getElementById('photoPriceInput').value.trim();
+  const cents = raw === '' ? null : Math.round(Number(raw) * 100);
+  if (cents !== null && (!Number.isFinite(cents) || cents < 0)) {
+    toast('Enter a valid price', 'error');
+    return;
+  }
+  const btn = document.getElementById('savePhotoPriceBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await fetch(BASE + '/api/photos/' + photoPriceTarget.id + '/price', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ price_cents: cents }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.hint || data.error || 'Could not save photo price');
+    photoPriceTarget.price_cents = cents;
+    renderPhotos();
+    closeModal('photoPriceModal');
+    toast(cents ? 'Photo price saved: ' + money(cents, pricing.currency) : 'Individual photo price removed', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Save photo price';
 }
 
 function openSell() {
@@ -1321,6 +1386,13 @@ document.querySelectorAll('[data-act="upload"]').forEach(function (b) { b.addEve
 document.querySelectorAll('[data-act="share"]').forEach(function (b) { b.addEventListener('click', function () { openShare(); }); });
 document.querySelectorAll('[data-act="sell"]').forEach(function (b) { b.addEventListener('click', openSell); });
 document.getElementById('sellBtn').addEventListener('click', openSell);
+document.getElementById('savePhotoPriceBtn').addEventListener('click', savePhotoPrice);
+document.getElementById('lbPrice').addEventListener('click', function () {
+  if (lightboxIndex < 0) return;
+  const p = photos[lightboxIndex];
+  closeLightbox();
+  openPhotoPrice(p);
+});
 document.getElementById('salesBtn').addEventListener('click', function () { openSell(); });
 document.getElementById('qrToggle').addEventListener('click', openShare);
 document.getElementById('miSell').addEventListener('click', function () { document.getElementById('moreMenu').classList.remove('open'); openSell(); });

@@ -4,10 +4,14 @@ export function homePage(apiBase: string): string {
   const body = `
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="toast-container" aria-live="polite" role="status"></div>
+<div class="ambient" id="ambient" aria-hidden="true"><div class="ambient-layer" id="ambientA"></div><div class="ambient-layer" id="ambientB"></div><span class="ambient-wash"></span></div>
 <div class="topbar">
   <div class="topbar-inner">
     <a class="nav-logo" href="/"><div class="logo-icon"><i class="ico ico-camera"></i></div><div class="logo-text">Take the shot</div></a>
-    <div class="topbar-actions" id="navRight"></div>
+    <div class="topbar-actions">
+      <button class="icon-btn ambient-toggle" id="ambientToggle" type="button" aria-label="Toggle adaptive background" aria-pressed="true" title="Adaptive background"><i class="ico ico-eye"></i></button>
+      <span id="navRight" style="display:contents"></span>
+    </div>
   </div>
 </div>
 <div class="wrap" id="main">
@@ -80,12 +84,14 @@ async function checkAuth() {
       load();
     } else {
       document.getElementById('guest').classList.remove('hidden');
+      document.getElementById('ambientToggle').classList.add('hidden');
       document.getElementById('navRight').innerHTML =
         '<a class="btn small ghost" href="/login">Log in</a>' +
         '<a class="btn small" href="/signup">Sign up</a>';
     }
   } catch {
     document.getElementById('guest').classList.remove('hidden');
+    document.getElementById('ambientToggle').classList.add('hidden');
   }
 }
 async function logout() {
@@ -113,6 +119,12 @@ async function load(append) {
     const data = await res.json();
     const collections = data.collections;
     total = data.total;
+    if (!append && window.setAmbient) {
+      window.setAmbient(collections
+        .filter(function(c){ return c.has_ambient || c.cover_filename || c.cover_thumb_filename; })
+        .slice(0, 4)
+        .map(function(c){ return BASE + '/api/collections/' + c.id + '/ambient'; }));
+    }
     if (!collections.length) {
       document.getElementById('loadMore').classList.add('hidden');
       const msg = q ? 'No collections match that search.' : filter === 'shared' ? 'Nothing has been shared with you yet.' : filter === 'owned' ? 'You have not made a collection yet.' : 'No collections yet. Create one above.';
