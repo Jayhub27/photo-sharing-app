@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
+  Pressable,
   StyleSheet,
+  Text,
   View,
   type StyleProp,
   type ViewStyle,
@@ -116,8 +118,14 @@ export function AmbientMosaic({
   const [step, setStep] = useState(0)
   const [baseStep, setBaseStep] = useState(0)
   const [incoming, setIncoming] = useState<number | null>(null)
+  const [tick, setTick] = useState(0)
   const fade = useRef(new Animated.Value(1)).current
   const idsKey = ids.join('|')
+
+  useEffect(() => {
+    const t = setInterval(() => setTick((value) => value + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   // A new set of covers starts from the beginning rather than mid-transition.
   useEffect(() => {
@@ -192,6 +200,22 @@ export function AmbientMosaic({
         </Animated.View>
       ) : null}
       <Wash variant={variant} intensity={settings.intensity} />
+      <Pressable
+        onPress={() => setStep((value) => value + 1)}
+        style={{
+          position: 'absolute',
+          top: 110,
+          left: 16,
+          zIndex: 99,
+          backgroundColor: 'rgba(0,0,0,0.78)',
+          paddingHorizontal: 8,
+          paddingVertical: 5,
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 11 }}>
+          {`t${tick} s${step} b${baseStep} n${ids.length} rm${settings.reduceMotion ? 1 : 0}`}
+        </Text>
+      </Pressable>
     </View>
   )
 }
