@@ -119,7 +119,8 @@ export function AmbientMosaic({
   const [step, setStep] = useState(0)
   const [baseStep, setBaseStep] = useState(0)
   const [incoming, setIncoming] = useState<number | null>(null)
-  const [appActive, setAppActive] = useState(AppState.currentState === 'active')
+  // Assume foreground on mount; AppState can report "unknown" briefly on Android.
+  const [appActive, setAppActive] = useState(true)
   const fade = useRef(new Animated.Value(1)).current
   const idsKey = ids.join('|')
 
@@ -174,7 +175,7 @@ export function AmbientMosaic({
     <View style={styles.mosaic}>
       {slotsFor(value).map((id, index) => (
         <View key={`${id}-${index}-${value}`} style={styles.tile}>
-          <AmbientImage uri={ambientCollectionUrl(id)} transition={0} blurRadius={22} />
+          <AmbientImage uri={ambientCollectionUrl(id)} transition={0} />
         </View>
       ))}
     </View>
