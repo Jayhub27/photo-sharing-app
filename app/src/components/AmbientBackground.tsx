@@ -2,9 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
-  Pressable,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type ViewStyle,
@@ -99,9 +97,8 @@ export function AmbientBackground({
 }
 
 /**
- * Home blends up to four collection covers into a 2 x 2 wash. The mosaic
- * rotates one cover every ten seconds with a slow crossfade, and pauses when
- * Home is not focused, the app is in the background, or reduce motion is on.
+ * Home rotates through the collection covers one at a time, full-bleed.
+ * Ten seconds per cover with a slow crossfade; reduce motion keeps the first.
  */
 export function AmbientMosaic({
   ids,
@@ -118,14 +115,8 @@ export function AmbientMosaic({
   const [step, setStep] = useState(0)
   const [baseStep, setBaseStep] = useState(0)
   const [incoming, setIncoming] = useState<number | null>(null)
-  const [tick, setTick] = useState(0)
   const fade = useRef(new Animated.Value(1)).current
   const idsKey = ids.join('|')
-
-  useEffect(() => {
-    const t = setInterval(() => setTick((value) => value + 1), 1000)
-    return () => clearInterval(t)
-  }, [])
 
   // A new set of covers starts from the beginning rather than mid-transition.
   useEffect(() => {
@@ -171,18 +162,12 @@ export function AmbientMosaic({
 
   if (!settings.adaptive || !ids.length) return null
 
-  const slotsFor = (value: number) => {
-    const count = ids.length
-    return [0, 1, 2, 3].map((offset) => ids[(value + offset) % count])
-  }
-
-  const renderMosaic = (value: number) => (
-    <View style={styles.mosaic}>
-      {slotsFor(value).map((id, index) => (
-        <View key={`${id}-${index}-${value}`} style={styles.tile}>
-          <AmbientImage uri={ambientCollectionUrl(id)} transition={0} />
-        </View>
-      ))}
+  const renderSlide = (value: number) => (
+    <View style={StyleSheet.absoluteFill}>
+      <AmbientImage
+        uri={ambientCollectionUrl(ids[value % ids.length])}
+        transition={0}
+      />
     </View>
   )
 
@@ -193,44 +178,17 @@ export function AmbientMosaic({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      {renderMosaic(baseStep)}
+      {renderSlide(baseStep)}
       {incoming !== null ? (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
-          {renderMosaic(incoming)}
+          {renderSlide(incoming)}
         </Animated.View>
       ) : null}
       <Wash variant={variant} intensity={settings.intensity} />
-      <Pressable
-        onPress={() => setStep((value) => value + 1)}
-        style={{
-          position: 'absolute',
-          top: 110,
-          left: 16,
-          zIndex: 99,
-          backgroundColor: 'rgba(0,0,0,0.78)',
-          paddingHorizontal: 8,
-          paddingVertical: 5,
-        }}
-      >
-        <Text style={{ color: '#fff', fontSize: 11 }}>
-          {`t${tick} s${step} b${baseStep} n${ids.length} rm${settings.reduceMotion ? 1 : 0}`}
-        </Text>
-      </Pressable>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   clip: { overflow: 'hidden' },
-  mosaic: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    transform: [{ scale: 1.08 }],
-  },
-  tile: {
-    width: '50%',
-    height: '50%',
-    overflow: 'hidden',
-  },
 })
