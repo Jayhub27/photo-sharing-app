@@ -25,6 +25,8 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_API_BASE: ${{ vars.EXPO_PUBLIC_API_BASE || 'https://take-the-shot-api.vercel.app' }}
     steps:
       - uses: actions/checkout@v7
 

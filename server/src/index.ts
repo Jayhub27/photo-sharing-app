@@ -67,7 +67,12 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '
 app.use(express.json({ limit: '100kb' }))
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
+  res.setHeader('Cache-Control', 'no-store')
+  res.json({
+    ok: true,
+    version: process.env.npm_package_version || '0.4.0',
+    commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'dev',
+  })
 })
 
 app.use('/api/auth', auth)
