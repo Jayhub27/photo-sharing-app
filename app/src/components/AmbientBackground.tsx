@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   Animated,
-  AppState,
   Easing,
   StyleSheet,
   View,
@@ -106,30 +105,19 @@ export function AmbientMosaic({
   ids,
   variant = 'light',
   style,
-  active = true,
   intervalMs = 10000,
 }: {
   ids: string[]
   variant?: Variant
   style?: StyleProp<ViewStyle>
-  active?: boolean
   intervalMs?: number
 }) {
   const { settings } = useAppearance()
   const [step, setStep] = useState(0)
   const [baseStep, setBaseStep] = useState(0)
   const [incoming, setIncoming] = useState<number | null>(null)
-  // Assume foreground on mount; AppState can report "unknown" briefly on Android.
-  const [appActive, setAppActive] = useState(true)
   const fade = useRef(new Animated.Value(1)).current
   const idsKey = ids.join('|')
-
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => {
-      setAppActive(state === 'active')
-    })
-    return () => sub.remove()
-  }, [])
 
   // A new set of covers starts from the beginning rather than mid-transition.
   useEffect(() => {
@@ -140,28 +128,37 @@ export function AmbientMosaic({
   }, [idsKey, fade])
 
   useEffect(() => {
-    if (!active || !appActive || !settings.adaptive || settings.reduceMotion || ids.length < 2) {
-      return
-    }
+    if (!settings.adaptive || settings.reduceMotion || ids.length < 2) return
     const timer = setInterval(() => setStep((value) => value + 1), intervalMs)
     return () => clearInterval(timer)
-  }, [active, appActive, settings.adaptive, settings.reduceMotion, ids.length, intervalMs])
+  }, [settings.adaptive, settings.reduceMotion, ids.length, intervalMs])
 
   useEffect(() => {
     if (step === baseStep) return
     setIncoming(step)
     fade.setValue(0)
+
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      setBaseStep(step)
+      setIncoming(null)
+      fade.setValue(1)
+    }
+
+    // JS-driven: opacity on a tiny image layer is cheap, and this avoids
+    // native-driver quirks with freshly mounted image views on Android.
     Animated.timing(fade, {
       toValue: 1,
       duration: 900,
       easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return
-      setBaseStep(step)
-      setIncoming(null)
-      fade.setValue(1)
-    })
+      useNativeDriver: false,
+    }).start(finish)
+
+    // Guarantee the layer swap even if the animation callback is delayed.
+    const fallback = setTimeout(finish, 1000)
+    return () => clearTimeout(fallback)
   }, [step, baseStep, fade])
 
   if (!settings.adaptive || !ids.length) return null

@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useIsFocused, type CompositeScreenProps } from '@react-navigation/native'
+import type { CompositeScreenProps } from '@react-navigation/native'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
@@ -157,7 +157,6 @@ function RowCard({
 
 export default function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets()
-  const isFocused = useIsFocused()
   const { user } = useAuth()
   const { settings } = useAppearance()
 
@@ -371,7 +370,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic ids={ambientIds} active={isFocused} />
+        <AmbientMosaic ids={ambientIds} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -386,7 +385,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (error) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic ids={ambientIds} active={isFocused} />
+        <AmbientMosaic ids={ambientIds} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -405,7 +404,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={s.screen}>
-      <AmbientMosaic ids={ambientIds} active={isFocused} />
+      <AmbientMosaic ids={ambientIds} />
       <FlatList
         data={rest}
         keyExtractor={(item) => item.id}
