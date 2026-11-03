@@ -283,6 +283,7 @@ type ViewerPhoto = {
   id: string
   filename: string
   original_name?: string
+  price_cents?: number | null
   ambient_colors?: string[] | null
 }
 
@@ -295,6 +296,8 @@ export function PhotoViewer({
   urlFor,
   headers,
   title,
+  canManagePrices,
+  onEditPrice,
 }: {
   visible: boolean
   photos: ViewerPhoto[]
@@ -303,6 +306,8 @@ export function PhotoViewer({
   urlFor: (filename: string) => string
   headers?: Record<string, string>
   title?: string
+  canManagePrices?: boolean
+  onEditPrice?: (photo: ViewerPhoto) => void
 }) {
   const { width, height } = Dimensions.get('window')
   const listRef = useRef<FlatList<ViewerPhoto>>(null)
@@ -454,7 +459,7 @@ export function PhotoViewer({
                 flex: 1,
                 paddingHorizontal: 22,
                 paddingTop: 14,
-                paddingBottom: 154,
+                paddingBottom: 190,
                 justifyContent: 'center',
               }}
             >
@@ -536,6 +541,36 @@ export function PhotoViewer({
               ))}
             </View>
           </View>
+
+          {canManagePrices && onEditPrice && current ? (
+            <Pressable
+              onPress={() => onEditPrice(current)}
+              style={{
+                alignSelf: 'flex-start',
+                marginTop: 10,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: dark ? 'rgba(250,245,235,0.28)' : 'rgba(33,28,21,0.18)',
+                backgroundColor: dark ? 'rgba(250,245,235,0.1)' : 'rgba(33,28,21,0.06)',
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={current.price_cents ? 'Edit photo price' : 'Set photo price'}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.sansSemi,
+                  fontSize: 7,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  color: dark ? 'rgba(250,245,235,0.78)' : wg.color.inkSoft,
+                }}
+              >
+                {current.price_cents ? 'Edit photo price' : 'Set photo price'}
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Modal>

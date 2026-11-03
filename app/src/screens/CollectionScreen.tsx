@@ -28,6 +28,7 @@ import {
   setCollectionExpiry,
   setCollectionPrice,
   setCollectionVisibility,
+  setPhotoPrice,
   startCheckout,
   startPayoutOnboarding,
   uploadPhoto,
@@ -76,6 +77,14 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [sellOpen, setSellOpen] = useState(false)
   const [priceText, setPriceText] = useState('')
   const [savingPrice, setSavingPrice] = useState(false)
+  const [photoPriceOpen, setPhotoPriceOpen] = useState(false)
+  const [photoPriceTarget, setPhotoPriceTarget] = useState<{
+    id: string
+    original_name?: string
+    price_cents?: number | null
+  } | null>(null)
+  const [photoPriceText, setPhotoPriceText] = useState('')
+  const [savingPhotoPrice, setSavingPhotoPrice] = useState(false)
   const [payout, setPayout] = useState<PayoutStatus | null>(null)
   const [connecting, setConnecting] = useState(false)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
@@ -339,6 +348,52 @@ export default function CollectionScreen({ route, navigation }: Props) {
     }
   }
 
+  const openPhotoPrice = (photo: {
+    id: string
+    original_name?: string
+    price_cents?: number | null
+  }) => {
+    setPhotoPriceTarget(photo)
+    setPhotoPriceText(photo.price_cents ? String(photo.price_cents / 100) : '')
+    setPhotoPriceOpen(true)
+  }
+
+  const handleSavePhotoPrice = async () => {
+    if (!photoPriceTarget) return
+    const raw = photoPriceText.trim()
+    const cents = raw === '' ? null : Math.round(Number(raw) * 100)
+    if (cents !== null && (!Number.isFinite(cents) || cents < 0)) {
+      return Alert.alert('Photo price', 'Enter a valid price')
+    }
+    setSavingPhotoPrice(true)
+    try {
+      await setPhotoPrice(photoPriceTarget.id, cents)
+      setPhotos((prev) =>
+        prev.map((photo) => (photo.id === photoPriceTarget.id ? { ...photo, price_cents: cents } : photo))
+      )
+      setPhotoPriceOpen(false)
+      setPhotoPriceTarget(null)
+      Alert.alert('Photo price saved', cents ? 'This photo now has its own price.' : 'Individual price removed.')
+    } catch (err) {
+      Alert.alert('Could not save photo price', err instanceof Error ? err.message : 'Try again later')
+    } finally {
+      setSavingPhotoPrice(false)
+    }
+  }
+
+  const photoActions = (photo: Photo) => {
+    if (!canEdit) return
+    if (role !== 'owner') {
+      handleDelete(photo)
+      return
+    }
+    Alert.alert(photo.original_name || 'Photograph', 'Photo options', [
+      { text: 'Set price', onPress: () => openPhotoPrice(photo) },
+      { text: 'Delete', style: 'destructive', onPress: () => handleDelete(photo) },
+      { text: 'Cancel', style: 'cancel' },
+    ])
+  }
+
   const handleConnectPayouts = async () => {
     setConnecting(true)
     try {
@@ -540,6 +595,10 @@ export default function CollectionScreen({ route, navigation }: Props) {
             ) : null}
           </View>
 
+          {role === 'owner' ? (
+            <Text style={c.photoPriceHint}>Long-press a photo to set an individual price.</Text>
+          ) : null}
+
           {pricing?.price_cents && pricing.locked ? (
             <Pressable onPress={handleBuy} style={c.buyRow} accessibilityRole="button">
               <Text style={c.buyLabel}>Unlock the originals</Text>
@@ -607,7 +666,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
           renderItem={({ item, index }) => (
             <Pressable
               onPress={() => setViewerIndex(index)}
-              onLongPress={canEdit ? () => handleDelete(item) : undefined}
+              onLongPress={canEdit ? () => photoActions(item) : undefined}
               accessibilityRole="imagebutton"
               accessibilityLabel={item.original_name ? `View photo ${item.original_name}` : 'View photo'}
               style={{ width: itemWidth }}
@@ -618,6 +677,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
                 resizeMode="cover"
                 accessibilityIgnoresInvertColors
               />
+              {role === 'owner' && item.price_cents ? (
+                <View style={c.photoPriceBadge}>
+                  <Text style={c.photoPriceText}>
+                    {formatCents(item.price_cents, pricing?.currency || 'usd')}
+                  </Text>
+                </View>
+              ) : null}
               <View style={c.caption}>
                 <Text style={c.captionNo}>{String(index + 1).padStart(2, '0')}</Text>
               </View>
@@ -656,7 +722,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               onChangeText={setImportText}
               placeholder={'https://drive.google.com/file/d/…/view'}
               placeholderTextColor={colors.textMuted}
-              style={[styles.input, { minHeight: 110, textAlignVertical: 'top' }]}
+              style={[modalStyles.input, { minHeight: 110, textAlignVertical: 'top' }]}
               autoCapitalize="none"
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -680,7 +746,8 @@ export default function CollectionScreen({ route, navigation }: Props) {
           <View style={modalStyles.card}>
             <Text style={modalStyles.title}>Pricing &amp; sales</Text>
             <Text style={modalStyles.hint}>
-              Set a price to sell the original files with Stripe Checkout. Leave empty to share for free.
+              Set a bundle price for every original in this collection. You can also price individual
+              photos from the viewer. Leave empty to share for free.
             </Text>
             <TextInput
               keyboardType="decimal-pad"
@@ -688,7 +755,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               onChangeText={setPriceText}
               placeholder="12.00"
               placeholderTextColor={colors.textMuted}
-              style={styles.input}
+              style={modalStyles.input}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
@@ -721,6 +788,43 @@ export default function CollectionScreen({ route, navigation }: Props) {
                   </AnimatedButton>
                 </View>
               ))}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={photoPriceOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPhotoPriceOpen(false)}
+      >
+        <View style={modalStyles.backdrop}>
+          <View style={modalStyles.card}>
+            <Text style={modalStyles.title}>Price this photograph</Text>
+            <Text style={modalStyles.hint}>
+              {photoPriceTarget?.original_name ? `${photoPriceTarget.original_name}\n` : ''}
+              Set an individual price for this original. Leave empty to remove the individual price.
+            </Text>
+            <TextInput
+              keyboardType="decimal-pad"
+              value={photoPriceText}
+              onChangeText={setPhotoPriceText}
+              placeholder="24.00"
+              placeholderTextColor={colors.textMuted}
+              style={modalStyles.input}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton outline onPress={() => setPhotoPriceOpen(false)}>
+                  <ButtonText outline>Cancel</ButtonText>
+                </AnimatedButton>
+              </View>
+              <View style={{ flex: 1 }}>
+                <AnimatedButton onPress={handleSavePhotoPrice} disabled={savingPhotoPrice}>
+                  <ButtonText>{savingPhotoPrice ? 'Saving…' : 'Save'}</ButtonText>
+                </AnimatedButton>
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
@@ -768,7 +872,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
               onChangeText={setExpiryDays}
               placeholder="Custom days"
               placeholderTextColor={colors.textMuted}
-              style={[styles.input, { marginBottom: 12 }]}
+              style={modalStyles.input}
             />
             {pricing?.price_cents ? (
               <Text style={[modalStyles.hint, { color: colors.red }]}>
@@ -799,6 +903,11 @@ export default function CollectionScreen({ route, navigation }: Props) {
         urlFor={(filename) => photoUrl(filename)}
         headers={imageHeaders()}
         title={name}
+        canManagePrices={role === 'owner'}
+        onEditPrice={(photo) => {
+          setViewerIndex(null)
+          openPhotoPrice(photo)
+        }}
       />
     </View>
   )
@@ -807,7 +916,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
 const modalStyles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: 'rgba(20,17,13,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -815,24 +924,35 @@ const modalStyles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 520,
-    backgroundColor: colors.paper,
-    borderWidth: 1,
-    borderColor: colors.ink,
+    backgroundColor: wg.color.paper,
+    borderRadius: 24,
     padding: 22,
   },
   title: {
-    fontFamily: fonts.serif,
-    color: colors.text,
-    fontSize: 24,
-    letterSpacing: -0.4,
+    fontFamily: wg.font.serif,
+    color: wg.color.ink,
+    fontSize: 26,
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
   hint: {
-    fontFamily: fonts.sans,
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 12,
+    fontFamily: wg.font.sans,
+    color: wg.color.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  input: {
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.14)',
+    paddingHorizontal: 14,
+    fontFamily: wg.font.sans,
+    fontSize: 16,
+    color: wg.color.ink,
+    marginBottom: 16,
   },
 })
 
@@ -996,6 +1116,29 @@ const c = StyleSheet.create({
     color: wg.color.muted,
   },
   filterTextOn: { color: wg.color.ivory },
+  photoPriceHint: {
+    marginTop: 10,
+    fontFamily: wg.font.sans,
+    fontSize: 8.5,
+    color: wg.color.muted,
+  },
+  photoPriceBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(250,245,234,0.94)',
+    borderWidth: 1,
+    borderColor: 'rgba(33,28,21,0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  photoPriceText: {
+    fontFamily: wg.font.sansSemi,
+    fontSize: 8,
+    letterSpacing: 0.4,
+    color: wg.color.inkSoft,
+  },
   thumb: { borderRadius: 14, backgroundColor: wg.color.paperDeep },
   caption: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 5 },
   captionNo: {

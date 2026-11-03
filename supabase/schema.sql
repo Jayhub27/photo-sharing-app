@@ -91,6 +91,10 @@ update storage.buckets set public = false where id = 'photos';
 alter table public.collections add column if not exists price_cents integer;
 alter table public.collections add column if not exists currency text not null default 'usd';
 
+-- Optional individual-photo price. Null or 0 means no individual price.
+-- Collection pricing still sells the whole bundle.
+alter table public.photos add column if not exists price_cents integer;
+
 -- Optional Stripe Connect account for payouts. When set (and
 -- STRIPE_APPLICATION_FEE_PERCENT is configured), checkout transfers the
 -- owner's share to this account.

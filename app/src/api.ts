@@ -70,6 +70,7 @@ export interface Photo {
   size: number
   width?: number | null
   height?: number | null
+  price_cents?: number | null
   created_at?: string
   ambient_colors?: string[] | null
 }
@@ -377,6 +378,19 @@ export async function uploadPhoto(collectionId: string, uri: string): Promise<{ 
 export async function deletePhoto(photoId: string): Promise<void> {
   const res = await fetch(`${resolveBase()}/api/photos/${photoId}`, { method: 'DELETE', headers: headers() })
   if (!res.ok) throw await errorFrom(res, 'Delete failed')
+}
+
+export async function setPhotoPrice(
+  photoId: string,
+  priceCents: number | null
+): Promise<{ id: string; price_cents: number | null }> {
+  const res = await fetch(`${resolveBase()}/api/photos/${photoId}/price`, {
+    method: 'PATCH',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ price_cents: priceCents }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not save photo price')
+  return res.json()
 }
 
 /* ------------------------------------------------------- import + selling */

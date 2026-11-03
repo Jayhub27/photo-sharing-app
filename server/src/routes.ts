@@ -56,7 +56,7 @@ const upload = multer({
 type Role = 'owner' | 'editor' | 'viewer'
 
 const PHOTO_FIELDS =
-  'id, filename, thumb_filename, ambient_filename, ambient_colors, original_name, mime_type, size, width, height, created_at'
+  'id, filename, thumb_filename, ambient_filename, ambient_colors, original_name, mime_type, size, width, height, price_cents, created_at'
 const THUMB_WIDTH = 640
 const AMBIENT_WIDTH = 48
 
@@ -925,6 +925,34 @@ router.post(
     res.json({ photos })
   }
 )
+
+router.patch('/photos/:id/price', authMiddleware, async (req: AuthedRequest, res) => {
+  const { data: photo } = await supabase
+    .from('photos')
+    .select('id, collection_id, price_cents')
+    .eq('id', req.params.id)
+    .maybeSingle()
+  if (!photo) return res.status(404).json({ error: 'Photo not found' })
+
+  const access = await getAccess(photo.collection_id, req.userId)
+  if (!access.canManage) return res.status(403).json({ error: 'Only the owner can set prices' })
+
+  const price = normalizePrice(req.body.price_cents)
+  if (price === undefined) return res.status(400).json({ error: 'Enter a valid price' })
+
+  const { error } = await supabase
+    .from('photos')
+    .update({ price_cents: price })
+    .eq('id', req.params.id)
+  if (error) {
+    return res.status(503).json({
+      error: 'Photo pricing is not enabled in the database yet',
+      code: 'schema_missing',
+      hint: 'Run the photo pricing migration in supabase/migrations',
+    })
+  }
+  res.json({ id: photo.id, price_cents: price })
+})
 
 router.delete('/photos/:id', authMiddleware, async (req: AuthedRequest, res) => {
   const { data: photo } = await supabase.from('photos').select('*').eq('id', req.params.id).maybeSingle()
