@@ -16,6 +16,7 @@ import {
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
   deletePhoto as deletePhotoApi,
@@ -54,6 +55,7 @@ function formatCents(cents: number, currency: string): string {
 
 export default function CollectionScreen({ route, navigation }: Props) {
   const { id, name } = route.params
+  const insets = useSafeAreaInsets()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -393,7 +395,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
       <AmbientBackground kind="collection" id={id} variant="light" />
 
       <FadeIn>
-        <View style={[c.head, glassLight]}>
+        <View style={[c.head, glassLight, { marginTop: insets.top + 10 }]}>
           <View style={c.topRow}>
             <Pressable
               onPress={() => navigation.goBack()}

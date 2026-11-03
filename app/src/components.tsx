@@ -324,7 +324,13 @@ export function PhotoViewer({
   }, [visible, initialIndex])
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={{ flex: 1, backgroundColor: dark ? wg.color.dark : wg.color.paper }}>
         <StatusBar style={dark ? 'light' : 'dark'} />
         <AmbientBackground kind="photo" id={current?.id} variant="dark" />
