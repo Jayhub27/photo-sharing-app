@@ -16,3 +16,7 @@ app/ios/
 supabase/.temp/
 .vercel
 .env*
+!.env.example
+!**/.env.example
+playwright-report/
+test-results/

@@ -1,0 +1,90 @@
+name: Smoke
+
+# Runs against a deployed URL, never a local server. Vercel reports a
+# deployment_status event for every preview and production build; this turns
+# each one into a pass/fail signal on the commit that produced it.
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL to smoke test
+        required: true
+        default: https://take-the-shot-api.vercel.app
+
+concurrency:
+  group: smoke-${{ github.event.deployment_status.environment || inputs.url }}
+  cancel-in-progress: true
+
+jobs:
+  production:
+    name: Production smoke
+    if: github.event_name == 'workflow_dispatch' || (github.event.deployment_status.state == 'success' && github.event.deployment_status.environment == 'Production')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --include=dev
+      - run: npx playwright install --with-deps chromium
+
+      - name: Resolve deployment URL
+        run: |
+          URL="${{ inputs.url || github.event.deployment_status.environment_url }}"
+          if [ -z "$URL" ]; then URL="${{ github.event.deployment_status.target_url }}"; fi
+          echo "SHIP_URL=$URL" >> "$GITHUB_ENV"
+          echo "Smoke testing $URL"
+
+      - name: Verify production
+        run: npm run verify
+
+      - name: Browser smoke
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  preview:
+    name: Preview smoke
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success' && github.event.deployment_status.environment != 'Production'
+    runs-on: ubuntu-latest
+    # Preview deployments currently ship without the Supabase/Stripe env vars,
+    # so keep this signal visible without blocking the PR. Remove the
+    # continue-on-error line once Preview env vars exist in the Vercel project.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve preview URL
+        run: |
+          URL="${{ github.event.deployment_status.environment_url }}"
+          if [ -z "$URL" ]; then URL="${{ github.event.deployment_status.target_url }}"; fi
+          echo "SHIP_URL=$URL" >> "$GITHUB_ENV"
+
+      - name: Verify preview
+        run: node scripts/verify.mjs
+
+  rollback-note:
+    name: Rollback reference
+    if: github.event_name == 'deployment_status' && github.event.deployment_status.state == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Deployment failed. Roll back with:"
+          echo "  gh workflow run rollback.yml -f deployment=<previous-deployment-url>"
+          echo "Or run: npx vercel rollback --yes"

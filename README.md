@@ -186,6 +186,62 @@ You can also change the server URL at runtime from the login screen, so a phone
 can point at any deployment without a rebuild. See [docs/MOBILE.md](docs/MOBILE.md)
 for the PWA and native mobile details.
 
+## Shipping and operations
+
+Production lives at **https://take-the-shot-api.vercel.app**. Every merge to
+`main` deploys through the Vercel Git integration; there is no manual deploy
+step. `/api/health` returns `{ ok, version, commit }`, and the smoke suite
+asserts the shape.
+
+### Verification
+
+```bash
+npm run build                 # typecheck the server
+npx tsc --noEmit -p app/tsconfig.json
+npm run verify                # ship.verify.json against production
+npm run test:e2e              # Playwright smoke (5 tests, ~3s)
+SHIP_URL=https://preview-url  # point either command at a preview
+```
+
+| Layer | When | Workflow |
+| --- | --- | --- |
+| Build + typecheck | every push and PR | `ci.yml` |
+| Production smoke | every successful Vercel production deployment | `smoke.yml` |
+| Preview smoke | every successful preview deployment | `smoke.yml` (non-blocking until Preview env vars exist) |
+| Synthetic uptime | every 15 minutes | `synthetic.yml` |
+| Rollback | on demand | `rollback.yml` |
+
+The Playwright suite covers the health contract, the login form, the guest home
+page, the anonymous auth wall and the security headers. It runs against a
+deployed URL, never a local server, because the point is to prove the thing
+people open actually works.
+
+### Rollback
+
+```bash
+npx vercel rollback --yes          # previous production deployment
+# or pick one
+npx vercel rollback <deployment-url> --yes
+```
+
+In CI: `gh workflow run rollback.yml -f deployment=<url>` (needs
+`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`). The workflow rolls back
+and then re-runs the smoke suite against production.
+
+### Error tracking and alerts
+
+Set `SENTRY_DSN` to switch on Sentry; without it `captureException` is a no-op.
+Server errors flow through one Express error handler, and unhandled rejections
+and uncaught exceptions are reported with the deploy's commit as the release.
+
+Set `DISCORD_WEBHOOK` to get a ping when the synthetic check fails.
+
+### Environment contract
+
+`.env.example` at the repo root lists every server key; `server/.env.example`
+and `app/.env.example` hold the copy-paste versions. Update all three when a
+new key appears.
+
 ## Selling photos
 
 1. Open a collection you own and tap **Sell**.

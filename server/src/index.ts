@@ -8,12 +8,16 @@ import auth, { resolveUser, type AuthedRequest } from './auth.js'
 import { supabase } from './db.js'
 import { publicBaseUrl } from './utils.js'
 import { startSweeper } from './maintenance.js'
+import { captureException, initObservability } from './observability.js'
 import { createPendingShare } from './share-store.js'
 import { layout, htmlEscape } from './ui.js'
 import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
 
 const PORT = process.env.PORT || 3000
 const publicDir = fileURLToPath(new URL('../public', import.meta.url))
+
+initObservability()
+
 const app = express()
 
 app.disable('x-powered-by')
@@ -251,6 +255,28 @@ app.get('/c/:id', async (req, res) => {
     }
   } catch {}
   res.type('html').send(collectionPage(req.params.id, '', meta))
+})
+
+// Last line of defence: log, report, and answer without leaking internals.
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  captureException(err, { method: req.method, path: req.path })
+  console.error(err)
+  if (res.headersSent) return next(err)
+  if (req.path.startsWith('/api/')) {
+    res.status(500).json({ error: 'Something went wrong' })
+    return
+  }
+  res.status(500).type('text').send('Something went wrong')
+})
+
+process.on('unhandledRejection', (reason) => {
+  captureException(reason)
+  console.error('unhandledRejection', reason)
+})
+
+process.on('uncaughtException', (err) => {
+  captureException(err)
+  console.error('uncaughtException', err)
 })
 
 export default app

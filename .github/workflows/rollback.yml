@@ -1,0 +1,56 @@
+name: Rollback
+
+# Point the production alias at an earlier deployment, then re-run the smoke
+# suite against it. Defaults to Vercel's "previous production deployment".
+
+on:
+  workflow_dispatch:
+    inputs:
+      deployment:
+        description: Deployment URL or id (blank = previous production)
+        required: false
+        default: ''
+      verify:
+        description: Run the smoke suite after rolling back
+        type: boolean
+        default: true
+
+concurrency:
+  group: rollback-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Roll back production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN secret is missing. Add it, or run 'npx vercel rollback --yes' locally."
+            exit 1
+          fi
+          npx --yes vercel@latest rollback ${{ inputs.deployment }} --yes --token "$VERCEL_TOKEN"
+
+      - name: Verify the rolled-back deployment
+        if: ${{ inputs.verify }}
+        env:
+          SHIP_URL: https://take-the-shot-api.vercel.app
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if node scripts/verify.mjs; then exit 0; fi
+            sleep 10
+          done
+          echo "Smoke still failing after rollback"
+          exit 1

@@ -1,0 +1,10 @@
+{
+  "url": "https://take-the-shot-api.vercel.app",
+  "timeoutMs": 10000,
+  "checks": [
+    { "name": "health", "path": "/api/health", "status": 200, "json": { "ok": true } },
+    { "name": "login page", "path": "/login", "status": 200, "contains": "Welcome back" },
+    { "name": "home page", "path": "/", "status": 200, "contains": "Take the shot" },
+    { "name": "auth wall", "path": "/api/collections", "status": 401 }
+  ]
+}

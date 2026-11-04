@@ -1,0 +1,48 @@
+name: Synthetic check
+
+# Every 15 minutes: is production healthy? Fails loudly and pings Discord when
+# a secret is configured. GitHub Actions cron is best-effort; treat a skipped
+# run as unknown, not as healthy.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: synthetic-production
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      SHIP_URL: https://take-the-shot-api.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Health endpoint
+        id: health
+        run: |
+          curl -fsS "$SHIP_URL/api/health" -o health.json
+          cat health.json
+          node -e "const h=require('./health.json'); if(!h.ok) process.exit(1); console.log('version', h.version, 'commit', h.commit)"
+
+      - name: Live verification
+        id: verify
+        run: node scripts/verify.mjs
+
+      - name: Alert Discord
+        if: failure() && env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -fsS -H 'Content-Type: application/json' \
+            -d "{\"content\":\"Production synthetic check failed: $RUN_URL\"}" \
+            "$DISCORD_WEBHOOK"
