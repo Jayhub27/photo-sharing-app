@@ -516,7 +516,7 @@ export const WARM_GLASS_CSS = `
   --shadow-2:0 18px 40px -22px rgba(60,43,22,.3);
   --font-ui:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-display:'Instrument Serif',Georgia,serif;
-  --ambient-wash:linear-gradient(180deg,rgba(244,239,229,.58) 0%,rgba(244,239,229,.44) 36%,rgba(244,239,229,.86) 100%);
+  --ambient-wash:linear-gradient(180deg,rgba(244,239,229,.84) 0%,rgba(244,239,229,.68) 20%,rgba(244,239,229,.46) 44%,rgba(244,239,229,.8) 100%);
   --wrap:1120px;
 }
 html[data-theme="dark"]{
@@ -525,7 +525,7 @@ html[data-theme="dark"]{
   --accent:#FAF5EA;--accent-soft:rgba(180,140,86,.16);--accent-text:#E7C08B;--on-accent:#211C15;
   --danger:#E5795C;--danger-soft:rgba(229,121,92,.12);--ok:#9AAE82;
   --shadow-1:0 1px 2px rgba(0,0,0,.35);--shadow-2:0 18px 44px -18px rgba(0,0,0,.6);
-  --ambient-wash:linear-gradient(180deg,rgba(23,19,15,.62) 0%,rgba(23,19,15,.5) 36%,rgba(23,19,15,.9) 100%);
+  --ambient-wash:linear-gradient(180deg,rgba(23,19,15,.86) 0%,rgba(23,19,15,.7) 20%,rgba(23,19,15,.52) 44%,rgba(23,19,15,.86) 100%);
 }
 html{background:var(--bg)}
 body{background:transparent;font-family:var(--font-ui);font-size:15px;line-height:1.55;font-weight:400}
@@ -571,7 +571,8 @@ html[data-theme="dark"] .modal-card{background:rgba(30,24,19,.98);border-color:r
 .theme-toggle{width:44px;height:44px;border:1px solid var(--border);background:rgba(255,252,245,.82);box-shadow:var(--shadow-2);border-radius:50%}
 .ambient-toggle{background:rgba(255,252,245,.45)}
 .ambient{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:var(--bg)}
-.ambient-layer{position:absolute;inset:-12%;background-position:center;background-size:cover;filter:blur(7px) saturate(1.05);transform:scale(1.16);opacity:0;transition:opacity .9s var(--ease)}
+.ambient-layer{position:absolute;inset:-12%;background-position:center;background-size:cover;filter:saturate(1.03);transform:scale(1.16);opacity:0;transition:opacity .9s var(--ease),filter .28s var(--ease)}
+body.is-scrolling .ambient-layer{filter:blur(18px) saturate(1.05)}
 .ambient-layer.on{opacity:1}
 .ambient-wash{position:absolute;inset:0;background:var(--ambient-wash)}
 body.ambient-off .ambient-layer{opacity:0!important}
@@ -640,6 +641,12 @@ function AMBIENT_JS(): string {
   document.body.classList.toggle('ambient-off',!enabled);
   var btn=document.getElementById('ambientToggle');
   if(btn) btn.setAttribute('aria-pressed',enabled?'true':'false');
+  var idle=null;
+  window.addEventListener('scroll',function(){
+    document.body.classList.add('is-scrolling');
+    if(idle) clearTimeout(idle);
+    idle=setTimeout(function(){ document.body.classList.remove('is-scrolling'); },280);
+  },{passive:true});
 })();`
 }
 

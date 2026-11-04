@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Pressable,
   RefreshControl,
@@ -176,10 +177,35 @@ export default function HomeScreen({ navigation }: Props) {
   const [filter, setFilter] = useState<'all' | 'owned' | 'shared'>('all')
   const offsetRef = useRef(0)
   const requestId = useRef(0)
+  // The backdrop is sharp at rest and blurs only while the list is moving.
+  const blurAnim = useRef(new Animated.Value(0)).current
+  const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sortRef = useRef(sort)
   const filterRef = useRef(filter)
   sortRef.current = sort
   filterRef.current = filter
+
+  const handleScroll = useCallback(() => {
+    Animated.timing(blurAnim, {
+      toValue: 1,
+      duration: 120,
+      useNativeDriver: true,
+    }).start()
+    if (scrollIdle.current) clearTimeout(scrollIdle.current)
+    scrollIdle.current = setTimeout(() => {
+      Animated.timing(blurAnim, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true,
+      }).start()
+    }, 300)
+  }, [blurAnim])
+
+  useEffect(() => {
+    return () => {
+      if (scrollIdle.current) clearTimeout(scrollIdle.current)
+    }
+  }, [])
 
   const load = useCallback(async (q: string, opts: { silent?: boolean } = {}) => {
     const id = ++requestId.current
@@ -384,7 +410,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic sources={ambientSources} />
+        <AmbientMosaic sources={ambientSources} blurOpacity={blurAnim} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -399,7 +425,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (error) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic sources={ambientSources} />
+        <AmbientMosaic sources={ambientSources} blurOpacity={blurAnim} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -418,7 +444,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={s.screen}>
-      <AmbientMosaic sources={ambientSources} />
+      <AmbientMosaic sources={ambientSources} blurOpacity={blurAnim} />
       <FlatList
         data={rest}
         keyExtractor={(item) => item.id}
@@ -432,6 +458,8 @@ export default function HomeScreen({ navigation }: Props) {
             colors={[wg.color.bronze]}
           />
         }
+        onScroll={handleScroll}
+        scrollEventThrottle={64}
         onEndReachedThreshold={0.4}
         onEndReached={loadMore}
         ListFooterComponent={

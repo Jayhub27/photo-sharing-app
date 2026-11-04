@@ -24,17 +24,22 @@ const washAlpha: Record<Intensity, number> = {
 function Wash({ variant, intensity }: { variant: Variant; intensity: Intensity }) {
   const a = washAlpha[intensity]
   // The hero title and subtitle sit in the top third, so the paper is densest
-  // there; below it the photograph comes through at close to full strength.
-  const colors: [string, string, string] =
+  // there; through the middle the photograph is almost untouched.
+  const colors: [string, string, string, string] =
     variant === 'light'
-      ? [paperRgba(Math.min(1, a + 0.26)), paperRgba(a + 0.04), paperRgba(Math.min(1, a + 0.22))]
-      : [darkRgba(0.5), darkRgba(0.24), darkRgba(0.5)]
+      ? [
+          paperRgba(Math.min(1, a + 0.54)),
+          paperRgba(a + 0.38),
+          paperRgba(a + 0.16),
+          paperRgba(Math.min(1, a + 0.5)),
+        ]
+      : [darkRgba(0.86), darkRgba(0.7), darkRgba(0.52), darkRgba(0.86)]
 
   return (
     <LinearGradient
       pointerEvents="none"
       colors={colors}
-      locations={[0, 0.34, 1]}
+      locations={[0, 0.2, 0.44, 1]}
       style={StyleSheet.absoluteFill}
     />
   )
@@ -71,7 +76,7 @@ export function AmbientBackground({
   kind,
   id,
   src,
-  blurRadius = 5,
+  blurRadius = 0,
   variant = 'light',
   force = false,
   style,
@@ -113,12 +118,15 @@ export function AmbientBackground({
  */
 export function AmbientMosaic({
   sources,
-  blurRadius = 5,
+  blurOpacity,
+  blurRadius = 18,
   variant = 'light',
   style,
   intervalMs = 10000,
 }: {
   sources: string[]
+  /** 0 = sharp, 1 = blurred. Drive it from the list scroll position. */
+  blurOpacity?: Animated.Value
   blurRadius?: number
   variant?: Variant
   style?: StyleProp<ViewStyle>
@@ -175,15 +183,22 @@ export function AmbientMosaic({
 
   if (!settings.adaptive || !sources.length) return null
 
-  const renderSlide = (value: number) => (
-    <View style={StyleSheet.absoluteFill}>
-      <AmbientImage
-        uri={sources[value % sources.length]}
-        transition={0}
-        blurRadius={blurRadius}
-      />
-    </View>
-  )
+  const renderSlide = (value: number) => {
+    const uri = sources[value % sources.length]
+    return (
+      <View style={StyleSheet.absoluteFill}>
+        <AmbientImage uri={uri} transition={0} />
+        {blurOpacity ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { opacity: blurOpacity }]}
+          >
+            <AmbientImage uri={uri} transition={0} blurRadius={blurRadius} />
+          </Animated.View>
+        ) : null}
+      </View>
+    )
+  }
 
   return (
     <View
