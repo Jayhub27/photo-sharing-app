@@ -69,7 +69,7 @@ export function AmbientBackground({
   kind,
   id,
   src,
-  blurRadius = 10,
+  blurRadius = 5,
   variant = 'light',
   force = false,
   style,
@@ -111,7 +111,7 @@ export function AmbientBackground({
  */
 export function AmbientMosaic({
   sources,
-  blurRadius = 10,
+  blurRadius = 5,
   variant = 'light',
   style,
   intervalMs = 10000,
