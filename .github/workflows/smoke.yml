@@ -102,7 +102,17 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Dispatch rollback and re-verify
-        run: gh workflow run rollback.yml -f verify=true
+        run: |
+          # Never flap: if a rollback ran in the last 30 minutes, leave it alone.
+          LAST=$(gh run list --workflow=rollback.yml --limit 1 --json createdAt --jq '.[0].createdAt // empty')
+          if [ -n "$LAST" ]; then
+            AGE=$(( $(date +%s) - $(date -d "$LAST" +%s) ))
+            if [ "$AGE" -lt 1800 ]; then
+              echo "A rollback ran ${AGE}s ago; not dispatching another one."
+              exit 0
+            fi
+          fi
+          gh workflow run rollback.yml -f verify=true
 
   preview:
     name: Preview smoke
