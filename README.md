@@ -228,13 +228,24 @@ In CI: `gh workflow run rollback.yml -f deployment=<url>` (needs
 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`). The workflow rolls back
 and then re-runs the smoke suite against production.
 
+**Automatic:** when production smoke fails for the commit `main` points at,
+`smoke.yml` opens an incident issue and dispatches `rollback.yml`. The job is
+guarded by `deployment.sha == github.sha`, so a rollback deployment (an older
+commit) can never trigger another rollback. Automatic rollback needs the three
+Vercel secrets above; without them the dispatch fails with a clear message and
+the incident issue is still opened.
+
 ### Error tracking and alerts
 
-Set `SENTRY_DSN` to switch on Sentry; without it `captureException` is a no-op.
-Server errors flow through one Express error handler, and unhandled rejections
-and uncaught exceptions are reported with the deploy's commit as the release.
+Set `SENTRY_DSN` to switch on Sentry. Without it, `ALERT_WEBHOOK_URL` receives a
+compact message (Discord shape, one per 30 s); with neither, reporting is a
+no-op. Server errors flow through one Express error handler, and unhandled
+rejections and uncaught exceptions are reported with the deploy's commit as the
+release.
 
-Set `DISCORD_WEBHOOK` to get a ping when the synthetic check fails.
+The 15-minute synthetic check needs no secrets: it opens a GitHub issue on
+failure and closes it on the next green run, so GitHub's own notifications are
+the always-on channel. Set `DISCORD_WEBHOOK` to add a chat ping.
 
 ### Environment contract
 

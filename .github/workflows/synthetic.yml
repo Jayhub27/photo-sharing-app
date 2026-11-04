@@ -16,6 +16,9 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     env:
       SHIP_URL: https://take-the-shot-api.vercel.app
     steps:
@@ -36,6 +39,32 @@ jobs:
       - name: Live verification
         id: verify
         run: node scripts/verify.mjs
+
+      - name: Open or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TITLE="Production synthetic check failing"
+          BODY="The 15-minute check failed against $SHIP_URL.
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
+
+      - name: Close the incident when healthy
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh issue list --state open --search "Production synthetic check failing in:title" --json number --jq '.[].number' | while read -r n; do
+            [ -n "$n" ] && gh issue close "$n" --comment "Resolved by a green run: $SHIP_URL"
+          done
 
       - name: Alert Discord
         if: failure() && env.DISCORD_WEBHOOK != ''

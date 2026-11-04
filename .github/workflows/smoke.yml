@@ -17,6 +17,11 @@ concurrency:
   group: smoke-${{ github.event.deployment_status.environment || inputs.url }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
 jobs:
   production:
     name: Production smoke
@@ -53,6 +58,51 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  incident:
+    name: Open incident
+    needs: production
+    if: failure() && github.event_name == 'deployment_status'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Open or update the incident issue
+        run: |
+          SHA="${{ github.event.deployment.sha }}"
+          TITLE="Production smoke failed at ${SHA:0:7}"
+          BODY="Deployment: ${{ github.event.deployment_status.environment_url }}
+          Commit: $SHA
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          EXISTING=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
+
+  auto-rollback:
+    name: Auto rollback
+    needs: production
+    # Only roll back the commit that main points at. A rollback itself produces
+    # a deployment of an older commit, so it can never trigger another one.
+    if: >-
+      failure() && github.event_name == 'deployment_status' &&
+      github.event.deployment_status.environment == 'Production' &&
+      github.event.deployment.sha == github.sha
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Dispatch rollback and re-verify
+        run: gh workflow run rollback.yml -f verify=true
 
   preview:
     name: Preview smoke
