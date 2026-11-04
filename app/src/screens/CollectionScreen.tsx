@@ -24,6 +24,7 @@ import {
   deletePhoto as deletePhotoApi,
   getCollection,
   getPayoutStatus,
+  getSalesSummary,
   imageHeaders,
   importFromLinks,
   photoUrl,
@@ -89,6 +90,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const [photoPriceText, setPhotoPriceText] = useState('')
   const [savingPhotoPrice, setSavingPhotoPrice] = useState(false)
   const [payout, setPayout] = useState<PayoutStatus | null>(null)
+  const [sales, setSales] = useState<{ platformHeldCents?: number; platformHeldCount?: number; currency: string } | null>(null)
   const [connecting, setConnecting] = useState(false)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [expiryOpen, setExpiryOpen] = useState(false)
@@ -178,6 +180,11 @@ export default function CollectionScreen({ route, navigation }: Props) {
     getPayoutStatus()
       .then((s) => {
         if (active) setPayout(s)
+      })
+      .catch(() => {})
+    getSalesSummary(id)
+      .then((s) => {
+        if (active) setSales(s)
       })
       .catch(() => {})
     return () => {
@@ -797,6 +804,13 @@ export default function CollectionScreen({ route, navigation }: Props) {
                   </AnimatedButton>
                 </View>
               ))}
+            {sales?.platformHeldCents ? (
+              <Text style={[modalStyles.hint, { marginTop: 12 }]}>
+                {formatCents(sales.platformHeldCents, sales.currency)} is held on the platform:{' '}
+                {sales.platformHeldCount || 0} sale{(sales.platformHeldCount || 0) === 1 ? '' : 's'} completed
+                before Stripe onboarding finished.
+              </Text>
+            ) : null}
           </View>
         </View>
       </Modal>

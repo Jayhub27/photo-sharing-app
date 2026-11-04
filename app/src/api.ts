@@ -517,6 +517,21 @@ export async function getPayoutStatus(): Promise<PayoutStatus> {
   return res.json()
 }
 
+export interface SalesSummary {
+  count: number
+  gross_cents: number
+  platformHeldCents?: number
+  platformHeldCount?: number
+  currency: string
+}
+
+export async function getSalesSummary(collectionId: string): Promise<SalesSummary> {
+  const res = await fetch(`${resolveBase()}/api/collections/${collectionId}/sales`, { headers: headers() })
+  if (res.status === 401) throw new Error('Not authenticated')
+  if (!res.ok) throw await errorFrom(res, 'Could not load sales')
+  return res.json()
+}
+
 export async function startPayoutOnboarding(collectionId: string): Promise<{ url: string; accountId: string }> {
   const res = await fetch(`${resolveBase()}/api/stripe/connect`, {
     method: 'POST',
