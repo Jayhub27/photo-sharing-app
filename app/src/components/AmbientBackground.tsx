@@ -68,21 +68,26 @@ function AmbientImage({
 export function AmbientBackground({
   kind,
   id,
+  src,
+  blurRadius = 18,
   variant = 'light',
   force = false,
   style,
 }: {
   kind: 'collection' | 'photo'
   id?: string | null
+  /** Full URL to a real photograph; falls back to the blurred ambient derivative. */
+  src?: string | null
+  blurRadius?: number
   variant?: Variant
   force?: boolean
   style?: StyleProp<ViewStyle>
 }) {
   const { settings } = useAppearance()
-  if (!id) return null
+  if (!id && !src) return null
   if (!settings.adaptive && !force) return null
 
-  const uri = kind === 'collection' ? ambientCollectionUrl(id) : ambientPhotoUrl(id)
+  const uri = src || (kind === 'collection' ? ambientCollectionUrl(id!) : ambientPhotoUrl(id!))
   return (
     <View
       pointerEvents="none"
@@ -90,23 +95,29 @@ export function AmbientBackground({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <AmbientImage uri={uri} transition={settings.reduceMotion ? 0 : 350} />
+      <AmbientImage
+        uri={uri}
+        transition={settings.reduceMotion ? 0 : 350}
+        blurRadius={blurRadius}
+      />
       <Wash variant={variant} intensity={settings.intensity} />
     </View>
   )
 }
 
 /**
- * Home rotates through the collection covers one at a time, full-bleed.
- * Ten seconds per cover with a slow crossfade; reduce motion keeps the first.
+ * Home rotates through photographs from the collections, full-bleed.
+ * Ten seconds per photo with a slow crossfade; reduce motion keeps the first.
  */
 export function AmbientMosaic({
-  ids,
+  sources,
+  blurRadius = 22,
   variant = 'light',
   style,
   intervalMs = 10000,
 }: {
-  ids: string[]
+  sources: string[]
+  blurRadius?: number
   variant?: Variant
   style?: StyleProp<ViewStyle>
   intervalMs?: number
@@ -116,9 +127,9 @@ export function AmbientMosaic({
   const [baseStep, setBaseStep] = useState(0)
   const [incoming, setIncoming] = useState<number | null>(null)
   const fade = useRef(new Animated.Value(1)).current
-  const idsKey = ids.join('|')
+  const idsKey = sources.join('|')
 
-  // A new set of covers starts from the beginning rather than mid-transition.
+  // A new set of photos starts from the beginning rather than mid-transition.
   useEffect(() => {
     setStep(0)
     setBaseStep(0)
@@ -127,10 +138,10 @@ export function AmbientMosaic({
   }, [idsKey, fade])
 
   useEffect(() => {
-    if (!settings.adaptive || settings.reduceMotion || ids.length < 2) return
+    if (!settings.adaptive || settings.reduceMotion || sources.length < 2) return
     const timer = setInterval(() => setStep((value) => value + 1), intervalMs)
     return () => clearInterval(timer)
-  }, [settings.adaptive, settings.reduceMotion, ids.length, intervalMs])
+  }, [settings.adaptive, settings.reduceMotion, sources.length, intervalMs])
 
   useEffect(() => {
     if (step === baseStep) return
@@ -160,13 +171,14 @@ export function AmbientMosaic({
     return () => clearTimeout(fallback)
   }, [step, baseStep, fade])
 
-  if (!settings.adaptive || !ids.length) return null
+  if (!settings.adaptive || !sources.length) return null
 
   const renderSlide = (value: number) => (
     <View style={StyleSheet.absoluteFill}>
       <AmbientImage
-        uri={ambientCollectionUrl(ids[value % ids.length])}
+        uri={sources[value % sources.length]}
         transition={0}
+        blurRadius={blurRadius}
       />
     </View>
   )

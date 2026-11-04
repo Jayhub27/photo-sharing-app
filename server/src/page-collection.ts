@@ -655,7 +655,10 @@ async function load(append) {
     expiresAt = data.collection.expires_at || null;
     pricing = data.pricing || pricing;
     if (!append && window.setAmbient) {
-      window.setAmbient([BASE + '/api/collections/' + CID + '/ambient']);
+      var cover = data.collection.cover_filename;
+      window.setAmbient([cover
+        ? BASE + '/api/photos/' + encodeURIComponent(cover) + '?thumb=1'
+        : BASE + '/api/collections/' + CID + '/ambient']);
     }
     photos = append ? photos.concat(data.photos) : data.photos;
     offset = photos.length;

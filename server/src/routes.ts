@@ -784,6 +784,79 @@ router.get('/photos/:id/ambient', optionalAuth, async (req: AuthedRequest, res) 
   res.type('image/jpeg').send(Buffer.from(await blob.arrayBuffer()))
 })
 
+/**
+ * Photos for the home backdrop slideshow.
+ *
+ * The ambient derivative is a 48 px wash meant to tint a surface, not to be
+ * looked at. The home slideshow shows the photographs themselves, so this
+ * returns real thumbnails, interleaved across every collection the person can
+ * open (newest collection first, newest photo first inside each).
+ */
+router.get('/ambient/feed', authMiddleware, async (req: AuthedRequest, res) => {
+  const limit = clampInt(req.query.limit, 12, 1, 24)
+
+  const { data: memberships } = await supabase
+    .from('collection_members')
+    .select('collection_id')
+    .eq('user_id', req.userId)
+  const memberIds = (memberships || []).map((m) => m.collection_id)
+
+  let collectionsQuery = supabase
+    .from('collections')
+    .select('id, name, created_at')
+    .order('created_at', { ascending: false })
+    .limit(40)
+  collectionsQuery = memberIds.length
+    ? collectionsQuery.or(`user_id.eq.${req.userId},id.in.(${memberIds.join(',')})`)
+    : collectionsQuery.eq('user_id', req.userId)
+
+  const { data: collections } = await collectionsQuery
+  const ids = (collections || []).map((c) => c.id)
+  if (!ids.length) return res.json({ photos: [] })
+
+  const names = new Map((collections || []).map((c) => [c.id, c.name as string]))
+  const { data: photos } = await supabase
+    .from('photos')
+    .select('id, filename, thumb_filename, collection_id, created_at')
+    .in('collection_id', ids)
+    .order('created_at', { ascending: false })
+    .limit(Math.max(limit * 6, 60))
+
+  const perCollection = new Map<string, typeof photos>()
+  for (const photo of photos || []) {
+    const list = perCollection.get(photo.collection_id) || []
+    if (list.length < 6) list.push(photo)
+    perCollection.set(photo.collection_id, list)
+  }
+
+  const feed: Array<{
+    id: string
+    filename: string
+    thumb_filename: string | null
+    collection_id: string
+    collection_name: string
+  }> = []
+  for (let round = 0; feed.length < limit; round += 1) {
+    let added = false
+    for (const id of ids) {
+      const photo = (perCollection.get(id) || [])[round]
+      if (!photo) continue
+      feed.push({
+        id: photo.id,
+        filename: photo.filename,
+        thumb_filename: photo.thumb_filename || null,
+        collection_id: id,
+        collection_name: names.get(id) || '',
+      })
+      added = true
+      if (feed.length >= limit) break
+    }
+    if (!added) break
+  }
+
+  res.json({ photos: feed })
+})
+
 router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, res) => {
   const { data: col } = await supabase.from('collections').select('*').eq('id', req.params.id).maybeSingle()
   if (!col) return res.status(404).json({ error: 'Collection not found' })

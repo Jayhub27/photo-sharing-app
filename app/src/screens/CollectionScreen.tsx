@@ -58,6 +58,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   const { id, name } = route.params
   const insets = useSafeAreaInsets()
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [coverSrc, setCoverSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -127,6 +128,8 @@ export default function CollectionScreen({ route, navigation }: Props) {
         setRole(res.role)
         setIsPublic(res.collection.is_public !== false)
         setExpiresAt(res.collection.expires_at || null)
+        const cover = res.collection.cover_filename
+        setCoverSrc(cover ? photoUrl(cover, { thumb: true }) : null)
         if (res.pricing) setPricing(res.pricing)
         offsetRef.current = res.photos.length
         newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')
@@ -447,7 +450,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
 
   return (
     <View style={s.screen}>
-      <AmbientBackground kind="collection" id={id} variant="light" />
+      <AmbientBackground kind="collection" id={id} src={coverSrc} variant="light" />
 
       <FadeIn>
         <View style={[c.head, glassLight, { marginTop: insets.top + 10 }]}>

@@ -120,10 +120,18 @@ async function load(append) {
     const collections = data.collections;
     total = data.total;
     if (!append && window.setAmbient) {
-      window.setAmbient(collections
+      var covers = collections
         .filter(function(c){ return c.has_ambient || c.cover_filename || c.cover_thumb_filename; })
         .slice(0, 4)
-        .map(function(c){ return BASE + '/api/collections/' + c.id + '/ambient'; }));
+        .map(function(c){ return BASE + '/api/collections/' + c.id + '/ambient'; });
+      fetch(BASE + '/api/ambient/feed?limit=8', { credentials: 'include' })
+        .then(function(r){ return r.ok ? r.json() : { photos: [] }; })
+        .then(function(data){
+          var photos = (data.photos || [])
+            .map(function(p){ return BASE + '/api/photos/' + encodeURIComponent(p.filename) + '?thumb=1'; });
+          if (window.setAmbient) window.setAmbient(photos.length ? photos : covers);
+        })
+        .catch(function(){ if (window.setAmbient) window.setAmbient(covers); });
     }
     if (!collections.length) {
       document.getElementById('loadMore').classList.add('hidden');

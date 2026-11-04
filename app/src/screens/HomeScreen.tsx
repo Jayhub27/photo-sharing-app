@@ -16,9 +16,12 @@ import type { CompositeScreenProps } from '@react-navigation/native'
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import {
+  ambientCollectionUrl,
+  ambientFeed,
   imageHeaders,
   listCollections,
   photoUrl,
+  type AmbientSlide,
   type AppTabParamList,
   type Collection,
   type RootStackParamList,
@@ -161,6 +164,7 @@ export default function HomeScreen({ navigation }: Props) {
   const { settings } = useAppearance()
 
   const [collections, setCollections] = useState<Collection[]>([])
+  const [ambientSlides, setAmbientSlides] = useState<AmbientSlide[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -182,15 +186,19 @@ export default function HomeScreen({ navigation }: Props) {
     if (!opts.silent) setLoading(true)
     setError(null)
     try {
-      const res = await listCollections({
-        q,
-        limit: PAGE_SIZE,
-        offset: 0,
-        sort: sortRef.current,
-        filter: filterRef.current,
-      })
+      const [res, feed] = await Promise.all([
+        listCollections({
+          q,
+          limit: PAGE_SIZE,
+          offset: 0,
+          sort: sortRef.current,
+          filter: filterRef.current,
+        }),
+        ambientFeed(12).catch(() => [] as AmbientSlide[]),
+      ])
       if (id !== requestId.current) return
       setCollections(res.collections)
+      setAmbientSlides(feed)
       setTotal(res.total)
       setHasMore(res.hasMore)
       offsetRef.current = res.collections.length
@@ -267,6 +275,10 @@ export default function HomeScreen({ navigation }: Props) {
     .filter((c) => c.has_ambient || c.cover_filename || c.cover_thumb_filename)
     .slice(0, 4)
     .map((c) => c.id)
+  // Real photographs when the feed has them, collection covers as the fallback.
+  const ambientSources = ambientSlides.length
+    ? ambientSlides.map((p) => photoUrl(p.filename, { thumb: true }))
+    : ambientIds.map((cid) => ambientCollectionUrl(cid))
   const palette = featured?.ambient_colors?.length
     ? featured.ambient_colors
     : collections.find((c) => c.ambient_colors?.length)?.ambient_colors || []
@@ -315,7 +327,9 @@ export default function HomeScreen({ navigation }: Props) {
         >
           <View style={[s.statusDot, { backgroundColor: palette[0] || wg.color.teal }]} />
           <Text style={s.adaptiveText}>
-            {settings.adaptive ? `Adaptive · ${Math.max(1, ambientIds.length)} covers` : 'Warm paper'}
+            {settings.adaptive
+              ? `Adaptive · ${Math.max(1, ambientSources.length)} photo${ambientSources.length === 1 ? '' : 's'}`
+              : 'Warm paper'}
           </Text>
           <View style={s.dots}>
             {(palette.length ? palette : [wg.color.teal, wg.color.bronze, wg.color.line]).slice(0, 4).map((c, i) => (
@@ -370,7 +384,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (loading) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic ids={ambientIds} />
+        <AmbientMosaic sources={ambientSources} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -385,7 +399,7 @@ export default function HomeScreen({ navigation }: Props) {
   if (error) {
     return (
       <View style={s.screen}>
-        <AmbientMosaic ids={ambientIds} />
+        <AmbientMosaic sources={ambientSources} />
         <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 22 }}>
           <View style={[s.topbar, glassLight]}>
             <Text style={s.wordmark}>Take the shot</Text>
@@ -404,7 +418,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={s.screen}>
-      <AmbientMosaic ids={ambientIds} />
+      <AmbientMosaic sources={ambientSources} />
       <FlatList
         data={rest}
         keyExtractor={(item) => item.id}

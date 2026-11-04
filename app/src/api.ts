@@ -206,6 +206,22 @@ export async function me(): Promise<{ user: User }> {
 
 /* ------------------------------------------------------------ collections */
 
+export interface AmbientSlide {
+  id: string
+  filename: string
+  thumb_filename?: string | null
+  collection_id: string
+  collection_name: string
+}
+
+/** Real photographs from every collection the person can open, for the home backdrop. */
+export async function ambientFeed(limit = 12): Promise<AmbientSlide[]> {
+  const res = await fetch(`${resolveBase()}/api/ambient/feed?limit=${limit}`, { headers: headers() })
+  if (!res.ok) return []
+  const data = await res.json().catch(() => ({}))
+  return Array.isArray(data.photos) ? data.photos : []
+}
+
 export async function listCollections(
   opts: { q?: string; limit?: number; offset?: number; sort?: 'newest' | 'name'; filter?: 'all' | 'owned' | 'shared' } = {}
 ): Promise<{
