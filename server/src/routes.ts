@@ -1575,14 +1575,20 @@ router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) =
           },
         })
         created = account.id
-      } catch {
-        const account = await s.accounts.create({
-          type: 'express',
-          email: user?.email || undefined,
-          capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-          metadata: { user_id: req.userId || '' },
-        })
-        created = account.id
+      } catch (v2Err: any) {
+        try {
+          const account = await s.accounts.create({
+            type: 'express',
+            email: user?.email || undefined,
+            capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+            metadata: { user_id: req.userId || '' },
+          })
+          created = account.id
+        } catch (v1Err: any) {
+          throw new Error(
+            `Accounts v2 failed: ${v2Err?.message || v2Err} | Accounts v1 failed: ${v1Err?.message || v1Err}`
+          )
+        }
       }
       accountId = created
       const { error: saveErr } = await supabase
