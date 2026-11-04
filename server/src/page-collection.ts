@@ -43,7 +43,16 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     <button class="btn small" id="saveBtn">Save to my account</button>
   </div>
 
-  <div id="paywall" class="paywall hidden">
+  <div class="checkout-splash hidden" id="checkoutSplash" role="status" aria-live="polite">
+  <div class="checkout-splash-card">
+    <span class="spinner"></span>
+    <h2>Opening secure checkout</h2>
+    <p class="hint">Stripe takes the card. You can come back to the photos any time.</p>
+    <button class="btn outline small" id="checkoutCancel" type="button">View the photos first</button>
+  </div>
+</div>
+
+<div id="paywall" class="paywall hidden">
     <div>
       <strong id="paywallTitle">Unlock the originals</strong>
       <div class="hint" id="paywallHint"></div>
@@ -300,6 +309,10 @@ let selectMode = false;
 let lastIndex = -1;
 let lightboxIndex = -1;
 let dragging = false;
+let autoBuy = false, autoBuyStarted = false;
+try {
+  autoBuy = new URLSearchParams(location.search).get('buy') === '1';
+} catch (e) {}
 
 try {
   photoSort = localStorage.getItem('tts.photoSort') || 'newest';
@@ -366,6 +379,20 @@ function updateChrome() {
   const strip = document.getElementById('salesStrip');
   strip.classList.toggle('hidden', !(canManage && pricing.price_cents));
   renderMeta();
+  maybeAutoBuy();
+}
+
+// Scanning a paid collection's QR lands on /c/<id>?buy=1. Send that straight
+// to Stripe once the pricing state is known; a buyer who already paid, or an
+// owner, just gets the gallery.
+function maybeAutoBuy() {
+  if (!autoBuy || autoBuyStarted) return;
+  if (!pricing || !pricing.locked || canEdit) return;
+  autoBuyStarted = true;
+  autoBuy = false;
+  try { history.replaceState(null, '', '/c/' + CID); } catch (e) {}
+  document.getElementById('checkoutSplash').classList.remove('hidden');
+  buy();
 }
 
 function photoSrc(p) {
@@ -699,18 +726,24 @@ async function saveCollection() {
 async function buy() {
   const btn = document.getElementById('buyBtn');
   btn.disabled = true;
+  const hideSplash = function () {
+    const el = document.getElementById('checkoutSplash');
+    if (el) el.classList.add('hidden');
+  };
   try {
     const res = await fetch(BASE + '/api/collections/' + CID + '/checkout', { method: 'POST', credentials: 'include' });
     const data = await res.json().catch(function () { return {}; });
     if (data.url) { window.location.href = data.url; return; }
-    if (data.alreadyPurchased) { toast('You already own this collection', 'success'); location.reload(); return; }
+    if (data.alreadyPurchased) { hideSplash(); toast('You already own this collection', 'success'); location.reload(); return; }
     const hint = data.code === 'schema_missing'
       ? 'Database setup needed: run the selling section of supabase/schema.sql in the Supabase SQL editor.'
       : data.code === 'stripe_not_configured'
         ? 'Payments are not configured yet: set STRIPE_SECRET_KEY on the server.'
         : data.error || 'Could not start checkout';
+    hideSplash();
     toast(hint, 'error');
   } catch {
+    hideSplash();
     toast('Could not start checkout', 'error');
   }
   btn.disabled = false;
@@ -1439,6 +1472,9 @@ document.getElementById('moreBtn').addEventListener('click', function (e) { e.st
 
 document.getElementById('saveBtn').addEventListener('click', saveCollection);
 document.getElementById('buyBtn').addEventListener('click', buy);
+document.getElementById('checkoutCancel').addEventListener('click', function () {
+  document.getElementById('checkoutSplash').classList.add('hidden');
+});
 document.getElementById('savePrice').addEventListener('click', savePrice);
 document.getElementById('importBtn').addEventListener('click', runImport);
 document.getElementById('inviteBtn').addEventListener('click', inviteMember);

@@ -564,6 +564,10 @@ html[data-theme="dark"] .create-bar input,html[data-theme="dark"] .controls inpu
 html[data-theme="dark"] .modal-card{background:rgba(30,24,19,.98);border-color:rgba(255,255,255,.12)}
 .modal-head h2{font-family:var(--font-display);font-size:28px;font-weight:400}
 .menu,.context-menu,.select-bar,.note,.sales-strip,.paywall{background:var(--surface);border-color:var(--border);border-radius:var(--r);backdrop-filter:blur(18px)}
+.checkout-splash{position:fixed;inset:0;z-index:220;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.checkout-splash-card{width:100%;max-width:420px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;padding:34px 28px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-2);backdrop-filter:blur(18px)}
+.checkout-splash-card h2{font-family:var(--font-display);font-size:30px;font-weight:400;margin:0;letter-spacing:-.01em}
+.checkout-splash-card .hint{color:var(--muted);font-size:14px;line-height:1.5;margin:0}
 .paywall{background:var(--accent);color:var(--on-accent);border:0;border-radius:var(--r-lg)}
 .paywall strong{font-family:var(--font-display);font-weight:400}
 .paywall .hint{color:rgba(250,245,234,.7)}

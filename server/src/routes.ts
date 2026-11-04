@@ -705,9 +705,16 @@ router.delete('/collections/:id', authMiddleware, async (req: AuthedRequest, res
 })
 
 router.get('/collections/:id/qr', async (req, res) => {
-  const { data: col } = await supabase.from('collections').select('id').eq('id', req.params.id).maybeSingle()
+  const { data: col } = await supabase
+    .from('collections')
+    .select('id, price_cents')
+    .eq('id', req.params.id)
+    .maybeSingle()
   if (!col) return res.status(404).json({ error: 'Collection not found' })
-  const url = `${publicBaseUrl(req)}/c/${req.params.id}`
+  // A priced collection's QR is a buy code: scanning it opens Stripe Checkout
+  // straight away instead of asking the buyer to find the Buy button.
+  const buy = Number(col.price_cents) > 0 ? '?buy=1' : ''
+  const url = `${publicBaseUrl(req)}/c/${req.params.id}${buy}`
   const qrPng = await QRCode.toBuffer(url, { width: 600 })
   res.type('png').send(qrPng)
 })
