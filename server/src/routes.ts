@@ -1426,7 +1426,14 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
     .select('stripe_account_id')
     .eq('id', access.col.user_id)
     .maybeSingle()
-  const destination = owner?.stripe_account_id
+  // Only route money to the seller once their Connect account can actually
+  // receive transfers. A half-onboarded account makes Stripe reject the whole
+  // session, which used to break checkout for every buyer of that collection.
+  let destination: string | undefined
+  if (owner?.stripe_account_id) {
+    const status = await connectAccountStatus(owner.stripe_account_id)
+    if (status?.payoutsEnabled || status?.chargesEnabled) destination = owner.stripe_account_id
+  }
   if (destination) {
     params.payment_intent_data = { transfer_data: { destination } }
     const fee = applicationFeePercent()
