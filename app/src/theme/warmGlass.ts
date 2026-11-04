@@ -32,7 +32,7 @@ export const wg = {
     sansMedium: 'InstrumentSans_500Medium',
     sansSemi: 'InstrumentSans_600SemiBold',
   },
-  wash: { subtle: 0.58, balanced: 0.42, vivid: 0.26 },
+  wash: { subtle: 0.36, balanced: 0.26, vivid: 0.16 },
 } as const
 
 export const glassLight: ViewStyle = {

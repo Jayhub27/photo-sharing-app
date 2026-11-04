@@ -508,7 +508,7 @@ export const WARM_GLASS_CSS = `
 @font-face{font-family:'Instrument Serif';src:url('/fonts/instrument-serif-italic-latin.woff2') format('woff2');font-weight:400;font-style:italic;font-display:swap}
 :root{
   --bg:#F4EFE5;--surface:rgba(255,252,245,.8);--surface-2:#EDE5D7;--elevated:rgba(255,252,245,.94);
-  --text:#211C15;--muted:#6F6557;--border:rgba(33,28,21,.12);--border-strong:rgba(33,28,21,.28);
+  --text:#211C15;--muted:#5E5445;--border:rgba(33,28,21,.12);--border-strong:rgba(33,28,21,.28);
   --accent:#211C15;--accent-soft:rgba(150,118,77,.14);--accent-text:#96764D;--on-accent:#FAF5EA;
   --danger:#8C1D18;--danger-soft:rgba(140,29,24,.1);--ok:#5E6347;
   --r-sm:12px;--r:18px;--r-lg:26px;--r-pill:999px;
@@ -516,7 +516,7 @@ export const WARM_GLASS_CSS = `
   --shadow-2:0 18px 40px -22px rgba(60,43,22,.3);
   --font-ui:'Instrument Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-display:'Instrument Serif',Georgia,serif;
-  --ambient-wash:linear-gradient(180deg,rgba(244,239,229,.5) 0%,rgba(244,239,229,.62) 46%,rgba(244,239,229,.9) 100%);
+  --ambient-wash:linear-gradient(180deg,rgba(244,239,229,.58) 0%,rgba(244,239,229,.44) 36%,rgba(244,239,229,.86) 100%);
   --wrap:1120px;
 }
 html[data-theme="dark"]{
@@ -525,7 +525,7 @@ html[data-theme="dark"]{
   --accent:#FAF5EA;--accent-soft:rgba(180,140,86,.16);--accent-text:#E7C08B;--on-accent:#211C15;
   --danger:#E5795C;--danger-soft:rgba(229,121,92,.12);--ok:#9AAE82;
   --shadow-1:0 1px 2px rgba(0,0,0,.35);--shadow-2:0 18px 44px -18px rgba(0,0,0,.6);
-  --ambient-wash:linear-gradient(180deg,rgba(23,19,15,.56) 0%,rgba(23,19,15,.68) 46%,rgba(23,19,15,.94) 100%);
+  --ambient-wash:linear-gradient(180deg,rgba(23,19,15,.62) 0%,rgba(23,19,15,.5) 36%,rgba(23,19,15,.9) 100%);
 }
 html{background:var(--bg)}
 body{background:transparent;font-family:var(--font-ui);font-size:15px;line-height:1.55;font-weight:400}

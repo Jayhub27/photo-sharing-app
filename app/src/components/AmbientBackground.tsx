@@ -23,16 +23,18 @@ const washAlpha: Record<Intensity, number> = {
 
 function Wash({ variant, intensity }: { variant: Variant; intensity: Intensity }) {
   const a = washAlpha[intensity]
+  // The hero title and subtitle sit in the top third, so the paper is densest
+  // there; below it the photograph comes through at close to full strength.
   const colors: [string, string, string] =
     variant === 'light'
-      ? [paperRgba(a), paperRgba(Math.max(0.2, a - 0.1)), paperRgba(Math.min(1, a + 0.14))]
-      : [darkRgba(0.44), darkRgba(0.16), darkRgba(0.62)]
+      ? [paperRgba(Math.min(1, a + 0.26)), paperRgba(a + 0.04), paperRgba(Math.min(1, a + 0.22))]
+      : [darkRgba(0.5), darkRgba(0.24), darkRgba(0.5)]
 
   return (
     <LinearGradient
       pointerEvents="none"
       colors={colors}
-      locations={[0, 0.52, 1]}
+      locations={[0, 0.34, 1]}
       style={StyleSheet.absoluteFill}
     />
   )
