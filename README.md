@@ -286,7 +286,10 @@ link an existing account.
 
 Checkout refuses with `409 payouts_not_ready` while a linked account has not
 activated its `transfers` capability, instead of charging the buyer and keeping
-the money on the platform. The webhook also handles `charge.refunded` and
+the money on the platform. Set `PLATFORM_COLLECTS=1` to take those sales anyway
+while onboarding is in progress: each one is stored with
+`purchases.payout_status = 'platform'` and the collection's Sales panel shows the
+held amount. The webhook also handles `charge.refunded` and
 `charge.dispute.created`, which flip the purchase to `refunded`/`disputed` and
 revoke access; subscribe the endpoint to both events alongside
 `checkout.session.completed`.

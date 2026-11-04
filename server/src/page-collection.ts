@@ -765,6 +765,9 @@ async function loadSales() {
     if (!data.stripeConfigured) {
       html += '<div class="note warn" style="margin-top:10px"><span><strong>Stripe keys missing.</strong> Set STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) to accept payments.</span></div>';
     }
+    if (data.platformHeldCents > 0) {
+      html += '<div class="note warn" style="margin-top:10px"><span><strong>' + money(data.platformHeldCents, data.currency) + ' is held on the platform.</strong> ' + (data.platformHeldCount || 0) + ' sale' + (data.platformHeldCount === 1 ? '' : 's') + ' happened before the seller finished Stripe onboarding, so the money was not transferred yet.</span></div>';
+    }
     const rows = (data.sales || []).map(function (s) {
       return '<div class="sale-row"><span>' + esc(s.buyer_email || 'Buyer') + '<br><span class="hint">' + new Date(s.created_at).toLocaleDateString() + '</span></span><span class="amount">' + money(s.amount_cents, s.currency) + (s.status === 'paid' ? '' : ' \u00b7 ' + esc(s.status)) + '</span></div>';
     }).join('');

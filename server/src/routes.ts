@@ -1599,6 +1599,7 @@ async function recordPurchase(session: any) {
     status: paid ? 'paid' : 'pending',
     paid_at: paid ? new Date().toISOString() : null,
     buyer_email: buyerEmail || null,
+    payout_status: session.metadata?.payout === 'platform' ? 'platform' : 'destination',
     stripe_payment_intent:
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null,
   }
@@ -1678,7 +1679,11 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
     ],
     success_url: `${base}/c/${access.col.id}?purchased=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${base}/c/${access.col.id}?canceled=1`,
-    metadata: { collection_id: access.col.id, buyer_user_id: req.userId || '' },
+    metadata: {
+      collection_id: access.col.id,
+      buyer_user_id: req.userId || '',
+      payout: 'platform',
+    },
   }
   if (email) params.customer_email = email
 
@@ -1700,14 +1705,22 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
       })
     }
     if (!status.transfersEnabled) {
-      // Taking the money would leave it on the platform with no transfer, so
-      // stop before charging anyone.
-      return res.status(409).json({
-        error: 'This seller is still finishing Stripe onboarding',
-        code: 'payouts_not_ready',
-      })
+      // The seller cannot receive transfers yet. Refuse by default; with
+      // PLATFORM_COLLECTS=1 the sale proceeds and is recorded as held on the
+      // platform so the owner can see it, rather than routing nowhere silently.
+      if (process.env.PLATFORM_COLLECTS !== '1') {
+        return res.status(409).json({
+          error: 'This seller is still finishing Stripe onboarding',
+          code: 'payouts_not_ready',
+        })
+      }
+      console.warn(
+        `[checkout] platform collects ${price} ${currency} for collection ${access.col.id}: seller ${access.col.user_id} has no transfers capability`
+      )
+    } else {
+      destination = owner.stripe_account_id
+      params.metadata.payout = 'destination'
     }
-    destination = owner.stripe_account_id
   }
   if (destination) {
     params.payment_intent_data = { transfer_data: { destination } }
@@ -1777,15 +1790,18 @@ router.get('/collections/:id/sales', authMiddleware, async (req: AuthedRequest, 
 
   const { data: sales } = await supabase
     .from('purchases')
-    .select('id, buyer_email, amount_cents, currency, status, created_at, paid_at')
+    .select('id, buyer_email, amount_cents, currency, status, payout_status, created_at, paid_at')
     .eq('collection_id', req.params.id)
     .order('created_at', { ascending: false })
     .limit(200)
   const paid = (sales || []).filter((s) => s.status === 'paid')
+  const held = paid.filter((s) => s.payout_status === 'platform')
   res.json({
     sales: sales || [],
     count: paid.length,
     gross_cents: paid.reduce((sum, s) => sum + (s.amount_cents || 0), 0),
+    platformHeldCents: held.reduce((sum, s) => sum + (s.amount_cents || 0), 0),
+    platformHeldCount: held.length,
     currency: paid[0]?.currency || normalizeCurrency(access.col.currency) || 'usd',
     schemaReady,
     stripeConfigured: isStripeConfigured(),

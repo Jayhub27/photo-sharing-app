@@ -110,6 +110,7 @@ create table if not exists public.purchases (
   status                text not null default 'pending',
   stripe_session_id     text unique,
   stripe_payment_intent text,
+  payout_status         text,
   created_at            timestamptz not null default now(),
   paid_at               timestamptz
 );
