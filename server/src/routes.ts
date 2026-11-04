@@ -1564,6 +1564,12 @@ router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) =
           display_name: user?.name || undefined,
           dashboard: 'express',
           identity: { country: 'US' },
+          defaults: {
+            responsibilities: {
+              fees_collector: 'application_express',
+              losses_collector: 'application',
+            },
+          },
           configuration: {
             recipient: {
               capabilities: {
