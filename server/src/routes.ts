@@ -1536,7 +1536,7 @@ router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) =
   }
   const { data: user, error: readErr } = await supabase
     .from('users')
-    .select('email, stripe_account_id')
+    .select('email, name, stripe_account_id')
     .eq('id', req.userId)
     .maybeSingle()
   if (readErr) {
@@ -1553,13 +1553,38 @@ router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) =
   try {
     let accountId = user?.stripe_account_id || ''
     if (!accountId) {
-      const account = await s.accounts.create({
-        type: 'express',
-        email: user?.email || undefined,
-        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
-        metadata: { user_id: req.userId || '' },
-      })
-      accountId = account.id
+      // Stripe now asks new platforms to create connected accounts with the
+      // Accounts v2 API. A recipient configuration can receive destination
+      // charge transfers and pay out to a bank account; the v1 fallback keeps
+      // platforms that already enabled Accounts v1 working.
+      let created: string | null = null
+      try {
+        const account = await s.v2.core.accounts.create({
+          contact_email: user?.email || undefined,
+          display_name: user?.name || undefined,
+          dashboard: 'express',
+          identity: { country: 'US' },
+          configuration: {
+            recipient: {
+              capabilities: {
+                stripe_balance: {
+                  stripe_transfers: { requested: true },
+                },
+              },
+            },
+          },
+        })
+        created = account.id
+      } catch {
+        const account = await s.accounts.create({
+          type: 'express',
+          email: user?.email || undefined,
+          capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
+          metadata: { user_id: req.userId || '' },
+        })
+        created = account.id
+      }
+      accountId = created
       const { error: saveErr } = await supabase
         .from('users')
         .update({ stripe_account_id: accountId })
@@ -1567,11 +1592,16 @@ router.post('/stripe/connect', authMiddleware, async (req: AuthedRequest, res) =
       if (saveErr) return res.status(500).json({ error: 'Could not save the payout account' })
     }
 
-    const link = await s.accountLinks.create({
+    const link = await s.v2.core.accountLinks.create({
       account: accountId,
-      type: 'account_onboarding',
-      refresh_url: `${base}${back}?connect=refresh`,
-      return_url: `${base}${back}?connect=done`,
+      use_case: {
+        type: 'account_onboarding',
+        account_onboarding: {
+          configurations: ['recipient'],
+          refresh_url: `${base}${back}?connect=refresh`,
+          return_url: `${base}${back}?connect=done`,
+        },
+      },
     })
     res.json({ url: link.url, accountId })
   } catch (err: any) {
