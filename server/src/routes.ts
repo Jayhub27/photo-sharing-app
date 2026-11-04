@@ -2,6 +2,8 @@ import { Router, type Request, type Response } from 'express'
 import multer from 'multer'
 import QRCode from 'qrcode'
 import sharp from 'sharp'
+import { lookup } from 'node:dns/promises'
+import { isIP } from 'node:net'
 import { supabase, BUCKET } from './db.js'
 import { generateId, publicBaseUrl } from './utils.js'
 import { createZip } from './zip.js'
@@ -50,7 +52,7 @@ const qrLimiter = rateLimit({
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => cb(null, file.mimetype.startsWith('image/')),
+  fileFilter: (_req, file, cb) => cb(null, RASTER_MIME.has(file.mimetype.toLowerCase())),
 })
 
 type Role = 'owner' | 'editor' | 'viewer'
@@ -59,6 +61,56 @@ const PHOTO_FIELDS =
   'id, filename, thumb_filename, ambient_filename, ambient_colors, original_name, mime_type, size, width, height, price_cents, created_at'
 const THUMB_WIDTH = 640
 const AMBIENT_WIDTH = 48
+
+// The client's Content-Type is a claim, not a fact. Only these raster formats
+// are stored, and the MIME we keep comes from sharp's sniff, never the upload.
+const RASTER_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/avif',
+  'image/heic',
+  'image/heif',
+  'image/tiff',
+])
+const EXT_BY_FORMAT: Record<string, string> = {
+  jpeg: '.jpg',
+  png: '.png',
+  webp: '.webp',
+  gif: '.gif',
+  avif: '.avif',
+  heif: '.heic',
+  tiff: '.tiff',
+}
+
+/**
+ * Sniff the bytes; null for anything that is not a plain raster image.
+ * HEIC is passed through on the declared type when sharp has no HEIF codec:
+ * an ISO-BMFF container cannot carry script, and nosniff keeps it inert.
+ */
+async function rasterInfo(
+  buffer: Buffer,
+  declaredMime?: string
+): Promise<{ mime: string; ext: string } | null> {
+  try {
+    const meta = await sharp(buffer).metadata()
+    const format = meta.format || ''
+    const ext = EXT_BY_FORMAT[format]
+    if (ext) {
+      const mime = format === 'jpeg' ? 'image/jpeg' : format === 'heif' ? 'image/heic' : `image/${format}`
+      if (RASTER_MIME.has(mime)) return { mime, ext }
+    }
+  } catch {
+    // fall through to the HEIC container check
+  }
+  const declared = (declaredMime || '').toLowerCase()
+  const isoBmff = buffer.length > 12 && buffer.toString('ascii', 4, 8) === 'ftyp'
+  if ((declared === 'image/heic' || declared === 'image/heif') && isoBmff) {
+    return { mime: 'image/heic', ext: '.heic' }
+  }
+  return null
+}
 
 interface Access {
   col: any | null
@@ -228,7 +280,10 @@ async function storePhoto(
   originalName: string,
   mime: string,
 ): Promise<Record<string, unknown> | null> {
-  const ext = (originalName.includes('.') ? '.' + originalName.split('.').pop() : '') || `.${mime.split('/')[1] || 'jpg'}`
+  const sniffed = await rasterInfo(buffer, mime)
+  if (!sniffed) return null
+  mime = sniffed.mime
+  const ext = sniffed.ext
   const filename = generateId() + ext
 
   let thumbFilename: string | null = null
@@ -422,6 +477,60 @@ function assertPublicUrl(raw: string): URL {
   return url
 }
 
+function isPrivateAddress(ip: string): boolean {
+  if (isIP(ip) === 4) {
+    const [a, b] = ip.split('.').map(Number)
+    if (a === 0 || a === 10 || a === 127) return true
+    if (a === 169 && b === 254) return true
+    if (a === 172 && b >= 16 && b <= 31) return true
+    if (a === 192 && b === 168) return true
+    if (a === 100 && b >= 64 && b <= 127) return true
+    if (a === 192 && b === 0) return true
+    if (a === 198 && (b === 18 || b === 19)) return true
+    if (a >= 224) return true
+    return false
+  }
+  const v6 = ip.toLowerCase()
+  if (v6 === '::' || v6 === '::1') return true
+  if (v6.startsWith('fc') || v6.startsWith('fd')) return true
+  if (/^fe[89ab]/.test(v6)) return true
+  const mapped = v6.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+  if (mapped) return isPrivateAddress(mapped[1])
+  return false
+}
+
+/** Reject private/reserved targets after DNS, so hex/IPv6/rebinding hosts fail. */
+async function assertPublicHost(url: URL): Promise<void> {
+  const host = url.hostname.replace(/^\[|\]$/g, '')
+  if (!host) throw new Error('Not a valid URL')
+  if (isIP(host)) {
+    if (isPrivateAddress(host)) throw new Error('That host is not reachable from the server')
+    return
+  }
+  const addresses = await lookup(host, { all: true, verbatim: true })
+  if (!addresses.length) throw new Error('That host could not be resolved')
+  if (addresses.some((a) => isPrivateAddress(a.address))) {
+    throw new Error('That host is not reachable from the server')
+  }
+}
+
+/** Follow redirects by hand so every hop is re-checked, not just the first. */
+async function fetchPublic(raw: string, init: RequestInit, maxHops = 5): Promise<globalThis.Response> {
+  let current = assertPublicUrl(raw)
+  for (let hop = 0; hop <= maxHops; hop += 1) {
+    await assertPublicHost(current)
+    const res = await fetch(current.toString(), { ...init, redirect: 'manual' })
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location')
+      if (!location) return res
+      current = assertPublicUrl(new URL(location, current).toString())
+      continue
+    }
+    return res
+  }
+  throw new Error('Too many redirects')
+}
+
 /** Turn Google Drive/Photos share links into something the server can fetch. */
 function normalizeImportUrl(raw: string): string {
   const url = new URL(raw)
@@ -440,8 +549,7 @@ async function fetchImage(
   const timer = setTimeout(() => controller.abort(), 20_000)
   try {
     const url = assertPublicUrl(raw)
-    const res = await fetch(normalizeImportUrl(url.toString()), {
-      redirect: 'follow',
+    const res = await fetchPublic(normalizeImportUrl(url.toString()), {
       signal: controller.signal,
       headers: {
         'user-agent':
@@ -464,7 +572,7 @@ async function fetchImage(
         html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
       if (!match) return { error: 'No image found on that page (album links often need direct photo links)' }
       const imageUrl = new URL(match[1], url).toString()
-      const imgRes = await fetch(imageUrl, { signal: controller.signal, headers: { 'user-agent': 'Mozilla/5.0' } })
+      const imgRes = await fetchPublic(imageUrl, { signal: controller.signal, headers: { 'user-agent': 'Mozilla/5.0' } })
       if (!imgRes.ok) return { error: `Could not load the page image (${imgRes.status})` }
       const mime = (imgRes.headers.get('content-type') || 'image/jpeg').split(';')[0].trim()
       const buffer = Buffer.from(await imgRes.arrayBuffer())
@@ -868,9 +976,24 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
   const { data: col } = await supabase.from('collections').select('*').eq('id', req.params.id).maybeSingle()
   if (!col) return res.status(404).json({ error: 'Collection not found' })
   if (col.user_id === req.userId) return res.status(400).json({ error: 'This is already your collection' })
-  if (col.is_public === false) {
-    const access = await getAccess(req.params.id, req.userId)
-    if (!access.role) return res.status(403).json({ error: 'This collection is private' })
+
+  const access = await getAccess(req.params.id, req.userId)
+  if (col.is_public === false && !access.role) {
+    return res.status(403).json({ error: 'This collection is private' })
+  }
+  if (isExpired(col.expires_at)) {
+    return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
+  }
+  // Saving copies the originals server-side, so it must respect the price the
+  // same way a download does.
+  const pricing = await accessState(col, access, req.userId)
+  if (pricing.locked) {
+    return res.status(402).json({
+      error: 'Purchase required',
+      code: 'purchase_required',
+      price_cents: pricing.price_cents,
+      currency: pricing.currency,
+    })
   }
 
   const { data: photos } = await supabase
@@ -995,6 +1118,14 @@ router.post(
 
     const files = req.files as Express.Multer.File[]
     if (!files || files.length === 0) return res.status(400).json({ error: 'No photos uploaded' })
+
+    for (const f of files) {
+      if (!(await rasterInfo(f.buffer, f.mimetype))) {
+        return res.status(400).json({
+          error: 'Only JPEG, PNG, WebP, GIF, AVIF, HEIC or TIFF images are supported',
+        })
+      }
+    }
 
     const photos = []
     for (const f of files) {
@@ -1131,7 +1262,19 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
     const safeName = String(photo.original_name || 'photo').replace(/[\r\n"\\]/g, '').slice(0, 200)
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
   }
-  res.type(useThumb ? 'image/jpeg' : photo.mime_type).send(buf)
+  const storedMime = String(photo.mime_type || '')
+  if (useThumb) {
+    res.type('image/jpeg').send(buf)
+    return
+  }
+  if (!RASTER_MIME.has(storedMime)) {
+    // Legacy rows uploaded before the allowlist (e.g. SVG) must never render
+    // on our origin.
+    res.setHeader('Content-Disposition', 'attachment')
+    res.type('application/octet-stream').send(buf)
+    return
+  }
+  res.type(storedMime).send(buf)
 })
 
 /* -------------------------------------------------------------------- members */
