@@ -4,7 +4,7 @@ import QRCode from 'qrcode'
 import sharp from 'sharp'
 import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
-import { Agent } from 'undici'
+import { Agent, fetch as undiciFetch } from 'undici'
 import { supabase, BUCKET } from './db.js'
 import { generateId, publicBaseUrl } from './utils.js'
 import { streamZip } from './zip.js'
@@ -568,7 +568,12 @@ function pinnedAgent(address: string, family: number): Agent {
   }
   const agent = new Agent({
     connect: {
-      lookup: (_hostname, _options, callback) => callback(null, address, family),
+      // undici requests `all: true` and expects an array; the single form is
+      // used when the resolver asks for one address.
+      lookup: ((_hostname: string, options: any, callback: any) => {
+        if (options?.all) callback(null, [{ address, family }])
+        else callback(null, address, family)
+      }) as any,
     },
   })
   PINNED_AGENTS.set(key, agent)
@@ -580,11 +585,13 @@ async function fetchPublic(raw: string, init: RequestInit, maxHops = 5): Promise
   let current = assertPublicUrl(raw)
   for (let hop = 0; hop <= maxHops; hop += 1) {
     const pinned = await resolvePublicHost(current)
-    const res = await fetch(current.toString(), {
-      ...init,
+    // undici's fetch must be used with undici's Agent: the npm Agent is not
+    // wire-compatible with Node's built-in fetch dispatcher.
+    const res = (await undiciFetch(current.toString(), {
+      ...(init as any),
       redirect: 'manual',
       dispatcher: pinnedAgent(pinned.address, pinned.family),
-    } as RequestInit)
+    } as any)) as unknown as globalThis.Response
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location')
       if (!location) return res
