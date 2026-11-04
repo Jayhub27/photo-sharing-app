@@ -1,4 +1,7 @@
 import 'dotenv/config'
+// Express 4 does not forward rejected async handlers; without this, a thrown
+// route error hangs the request instead of reaching the error middleware.
+import 'express-async-errors'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
@@ -8,7 +11,7 @@ import auth, { resolveUser, type AuthedRequest } from './auth.js'
 import { supabase } from './db.js'
 import { publicBaseUrl } from './utils.js'
 import { startSweeper } from './maintenance.js'
-import { captureException, initObservability } from './observability.js'
+import { captureException, flushObservability, initObservability } from './observability.js'
 import { createPendingShare } from './share-store.js'
 import { layout, htmlEscape } from './ui.js'
 import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
@@ -259,8 +262,9 @@ app.get('/c/:id', async (req, res) => {
 })
 
 // Last line of defence: log, report, and answer without leaking internals.
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use(async (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   captureException(err, { method: req.method, path: req.path })
+  await flushObservability()
   console.error(err)
   if (res.headersSent) return next(err)
   if (req.path.startsWith('/api/')) {

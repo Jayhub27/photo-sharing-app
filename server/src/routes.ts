@@ -496,6 +496,12 @@ function isPrivateAddress(ip: string): boolean {
   if (/^fe[89ab]/.test(v6)) return true
   const mapped = v6.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
   if (mapped) return isPrivateAddress(mapped[1])
+  const hexMapped = v6.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/)
+  if (hexMapped) {
+    const hi = parseInt(hexMapped[1], 16)
+    const lo = parseInt(hexMapped[2], 16)
+    return isPrivateAddress(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)
+  }
   return false
 }
 

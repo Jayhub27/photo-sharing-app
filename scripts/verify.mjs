@@ -24,7 +24,7 @@ try {
   process.exit(2)
 }
 
-const base = (flag('--url', config.url) || '').replace(/\/$/, '')
+const base = (flag('--url', process.env.SHIP_URL || config.url) || '').replace(/\/$/, '')
 if (!base) {
   console.error('verify: no url in config and no --url given')
   process.exit(2)

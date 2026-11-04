@@ -309,7 +309,7 @@ let selectMode = false;
 let lastIndex = -1;
 let lightboxIndex = -1;
 let dragging = false;
-let autoBuy = false, autoBuyStarted = false;
+let autoBuy = false, autoBuyStarted = false, buyAborted = false;
 try {
   autoBuy = new URLSearchParams(location.search).get('buy') === '1';
 } catch (e) {}
@@ -390,6 +390,7 @@ function maybeAutoBuy() {
   if (!pricing || !pricing.locked || canEdit) return;
   autoBuyStarted = true;
   autoBuy = false;
+  buyAborted = false;
   try { history.replaceState(null, '', '/c/' + CID); } catch (e) {}
   document.getElementById('checkoutSplash').classList.remove('hidden');
   buy();
@@ -733,6 +734,7 @@ async function buy() {
   try {
     const res = await fetch(BASE + '/api/collections/' + CID + '/checkout', { method: 'POST', credentials: 'include' });
     const data = await res.json().catch(function () { return {}; });
+    if (buyAborted) { hideSplash(); btn.disabled = false; return; }
     if (data.url) { window.location.href = data.url; return; }
     if (data.alreadyPurchased) { hideSplash(); toast('You already own this collection', 'success'); location.reload(); return; }
     const hint = data.code === 'schema_missing'
@@ -808,6 +810,7 @@ async function connectPayouts() {
       body: JSON.stringify({ collection_id: CID }),
     });
     const data = await res.json().catch(function () { return {}; });
+    if (buyAborted) { hideSplash(); btn.disabled = false; return; }
     if (data.url) { window.location.href = data.url; return; }
     throw new Error(data.hint || data.error || 'Could not open Stripe onboarding');
   } catch (err) {
@@ -1473,6 +1476,7 @@ document.getElementById('moreBtn').addEventListener('click', function (e) { e.st
 document.getElementById('saveBtn').addEventListener('click', saveCollection);
 document.getElementById('buyBtn').addEventListener('click', buy);
 document.getElementById('checkoutCancel').addEventListener('click', function () {
+  buyAborted = true;
   document.getElementById('checkoutSplash').classList.add('hidden');
 });
 document.getElementById('savePrice').addEventListener('click', savePrice);

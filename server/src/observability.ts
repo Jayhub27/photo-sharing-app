@@ -21,6 +21,14 @@ export function initObservability(): void {
  * accepts {content}) so a deployment without Sentry still shouts. One message
  * per 30 s keeps a broken loop from flooding the channel.
  */
+/** Serverless freezes after the response, so flush before answering. */
+export async function flushObservability(): Promise<void> {
+  if (!ready) return
+  try {
+    await Sentry.flush(2000)
+  } catch {}
+}
+
 export function captureException(err: unknown, context?: Record<string, unknown>): void {
   if (ready) {
     Sentry.captureException(err, context ? { extra: context } : undefined)

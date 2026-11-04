@@ -102,7 +102,18 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Dispatch rollback and re-verify
+        env:
+          DEPLOY_SHA: ${{ github.event.deployment.sha }}
         run: |
+          # Only the commit main points at may trigger a rollback. Comparing the
+          # deployment to the live main head is reliable regardless of what
+          # github.sha means for this event type.
+          MAIN_SHA=$(gh api "repos/$GH_REPO/commits/main" --jq .sha)
+          if [ "$DEPLOY_SHA" != "$MAIN_SHA" ]; then
+            echo "Deployed commit $DEPLOY_SHA is not main ($MAIN_SHA); not rolling back."
+            exit 0
+          fi
+
           # Never flap: if a rollback ran in the last 30 minutes, leave it alone.
           LAST=$(gh run list --workflow=rollback.yml --limit 1 --json createdAt --jq '.[0].createdAt // empty')
           if [ -n "$LAST" ]; then

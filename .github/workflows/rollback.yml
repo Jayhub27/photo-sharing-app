@@ -36,12 +36,19 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          TARGET: ${{ inputs.deployment }}
         run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "VERCEL_TOKEN secret is missing. Add it, or run 'npx vercel rollback --yes' locally."
-            exit 1
-          fi
-          npx --yes vercel@latest rollback ${{ inputs.deployment }} --yes --token "$VERCEL_TOKEN"
+          for key in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!key}" ]; then
+              echo "$key secret is missing. Add it, or run 'npx vercel rollback --yes' locally."
+              exit 1
+            fi
+          done
+          case "$TARGET" in
+            ""|https://*|dpl_*|*.*) ;;
+            *) echo "Refusing unexpected deployment value: $TARGET"; exit 1 ;;
+          esac
+          npx --yes vercel@latest rollback "$TARGET" --yes --token "$VERCEL_TOKEN"
 
       - name: Verify the rolled-back deployment
         if: ${{ inputs.verify }}
