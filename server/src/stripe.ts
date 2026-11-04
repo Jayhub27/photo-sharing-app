@@ -36,6 +36,8 @@ export interface ConnectAccountStatus {
   accountId: string
   chargesEnabled: boolean
   payoutsEnabled: boolean
+  /** Destination charges need the transfers capability, not charges. */
+  transfersEnabled: boolean
   detailsSubmitted: boolean
   requirementsDue: string[]
 }
@@ -50,6 +52,7 @@ export async function connectAccountStatus(accountId: string): Promise<ConnectAc
       accountId: account.id,
       chargesEnabled: !!account.charges_enabled,
       payoutsEnabled: !!account.payouts_enabled,
+      transfersEnabled: account.capabilities?.transfers === 'active',
       detailsSubmitted: !!account.details_submitted,
       requirementsDue: account.requirements?.currently_due || [],
     }

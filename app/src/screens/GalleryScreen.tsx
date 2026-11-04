@@ -43,6 +43,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  const [locked, setLocked] = useState(false)
   const offsetRef = useRef(0)
   const { width } = useWindowDimensions()
   const columns = width >= 1000 ? 4 : width >= 700 ? 3 : 2
@@ -58,6 +59,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
     try {
       const res = await getCollection(collectionId, { limit: PAGE_SIZE, offset: 0 })
       setCollection(res.collection)
+      setLocked(!!res.pricing?.locked)
       setPhotos(res.photos)
       setTotal(res.total)
       setHasMore(res.hasMore)
@@ -217,7 +219,7 @@ export default function GalleryScreen({ route, navigation }: Props) {
         photos={photos}
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
-        urlFor={(filename) => photoUrl(filename)}
+        urlFor={(filename) => photoUrl(filename, locked ? { thumb: true } : {})}
         headers={imageHeaders()}
         title={name}
       />

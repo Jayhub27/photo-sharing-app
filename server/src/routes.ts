@@ -4,14 +4,16 @@ import QRCode from 'qrcode'
 import sharp from 'sharp'
 import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
+import { Agent } from 'undici'
 import { supabase, BUCKET } from './db.js'
 import { generateId, publicBaseUrl } from './utils.js'
-import { createZip } from './zip.js'
+import { streamZip } from './zip.js'
 import { authMiddleware, optionalAuth, type AuthedRequest } from './auth.js'
 import { rateLimit } from './ratelimit.js'
 import { classifyCameraQr } from './camera-qr.js'
 import { decodeQrFromImage } from './qr-decode.js'
 import { takePendingShare } from './share-store.js'
+import { cached, invalidate } from './cache.js'
 import {
   CURRENCIES,
   applicationFeePercent,
@@ -34,6 +36,12 @@ import {
 const router = Router()
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const accessLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: 'Too many access checks. Please wait a moment.',
+})
 
 const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -120,7 +128,7 @@ interface Access {
   canManage: boolean
 }
 
-async function getAccess(collectionId: string, userId?: string): Promise<Access> {
+async function loadAccess(collectionId: string, userId?: string): Promise<Access> {
   const { data: col } = await supabase.from('collections').select('*').eq('id', collectionId).maybeSingle()
   if (!col) return { col: null, role: null, isOwner: false, canEdit: false, canManage: false }
   const isOwner = !!userId && col.user_id === userId
@@ -136,6 +144,13 @@ async function getAccess(collectionId: string, userId?: string): Promise<Access>
   }
   const canEdit = role === 'owner' || role === 'editor'
   return { col, role, isOwner, canEdit, canManage: role === 'owner' }
+}
+
+/** 5 s TTL: one grid burst shares a single access lookup. */
+async function getAccess(collectionId: string, userId?: string): Promise<Access> {
+  return cached(`access:${collectionId}:${userId || '-'}`, 5000, () =>
+    loadAccess(collectionId, userId)
+  )
 }
 
 function clampInt(value: unknown, fallback: number, min: number, max: number): number {
@@ -436,7 +451,7 @@ function isLocked(col: any, access: Access, purchased: boolean): boolean {
   return !access.canEdit && !purchased
 }
 
-async function accessState(
+async function loadAccessState(
   col: any,
   access: Access,
   userId?: string,
@@ -458,6 +473,17 @@ async function accessState(
     stripeConfigured: isStripeConfigured(),
     schemaReady: await sellingSchemaReady(),
   }
+}
+
+async function accessState(
+  col: any,
+  access: Access,
+  userId?: string,
+  email?: string,
+  sessionId?: string
+) {
+  const key = `state:${col.id}:${userId || '-'}:${sessionId || '-'}`
+  return cached(key, 5000, () => loadAccessState(col, access, userId, email, sessionId))
 }
 
 /* ------------------------------------------------------------ import (URLs) */
@@ -505,27 +531,60 @@ function isPrivateAddress(ip: string): boolean {
   return false
 }
 
-/** Reject private/reserved targets after DNS, so hex/IPv6/rebinding hosts fail. */
-async function assertPublicHost(url: URL): Promise<void> {
+/**
+ * Resolve once and return the address to pin. Checking the hostname and then
+ * letting fetch resolve again leaves a DNS-rebinding window, so the caller
+ * passes this address to a dispatcher that cannot re-resolve.
+ */
+async function resolvePublicHost(url: URL): Promise<{ address: string; family: number }> {
   const host = url.hostname.replace(/^\[|\]$/g, '')
   if (!host) throw new Error('Not a valid URL')
   if (isIP(host)) {
     if (isPrivateAddress(host)) throw new Error('That host is not reachable from the server')
-    return
+    return { address: host, family: isIP(host) }
   }
   const addresses = await lookup(host, { all: true, verbatim: true })
   if (!addresses.length) throw new Error('That host could not be resolved')
   if (addresses.some((a) => isPrivateAddress(a.address))) {
     throw new Error('That host is not reachable from the server')
   }
+  return { address: addresses[0].address, family: addresses[0].family }
 }
 
-/** Follow redirects by hand so every hop is re-checked, not just the first. */
+// Reuse one keep-alive pool per validated address. The dispatcher's lookup
+// callback returns the pinned IP, so a second DNS answer can never be used.
+const PINNED_AGENTS = new Map<string, Agent>()
+
+function pinnedAgent(address: string, family: number): Agent {
+  const key = `${address}:${family}`
+  const existing = PINNED_AGENTS.get(key)
+  if (existing) return existing
+  if (PINNED_AGENTS.size >= 50) {
+    const oldest = PINNED_AGENTS.keys().next().value
+    if (oldest) {
+      PINNED_AGENTS.get(oldest)?.close().catch(() => {})
+      PINNED_AGENTS.delete(oldest)
+    }
+  }
+  const agent = new Agent({
+    connect: {
+      lookup: (_hostname, _options, callback) => callback(null, address, family),
+    },
+  })
+  PINNED_AGENTS.set(key, agent)
+  return agent
+}
+
+/** Follow redirects by hand so every hop is re-checked and pinned. */
 async function fetchPublic(raw: string, init: RequestInit, maxHops = 5): Promise<globalThis.Response> {
   let current = assertPublicUrl(raw)
   for (let hop = 0; hop <= maxHops; hop += 1) {
-    await assertPublicHost(current)
-    const res = await fetch(current.toString(), { ...init, redirect: 'manual' })
+    const pinned = await resolvePublicHost(current)
+    const res = await fetch(current.toString(), {
+      ...init,
+      redirect: 'manual',
+      dispatcher: pinnedAgent(pinned.address, pinned.family),
+    } as RequestInit)
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location')
       if (!location) return res
@@ -701,7 +760,7 @@ router.get('/collections/:id', optionalAuth, async (req: AuthedRequest, res) => 
 
   let query = supabase
     .from('photos')
-    .select(PHOTO_FIELDS, { count: 'exact' })
+    .select(PHOTO_FIELDS, since ? {} : { count: 'exact' })
     .eq('collection_id', req.params.id)
     .order(orderBy.column, { ascending: orderBy.ascending })
   if (q) query = query.ilike('original_name', `%${q}%`)
@@ -795,6 +854,8 @@ router.patch('/collections/:id', authMiddleware, async (req: AuthedRequest, res)
     await refreshSellingSchema()
     return res.status(500).json({ error: 'Could not update collection' })
   }
+  invalidate(`access:${req.params.id}:`)
+  invalidate(`state:${req.params.id}:`)
   res.json({ id: req.params.id, ...patch })
 })
 
@@ -815,6 +876,8 @@ router.delete('/collections/:id', authMiddleware, async (req: AuthedRequest, res
   await supabase.from('photos').delete().eq('collection_id', req.params.id)
   await supabase.from('collection_members').delete().eq('collection_id', req.params.id)
   await supabase.from('collections').delete().eq('id', req.params.id)
+  invalidate(`access:${req.params.id}:`)
+  invalidate(`state:${req.params.id}:`)
   res.json({ ok: true })
 })
 
@@ -1004,12 +1067,19 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
 
   const { data: photos } = await supabase
     .from('photos')
-    .select('filename, thumb_filename, original_name, mime_type, size, width, height')
+    .select('filename, thumb_filename, original_name, mime_type, size, width, height, price_cents')
     .eq('collection_id', req.params.id)
 
   const newId = generateId()
   const name = `${col.name} (saved)`.slice(0, 120)
-  const { error } = await supabase.from('collections').insert({ id: newId, user_id: req.userId, name })
+  const { error } = await supabase.from('collections').insert({
+    id: newId,
+    user_id: req.userId,
+    name,
+    is_public: col.is_public !== false,
+    price_cents: col.price_cents ?? null,
+    currency: col.currency || 'usd',
+  })
   if (error) return res.status(500).json({ error: 'Could not save collection' })
 
   for (const p of photos || []) {
@@ -1040,6 +1110,7 @@ router.post('/collections/:id/save', authMiddleware, async (req: AuthedRequest, 
         size: p.size,
         width: p.width,
         height: p.height,
+        price_cents: p.price_cents ?? null,
       })
     } catch {}
   }
@@ -1079,35 +1150,50 @@ router.get('/collections/:id/zip', optionalAuth, async (req: AuthedRequest, res)
     .slice(0, 500)
   let photosQuery = supabase
     .from('photos')
-    .select('filename, original_name')
+    .select('filename, original_name, size')
     .eq('collection_id', req.params.id)
   if (ids.length) photosQuery = photosQuery.in('id', ids)
   const { data: photos } = await photosQuery
   if (!photos || photos.length === 0) return res.status(404).json({ error: 'No photos in this collection' })
 
-  const entries: { name: string; data: Buffer }[] = []
-  const used = new Set<string>()
-  for (const p of photos) {
-    const { data: blob } = await supabase.storage.from(BUCKET).download(p.filename)
-    if (!blob) continue
-    const buf = Buffer.from(await blob.arrayBuffer())
-    let name = p.original_name || p.filename
-    let i = 1
-    while (used.has(name)) {
-      const dot = name.lastIndexOf('.')
-      name = dot > 0 ? `${name.slice(0, dot)} (${i})${name.slice(dot)}` : `${name} (${i})`
-      i++
-    }
-    used.add(name)
-    entries.push({ name, data: buf })
+  // Store-only ZIP uses 32-bit offsets; cap the archive well below 4 GB and
+  // stream one photo at a time so the function never holds the collection.
+  const totalBytes = photos.reduce((n, p) => n + Number(p.size || 0), 0)
+  const LIMIT = 2 * 1024 * 1024 * 1024
+  if (totalBytes > LIMIT) {
+    return res.status(413).json({
+      error: 'That selection is too large for one ZIP. Download in smaller batches.',
+      code: 'zip_too_large',
+    })
   }
-  if (!entries.length) return res.status(404).json({ error: 'No photos in this collection' })
 
-  const zip = createZip(entries)
   const safeName = (col.name.replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'photos').slice(0, 80)
   res.setHeader('Content-Type', 'application/zip')
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}.zip"`)
-  res.send(zip)
+
+  const used = new Set<string>()
+  async function* entries() {
+    for (const p of photos || []) {
+      const { data: blob } = await supabase.storage.from(BUCKET).download(p.filename)
+      if (!blob) continue
+      let name = p.original_name || p.filename
+      let i = 1
+      while (used.has(name)) {
+        const dot = name.lastIndexOf('.')
+        name = dot > 0 ? `${name.slice(0, dot)} (${i})${name.slice(dot)}` : `${name} (${i})`
+        i++
+      }
+      used.add(name)
+      yield { name, data: Buffer.from(await blob.arrayBuffer()) }
+    }
+  }
+
+  try {
+    await streamZip(res, entries())
+  } catch {
+    if (!res.headersSent) res.status(500).json({ error: 'Could not build the archive' })
+    else res.end()
+  }
 })
 
 /* --------------------------------------------------------------------- photos */
@@ -1233,6 +1319,21 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
   if (req.query.backdrop === '1') {
     const width = clampInt(req.query.w, 1440, 480, 2400)
     const sourceKey = useThumb ? photo.thumb_filename : photo.filename
+    const variantKey = `backdrop-${width}-${sourceKey}`
+    const send = (buf: Buffer) => {
+      res.setHeader(
+        'Cache-Control',
+        privateCache ? 'private, max-age=86400' : 'public, max-age=300'
+      )
+      if (privateCache) res.setHeader('Vary', 'Cookie, Authorization')
+      return res.type('image/jpeg').send(buf)
+    }
+
+    // sharp over a multi-megapixel original on every home load is the most
+    // expensive thing this server does. Keep the first render in storage.
+    const { data: hit } = await supabase.storage.from(BUCKET).download(variantKey)
+    if (hit) return send(Buffer.from(await hit.arrayBuffer()))
+
     const { data: source, error: sourceErr } = await supabase.storage
       .from(BUCKET)
       .download(sourceKey as string)
@@ -1243,12 +1344,11 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
         .resize({ width, withoutEnlargement: true })
         .jpeg({ quality: 82, mozjpeg: true })
         .toBuffer()
-      res.setHeader(
-        'Cache-Control',
-        privateCache ? 'private, max-age=86400' : 'public, max-age=604800, immutable'
-      )
-      if (privateCache) res.setHeader('Vary', 'Cookie, Authorization')
-      return res.type('image/jpeg').send(resized)
+      await supabase.storage
+        .from(BUCKET)
+        .upload(variantKey, resized, { contentType: 'image/jpeg', upsert: true })
+        .catch(() => {})
+      return send(resized)
     } catch {
       return res.status(415).json({ error: 'Could not render backdrop' })
     }
@@ -1259,9 +1359,11 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
   if (error || !blob) return res.status(404).json({ error: 'Photo not found' })
   const buf = Buffer.from(await blob.arrayBuffer())
 
+  // Access can change (a free collection may be made private), so never let a
+  // browser or edge keep a photo for longer than five minutes.
   res.setHeader(
     'Cache-Control',
-    privateCache ? 'private, max-age=3600' : 'public, max-age=31536000, immutable'
+    privateCache ? 'private, max-age=3600' : 'public, max-age=300'
   )
   if (privateCache) res.setHeader('Vary', 'Cookie, Authorization')
   if (req.query.download === '1') {
@@ -1336,6 +1438,7 @@ router.post('/collections/:id/members', authMiddleware, async (req: AuthedReques
     .from('collection_members')
     .upsert({ collection_id: req.params.id, user_id: user.id, role }, { onConflict: 'collection_id,user_id' })
   if (error) return res.status(500).json({ error: 'Could not add member' })
+  invalidate(`access:${req.params.id}:`)
   res.json({ user_id: user.id, name: user.name, email: user.email, role })
 })
 
@@ -1350,6 +1453,7 @@ router.patch('/collections/:id/members/:userId', authMiddleware, async (req: Aut
     .eq('collection_id', req.params.id)
     .eq('user_id', req.params.userId)
   if (error) return res.status(500).json({ error: 'Could not update member' })
+  invalidate(`access:${req.params.id}:`)
   res.json({ ok: true, role })
 })
 
@@ -1363,6 +1467,7 @@ router.delete('/collections/:id/members/:userId', authMiddleware, async (req: Au
     .delete()
     .eq('collection_id', req.params.id)
     .eq('user_id', req.params.userId)
+  invalidate(`access:${req.params.id}:`)
   res.json({ ok: true })
 })
 
@@ -1581,7 +1686,21 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
   let destination: string | undefined
   if (owner?.stripe_account_id) {
     const status = await connectAccountStatus(owner.stripe_account_id)
-    if (status?.payoutsEnabled || status?.chargesEnabled) destination = owner.stripe_account_id
+    if (!status) {
+      return res.status(502).json({
+        error: 'Could not reach the seller’s payout account. Try again in a moment.',
+        code: 'connect_unavailable',
+      })
+    }
+    if (!status.transfersEnabled) {
+      // Taking the money would leave it on the platform with no transfer, so
+      // stop before charging anyone.
+      return res.status(409).json({
+        error: 'This seller is still finishing Stripe onboarding',
+        code: 'payouts_not_ready',
+      })
+    }
+    destination = owner.stripe_account_id
   }
   if (destination) {
     params.payment_intent_data = { transfer_data: { destination } }
@@ -1597,7 +1716,7 @@ router.post('/collections/:id/checkout', optionalAuth, async (req: AuthedRequest
   }
 })
 
-router.get('/collections/:id/access', optionalAuth, async (req: AuthedRequest, res) => {
+router.get('/collections/:id/access', accessLimiter, optionalAuth, async (req: AuthedRequest, res) => {
   const access = await getAccess(req.params.id, req.userId)
   if (!access.col) return res.status(404).json({ error: 'Collection not found' })
 
@@ -1618,7 +1737,10 @@ router.get('/collections/:id/access', optionalAuth, async (req: AuthedRequest, r
     if (!paidSession && (await hasPurchased(req.params.id, undefined, undefined, sessionId))) {
       paidSession = sessionId
     }
-    if (paidSession) setPurchaseCookie(res, req, req.params.id, paidSession)
+    if (paidSession) {
+      setPurchaseCookie(res, req, req.params.id, paidSession)
+      invalidate(`state:${req.params.id}:`)
+    }
   }
 
   const pricing = await accessState(
@@ -1813,6 +1935,17 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
       event.type === 'checkout.session.async_payment_succeeded'
     ) {
       await recordPurchase(event.data.object)
+    }
+    if (event.type === 'charge.refunded' || event.type === 'charge.dispute.created') {
+      const paymentIntent = event.data.object.payment_intent
+      const id = typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id
+      if (id) {
+        // hasPurchased() only accepts status = 'paid', so this revokes access.
+        await supabase
+          .from('purchases')
+          .update({ status: event.type === 'charge.refunded' ? 'refunded' : 'disputed' })
+          .eq('stripe_payment_intent', id)
+      }
     }
     res.json({ received: true })
   } catch {

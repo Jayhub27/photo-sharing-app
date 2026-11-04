@@ -203,7 +203,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
   useEffect(() => {
     const start = () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
-      pollingRef.current = setInterval(poll, 5000)
+      pollingRef.current = setInterval(poll, 15000)
     }
     const stop = () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
@@ -909,7 +909,7 @@ export default function CollectionScreen({ route, navigation }: Props) {
         photos={photos}
         initialIndex={viewerIndex ?? 0}
         onClose={() => setViewerIndex(null)}
-        urlFor={(filename) => photoUrl(filename)}
+        urlFor={(filename) => photoUrl(filename, pricing?.locked ? { thumb: true } : {})}
         headers={imageHeaders()}
         title={name}
         canManagePrices={role === 'owner'}

@@ -18,22 +18,40 @@ function crc32(buf: Buffer): number {
   return (c ^ 0xffffffff) >>> 0
 }
 
-export interface ZipEntry {
+export interface ZipStreamEntry {
   name: string
   data: Buffer
 }
 
-export function createZip(entries: ZipEntry[]): Buffer {
-  const chunks: Buffer[] = []
+/** DOS timestamp shared by every entry in one archive. */
+function dosStamp(): { time: number; date: number } {
+  const now = new Date()
+  const year = Math.max(now.getFullYear(), 1980)
+  return {
+    time: ((now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2)) & 0xffff,
+    date: (((year - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xffff,
+  }
+}
+
+/**
+ * Stream a store-only ZIP to an HTTP response. Entries arrive one at a time,
+ * so peak memory is a single photo instead of the whole collection.
+ */
+export async function streamZip(
+  res: import('node:http').ServerResponse,
+  entries: AsyncIterable<ZipStreamEntry>
+): Promise<void> {
+  const { time: dosTime, date: dosDate } = dosStamp()
   const central: Buffer[] = []
   let offset = 0
 
-  const now = new Date()
-  const year = Math.max(now.getFullYear(), 1980)
-  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2)) & 0xffff
-  const dosDate = (((year - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xffff
+  const write = async (chunk: Buffer): Promise<void> => {
+    if (!res.write(chunk)) {
+      await new Promise<void>((resolve) => res.once('drain', resolve))
+    }
+  }
 
-  for (const entry of entries) {
+  for await (const entry of entries) {
     const nameBuf = Buffer.from(entry.name, 'utf8')
     const crc = crc32(entry.data)
 
@@ -50,7 +68,9 @@ export function createZip(entries: ZipEntry[]): Buffer {
     local.writeUInt16LE(nameBuf.length, 26)
     local.writeUInt16LE(0, 28)
 
-    chunks.push(local, nameBuf, entry.data)
+    await write(local)
+    await write(nameBuf)
+    await write(entry.data)
 
     const cd = Buffer.alloc(46)
     cd.writeUInt32LE(0x02014b50, 0)
@@ -80,11 +100,13 @@ export function createZip(entries: ZipEntry[]): Buffer {
   end.writeUInt32LE(0x06054b50, 0)
   end.writeUInt16LE(0, 4)
   end.writeUInt16LE(0, 6)
-  end.writeUInt16LE(entries.length, 8)
-  end.writeUInt16LE(entries.length, 10)
+  end.writeUInt16LE(central.length, 8)
+  end.writeUInt16LE(central.length, 10)
   end.writeUInt32LE(centralBuf.length, 12)
   end.writeUInt32LE(offset, 16)
   end.writeUInt16LE(0, 20)
 
-  return Buffer.concat([...chunks, centralBuf, end])
+  await write(centralBuf)
+  await write(end)
+  res.end()
 }

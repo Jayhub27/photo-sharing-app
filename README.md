@@ -284,6 +284,13 @@ through Stripe's hosted onboarding. Checkout then uses
 `application_fee_amount`. Admins can still set `stripe_account_id` by hand to
 link an existing account.
 
+Checkout refuses with `409 payouts_not_ready` while a linked account has not
+activated its `transfers` capability, instead of charging the buyer and keeping
+the money on the platform. The webhook also handles `charge.refunded` and
+`charge.dispute.created`, which flip the purchase to `refunded`/`disputed` and
+revoke access; subscribe the endpoint to both events alongside
+`checkout.session.completed`.
+
 ## Time-limited collections
 
 Owners can schedule a collection to delete itself. In the collection page open

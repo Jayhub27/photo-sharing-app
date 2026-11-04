@@ -1574,7 +1574,7 @@ document.getElementById('loadMore').addEventListener('click', function () { load
   }
   const connect = params.get('connect');
   await load(false);
-  setInterval(pollNew, 5000);
+  setInterval(pollNew, 15000);
   if (connect === 'done' || connect === 'refresh') {
     toast(connect === 'done'
       ? 'Stripe setup finished \u2014 payouts activate after Stripe verifies your details'
