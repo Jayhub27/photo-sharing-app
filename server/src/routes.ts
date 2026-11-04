@@ -1055,6 +1055,12 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
     return res.status(410).json({ error: 'This collection expired', code: 'expired', expired: true })
   }
 
+  // Paid originals must never reach the shared CDN cache: the cache key does
+  // not include the purchase cookie, so a cached copy would be served to
+  // everyone. Anything priced or private stays browser-only.
+  const priced = Number(access.col?.price_cents) > 0
+  const privateCache = isPrivate || priced
+
   let useThumb = req.query.thumb === '1' && !!photo.thumb_filename
   if (!useThumb && access.col) {
     const pricing = await accessState(
@@ -1095,8 +1101,9 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
         .toBuffer()
       res.setHeader(
         'Cache-Control',
-        isPrivate ? 'private, max-age=86400' : 'public, max-age=604800, immutable'
+        privateCache ? 'private, max-age=86400' : 'public, max-age=604800, immutable'
       )
+      if (privateCache) res.setHeader('Vary', 'Cookie, Authorization')
       return res.type('image/jpeg').send(resized)
     } catch {
       return res.status(415).json({ error: 'Could not render backdrop' })
@@ -1108,7 +1115,11 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
   if (error || !blob) return res.status(404).json({ error: 'Photo not found' })
   const buf = Buffer.from(await blob.arrayBuffer())
 
-  res.setHeader('Cache-Control', isPrivate ? 'private, max-age=3600' : 'public, max-age=31536000, immutable')
+  res.setHeader(
+    'Cache-Control',
+    privateCache ? 'private, max-age=3600' : 'public, max-age=31536000, immutable'
+  )
+  if (privateCache) res.setHeader('Vary', 'Cookie, Authorization')
   if (req.query.download === '1') {
     const safeName = String(photo.original_name || 'photo').replace(/[\r\n"\\]/g, '').slice(0, 200)
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`)
