@@ -1077,6 +1077,32 @@ router.get('/photos/:filename', optionalAuth, async (req: AuthedRequest, res) =>
       useThumb = true
     }
   }
+  // Full-bleed backdrops: render the original at the display width so a
+  // 1080 px screen does not get a 640 px thumbnail stretched across it.
+  // Locked collections keep the thumbnail, so no paid original leaks.
+  if (req.query.backdrop === '1') {
+    const width = clampInt(req.query.w, 1440, 480, 2400)
+    const sourceKey = useThumb ? photo.thumb_filename : photo.filename
+    const { data: source, error: sourceErr } = await supabase.storage
+      .from(BUCKET)
+      .download(sourceKey as string)
+    if (sourceErr || !source) return res.status(404).json({ error: 'Photo not found' })
+    try {
+      const resized = await sharp(Buffer.from(await source.arrayBuffer()))
+        .rotate()
+        .resize({ width, withoutEnlargement: true })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer()
+      res.setHeader(
+        'Cache-Control',
+        isPrivate ? 'private, max-age=86400' : 'public, max-age=604800, immutable'
+      )
+      return res.type('image/jpeg').send(resized)
+    } catch {
+      return res.status(415).json({ error: 'Could not render backdrop' })
+    }
+  }
+
   const key = useThumb ? photo.thumb_filename : photo.filename
   const { data: blob, error } = await supabase.storage.from(BUCKET).download(key as string)
   if (error || !blob) return res.status(404).json({ error: 'Photo not found' })

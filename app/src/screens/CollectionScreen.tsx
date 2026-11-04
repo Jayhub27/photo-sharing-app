@@ -4,10 +4,12 @@ import {
   Alert,
   AppState,
   FlatList,
+  Dimensions,
   Image,
   Linking,
   Modal,
   Pressable,
+  PixelRatio,
   StyleSheet,
   Text,
   TextInput,
@@ -129,7 +131,11 @@ export default function CollectionScreen({ route, navigation }: Props) {
         setIsPublic(res.collection.is_public !== false)
         setExpiresAt(res.collection.expires_at || null)
         const cover = res.collection.cover_filename
-        setCoverSrc(cover ? photoUrl(cover, { thumb: true }) : null)
+        const width = Math.min(
+          2400,
+          Math.round(Dimensions.get('window').width * PixelRatio.get())
+        )
+        setCoverSrc(cover ? photoUrl(cover, { backdrop: width }) : null)
         if (res.pricing) setPricing(res.pricing)
         offsetRef.current = res.photos.length
         newestRef.current = res.photos.reduce((m, p) => ((p.created_at || '') > m ? p.created_at || '' : m), '')

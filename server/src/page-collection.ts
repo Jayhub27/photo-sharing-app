@@ -656,8 +656,9 @@ async function load(append) {
     pricing = data.pricing || pricing;
     if (!append && window.setAmbient) {
       var cover = data.collection.cover_filename;
+      var px = Math.min(2400, Math.round((window.innerWidth || 1280) * (window.devicePixelRatio || 1)));
       window.setAmbient([cover
-        ? BASE + '/api/photos/' + encodeURIComponent(cover) + '?thumb=1'
+        ? BASE + '/api/photos/' + encodeURIComponent(cover) + '?backdrop=1&w=' + px
         : BASE + '/api/collections/' + CID + '/ambient']);
     }
     photos = append ? photos.concat(data.photos) : data.photos;

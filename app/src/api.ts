@@ -319,11 +319,15 @@ export async function removeMember(id: string, userId: string): Promise<void> {
 
 export function photoUrl(
   filename: string,
-  opts: { thumb?: boolean; download?: boolean } = {}
+  opts: { thumb?: boolean; download?: boolean; backdrop?: number } = {}
 ): string {
   const params = new URLSearchParams()
   if (opts.thumb) params.set('thumb', '1')
   if (opts.download) params.set('download', '1')
+  if (opts.backdrop) {
+    params.set('backdrop', '1')
+    params.set('w', String(Math.round(opts.backdrop)))
+  }
   const qs = params.toString()
   return `${resolveBase()}/api/photos/${filename}${qs ? `?${qs}` : ''}`
 }

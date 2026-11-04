@@ -127,8 +127,9 @@ async function load(append) {
       fetch(BASE + '/api/ambient/feed?limit=8', { credentials: 'include' })
         .then(function(r){ return r.ok ? r.json() : { photos: [] }; })
         .then(function(data){
+          var px = Math.min(2400, Math.round((window.innerWidth || 1280) * (window.devicePixelRatio || 1)));
           var photos = (data.photos || [])
-            .map(function(p){ return BASE + '/api/photos/' + encodeURIComponent(p.filename) + '?thumb=1'; });
+            .map(function(p){ return BASE + '/api/photos/' + encodeURIComponent(p.filename) + '?backdrop=1&w=' + px; });
           if (window.setAmbient) window.setAmbient(photos.length ? photos : covers);
         })
         .catch(function(){ if (window.setAmbient) window.setAmbient(covers); });

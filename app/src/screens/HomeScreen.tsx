@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   FlatList,
+  PixelRatio,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -301,9 +303,15 @@ export default function HomeScreen({ navigation }: Props) {
     .filter((c) => c.has_ambient || c.cover_filename || c.cover_thumb_filename)
     .slice(0, 4)
     .map((c) => c.id)
+  // Ask the server for the photo at the screen's real pixel width: a 640 px
+  // thumbnail stretched over a 1080 px display is what made the backdrop soft.
+  const backdropWidth = Math.min(
+    2400,
+    Math.round(Dimensions.get('window').width * PixelRatio.get())
+  )
   // Real photographs when the feed has them, collection covers as the fallback.
   const ambientSources = ambientSlides.length
-    ? ambientSlides.map((p) => photoUrl(p.filename, { thumb: true }))
+    ? ambientSlides.map((p) => photoUrl(p.filename, { backdrop: backdropWidth }))
     : ambientIds.map((cid) => ambientCollectionUrl(cid))
   const palette = featured?.ambient_colors?.length
     ? featured.ambient_colors
