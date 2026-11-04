@@ -74,7 +74,8 @@ app.get('/api/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store')
   res.json({
     ok: true,
-    version: process.env.npm_package_version || '0.4.0',
+    // Keep in sync with app/app.json — the release people install.
+    version: process.env.npm_package_version || '0.4.1',
     commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'dev',
   })
 })
