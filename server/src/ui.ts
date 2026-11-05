@@ -261,6 +261,25 @@ body.selecting .photo-wrap .check{display:flex}
 .copy-btn:hover{background:var(--surface-2)}
 select.copy-btn{min-width:110px}
 
+
+/* Temporary feedback chat: bug reports and improvement ideas. */
+.fb-fab{position:fixed;right:18px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:180;width:50px;height:50px;border-radius:50%;border:1px solid var(--border);background:var(--accent);color:var(--on-accent);box-shadow:var(--shadow-2);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;line-height:1}
+body.has-mobile-bar .fb-fab{bottom:calc(142px + env(safe-area-inset-bottom))}
+.fb-panel{position:fixed;right:18px;bottom:calc(136px + env(safe-area-inset-bottom));z-index:181;width:min(360px,calc(100vw - 28px));max-height:min(480px,62vh);display:flex;flex-direction:column;background:var(--elevated);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-2);overflow:hidden}
+body.has-mobile-bar .fb-panel{bottom:calc(204px + env(safe-area-inset-bottom))}
+.fb-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--border)}
+.fb-head strong{font-family:var(--font-display);font-weight:400;font-size:20px}
+.fb-head button{background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.fb-log{flex:1;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.fb-bubble{max-width:86%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.45}
+.fb-bubble.me{align-self:flex-end;background:var(--accent);color:var(--on-accent)}
+.fb-bubble.team{align-self:flex-start;background:var(--surface-2);color:var(--text)}
+.fb-form{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
+.fb-form textarea{flex:1;resize:none;border-radius:14px;padding:10px 12px;font-size:14px;font-family:inherit;background:rgba(255,252,245,.6);border:1px solid var(--border);color:var(--text)}
+html[data-theme="dark"] .fb-form textarea{background:rgba(255,255,255,.05)}
+.fb-form button{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:14px;padding:0 16px;font-weight:600;font-size:13px;cursor:pointer}
+.fb-note{font-size:10.5px;color:var(--muted);padding:0 16px 12px}
+
 /* --------------------------------------------------------------- lightbox */
 .lightbox{position:fixed;inset:0;background:rgba(24,17,12,.95);display:none;align-items:center;justify-content:center;z-index:140;animation:fadeIn .16s}
 .lightbox.open{display:flex}
@@ -654,6 +673,75 @@ function AMBIENT_JS(): string {
 })();`
 }
 
+
+function FEEDBACK_JS(): string {
+  return `
+(function(){
+  var toggle=document.getElementById('fbToggle');
+  var panel=document.getElementById('fbPanel');
+  var log=document.getElementById('fbLog');
+  var form=document.getElementById('fbForm');
+  var input=document.getElementById('fbInput');
+  if(!toggle||!panel||!log||!form||!input) return;
+  function open(next){
+    panel.classList.toggle('hidden', next===false);
+    if(next!==false) setTimeout(function(){ input.focus(); }, 40);
+  }
+  toggle.addEventListener('click', function(){ open(panel.classList.contains('hidden')); });
+  document.getElementById('fbClose').addEventListener('click', function(){ open(false); });
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var text=input.value.trim();
+    if(text.length<3) return;
+    var mine=document.createElement('div');
+    mine.className='fb-bubble me';
+    mine.textContent=text;
+    log.appendChild(mine);
+    input.value='';
+    log.scrollTop=log.scrollHeight;
+    fetch('/api/feedback', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body: JSON.stringify({
+        message: text,
+        source: 'web',
+        path: location.pathname + location.search,
+        meta: { url: location.href, theme: document.documentElement.dataset.theme || 'light' }
+      })
+    }).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(res){
+        var reply=document.createElement('div');
+        reply.className='fb-bubble team';
+        reply.textContent = res.ok ? (res.d.reply || 'Logged it.') : (res.d.error || 'Could not send that. Try again.');
+        log.appendChild(reply);
+        log.scrollTop=log.scrollHeight;
+      })
+      .catch(function(){
+        var reply=document.createElement('div');
+        reply.className='fb-bubble team';
+        reply.textContent='Could not reach the server. Try again.';
+        log.appendChild(reply);
+        log.scrollTop=log.scrollHeight;
+      });
+  });
+})();`
+}
+
+const FEEDBACK_WIDGET = `<button class="fb-fab" id="fbToggle" type="button" aria-label="Report a bug or suggest an improvement">💬</button>
+<div class="fb-panel hidden" id="fbPanel" role="dialog" aria-label="Feedback">
+  <div class="fb-head"><strong>Feedback</strong><button id="fbClose" type="button" aria-label="Close feedback">×</button></div>
+  <div class="fb-log" id="fbLog">
+    <div class="fb-bubble team">Found a bug or have an idea? Tell us in a sentence — it goes straight to the team.</div>
+  </div>
+  <form class="fb-form" id="fbForm">
+    <textarea id="fbInput" rows="2" maxlength="2000" placeholder="What went wrong, or what would help?" required></textarea>
+    <button type="submit">Send</button>
+  </form>
+  <p class="fb-note">Temporary feedback channel</p>
+</div>
+`
+
 export function layout(title: string, head: string, body: string, script: string, bodyClass = ''): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -669,8 +757,9 @@ ${head}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
+${FEEDBACK_WIDGET}
 <script>
-${TOAST_JS()}${THEME_JS()}${AMBIENT_JS()}${PWA_JS()}
+${TOAST_JS()}${THEME_JS()}${AMBIENT_JS()}${FEEDBACK_JS()}${PWA_JS()}
 ${script}
 </script>
 </body>

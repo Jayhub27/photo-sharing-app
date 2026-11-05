@@ -37,6 +37,12 @@ const router = Router()
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const feedbackLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Too many notes in a minute. Give it a moment.',
+})
+
 const accessLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 120,
@@ -485,6 +491,39 @@ async function accessState(
   const key = `state:${col.id}:${userId || '-'}:${sessionId || '-'}`
   return cached(key, 5000, () => loadAccessState(col, access, userId, email, sessionId))
 }
+
+/* ------------------------------------------------- feedback (temporary) */
+
+router.post('/feedback', feedbackLimiter, optionalAuth, async (req: AuthedRequest, res) => {
+  const message = String(req.body.message || '').trim().slice(0, 2000)
+  if (message.length < 3) return res.status(400).json({ error: 'Write a sentence first' })
+  const source = req.body.source === 'android' ? 'android' : 'web'
+  const path = String(req.body.path || '').slice(0, 300)
+  const meta =
+    req.body.meta && typeof req.body.meta === 'object' && !Array.isArray(req.body.meta)
+      ? req.body.meta
+      : null
+  const { error } = await supabase.from('feedback').insert({
+    id: generateId(),
+    user_id: req.userId || null,
+    source,
+    path,
+    message,
+    meta,
+  })
+  if (error) {
+    return res.status(503).json({
+      error: 'Feedback is not set up in this database yet',
+      code: 'schema_missing',
+      hint: 'Run supabase/migrations/20261105_feedback_chat.sql',
+    })
+  }
+  console.log(`[feedback] ${source} ${path}: ${message.slice(0, 200)}`)
+  res.json({
+    ok: true,
+    reply: 'Got it — logged with the team. Add another note any time.',
+  })
+})
 
 /* ------------------------------------------------------------ import (URLs) */
 

@@ -131,3 +131,19 @@ alter table public.collections add column if not exists expires_at timestamptz;
 create index if not exists idx_collections_expires
   on public.collections (expires_at)
   where expires_at is not null;
+
+
+-- Temporary feedback chat (bug reports and improvement ideas)
+create table if not exists public.feedback (
+  id         text primary key,
+  user_id    text,
+  source     text not null default 'web',
+  path       text,
+  message    text not null,
+  meta       jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_feedback_created on public.feedback (created_at desc);
+
+alter table public.feedback enable row level security;

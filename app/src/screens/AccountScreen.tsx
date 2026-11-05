@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Alert,
   Platform,
@@ -16,6 +16,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { getApiBase, type AppTabParamList, type RootStackParamList } from '../api'
 import { useAuth } from '../auth'
 import { appearanceSummary, useAppearance } from '../appearance'
+import { FeedbackChat } from '../components/FeedbackChat'
 import { glassLight, type, wg } from '../theme/warmGlass'
 
 type Props = CompositeScreenProps<
@@ -27,6 +28,7 @@ export default function AccountScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets()
   const { user, signOut } = useAuth()
   const { settings } = useAppearance()
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const initials = (user?.name || '?')
     .split(/\s+/)
@@ -89,6 +91,24 @@ export default function AccountScreen({ navigation }: Props) {
         <Ionicons name="chevron-forward" size={16} color={wg.color.muted} />
       </Pressable>
 
+      <Text style={s.section}>Help</Text>
+
+      <Pressable
+        onPress={() => setFeedbackOpen(true)}
+        style={[s.appearanceCard, glassLight]}
+        accessibilityRole="button"
+        accessibilityLabel="Report a bug or suggest an improvement"
+      >
+        <View style={s.appearanceIcon}>
+          <Ionicons name="chatbubble-ellipses-outline" size={18} color={wg.color.ink} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={s.rowTitle}>Report a bug or idea</Text>
+          <Text style={s.rowValue}>Temporary feedback chat</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={wg.color.muted} />
+      </Pressable>
+
       <Text style={s.section}>About</Text>
 
       <View style={[s.infoCard, glassLight]}>
@@ -108,6 +128,8 @@ export default function AccountScreen({ navigation }: Props) {
       <Pressable onPress={onSignOut} style={s.signOut} accessibilityRole="button">
         <Text style={s.signOutText}>Log out</Text>
       </Pressable>
+
+      <FeedbackChat visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </ScrollView>
   )
 }

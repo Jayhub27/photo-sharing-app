@@ -517,6 +517,19 @@ export async function getPayoutStatus(): Promise<PayoutStatus> {
   return res.json()
 }
 
+export async function sendFeedback(
+  message: string,
+  meta?: Record<string, unknown>
+): Promise<{ reply?: string }> {
+  const res = await fetch(`${resolveBase()}/api/feedback`, {
+    method: 'POST',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ message, source: 'android', path: 'app', meta }),
+  })
+  if (!res.ok) throw await errorFrom(res, 'Could not send feedback')
+  return res.json()
+}
+
 export interface SalesSummary {
   count: number
   gross_cents: number
