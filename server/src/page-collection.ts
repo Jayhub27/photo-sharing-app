@@ -1,14 +1,13 @@
-import { htmlEscape, layout, type PageMeta } from './ui.js'
+import { layout, type PageMeta } from './ui.js'
 
 export function collectionPage(id: string, apiBase: string, meta?: PageMeta): string {
-  const og = meta
-    ? `<meta property="og:type" content="website">
-<meta property="og:title" content="${htmlEscape(meta.title)}">
-<meta property="og:description" content="${htmlEscape(meta.description || 'View this shared photo collection.')}">
-${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` : ''}
-<meta name="twitter:card" content="summary_large_image">
-`
-    : ''
+  const pageMeta: PageMeta = meta
+    ? { ...meta, title: `${meta.title} \u00b7 Take the shot` }
+    : {
+        title: 'Shared photo collection \u00b7 Take the shot',
+        description: 'View a shared photo collection on Take the shot.',
+        noindex: true,
+      }
 
   const body = `
 <a class="skip-link" href="#main">Skip to content</a>
@@ -97,7 +96,10 @@ ${meta.image ? `<meta property="og:image" content="${htmlEscape(meta.image)}">` 
     <span class="live-dot" title="Live updates on"></span>
   </div>
 
-  <div class="grid" id="photos"></div>
+  <div class="grid" id="photos" aria-busy="true">
+    <div class="photo-skeleton"></div><div class="photo-skeleton"></div><div class="photo-skeleton"></div>
+    <div class="photo-skeleton"></div><div class="photo-skeleton"></div><div class="photo-skeleton"></div>
+  </div>
   <div class="load-wrap"><button class="btn outline small hidden" id="loadMore">Load more</button></div>
 </div>
 
@@ -406,6 +408,7 @@ function renderPhotos() {
   applyPhotoView();
   if (!photos.length) {
     el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-image"></i></div><div class="empty-text">' + (q ? 'No photos match your search.' : 'No photos yet.<br>' + (canEdit ? 'Use "Add photos" to add some.' : 'Check back later.')) + '</div></div>';
+    el.setAttribute('aria-busy', 'false');
     return;
   }
   el.innerHTML = photos.map(function (p, i) {
@@ -422,6 +425,7 @@ function renderPhotos() {
       '</div>' +
     '</div>';
   }).join('');
+  el.setAttribute('aria-busy', 'false');
   if (selectMode) updateSelectBar();
 }
 
@@ -647,6 +651,7 @@ async function checkAuth() {
 }
 
 async function load(append) {
+  document.getElementById('photos').setAttribute('aria-busy', 'true');
   try {
     const res = await fetch(BASE + '/api/collections/' + CID + '?q=' + encodeURIComponent(q) + '&limit=' + pageSize + '&offset=' + offset + '&sort=' + photoSort, { credentials: 'include' });
     if (res.status === 403) {
@@ -657,6 +662,7 @@ async function load(append) {
       document.querySelector('.toolbar').classList.add('hidden');
       document.getElementById('loadMore').classList.add('hidden');
       document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-lock"></i></div><div class="empty-text">This collection is private.<br>Ask the owner for an invite, then log in to view it.</div></div>';
+      document.getElementById('photos').setAttribute('aria-busy', 'false');
       return;
     }
     if (res.status === 410) {
@@ -667,6 +673,7 @@ async function load(append) {
       document.querySelector('.toolbar').classList.add('hidden');
       document.getElementById('loadMore').classList.add('hidden');
       document.getElementById('photos').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon"><i class="ico ico-clock"></i></div><div class="empty-text">This collection was set to auto-delete and is now gone.<br>Create a new collection to share more photos.</div></div>';
+      document.getElementById('photos').setAttribute('aria-busy', 'false');
       return;
     }
     if (!res.ok) throw new Error();
@@ -703,6 +710,7 @@ async function load(append) {
     document.getElementById('title').textContent = 'Collection not found';
     document.getElementById('metaLine').textContent = '';
     document.getElementById('photos').innerHTML = '<div class="empty"><div class="empty-icon"><i class="ico ico-alert"></i></div><div class="empty-text">This collection could not be loaded.</div></div>';
+    document.getElementById('photos').setAttribute('aria-busy', 'false');
   }
 }
 
@@ -1589,5 +1597,5 @@ document.getElementById('loadMore').addEventListener('click', function () { load
 })();
 `
 
-  return layout(meta ? `${meta.title} \u00b7 Take the shot` : 'Take the shot', og, body, script, 'has-mobile-bar')
+  return layout(pageMeta, body, script, 'has-mobile-bar')
 }

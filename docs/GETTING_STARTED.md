@@ -167,8 +167,10 @@ Take the shot is built to be boring about data — in a good way.
 
 - **Your photos stay on your storage.** The bucket is private; images are streamed
   through the server after an access check, never exposed as public URLs.
-- **No analytics, no tracking pixels, no ads, no third-party scripts.** The app
-  ships its own CSS, JS and fonts from your own origin.
+- **No analytics, no tracking pixels, no ads, no third-party scripts by default.**
+  The app ships its own CSS, JS and fonts from your own origin. Operators can opt
+  into cookieless Umami/Plausible with `ANALYTICS_SCRIPT_URL`; it stays off unless
+  they set it.
 - **No accounts for buyers.** Their email is only used by Stripe for the receipt.
 - **You choose how long data lives.** Collections can auto-delete after 1 to 3650
   days, storage objects included.

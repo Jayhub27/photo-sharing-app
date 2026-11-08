@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy policy — Take the shot</title>
+<meta name="description" content="What the Take the shot landing site and web app store, what they never collect, and how to delete your data.">
+<meta name="robots" content="index,follow">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0a07">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'">
+<link rel="canonical" href="https://take-the-shot-site.vercel.app/privacy">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Take the shot">
+<meta property="og:title" content="Privacy policy — Take the shot">
+<meta property="og:description" content="What the Take the shot landing site and web app store, what they never collect, and how to delete your data.">
+<meta property="og:url" content="https://take-the-shot-site.vercel.app/privacy">
+<meta property="og:image" content="https://take-the-shot-site.vercel.app/images/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Take the shot landing page hero.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy policy — Take the shot">
+<meta name="twitter:description" content="What the Take the shot landing site and web app store, what they never collect, and how to delete your data.">
+<meta name="twitter:image" content="https://take-the-shot-site.vercel.app/images/og-image.jpg">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="fonts/instrument-serif-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="fonts/instrument-sans-latin.woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="top" id="top">
+  <div class="wrap top-in">
+    <a class="brand" href="/">
+      <span class="brand-tile" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
+          <path d="M3.5 8h4l1.6-2.2h5.8L16.5 8h4v10.5h-17z" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <circle cx="12" cy="13" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/>
+        </svg>
+      </span>
+      Take the shot
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="/#wall">The wall</a>
+      <a href="/#privacy">Privacy</a>
+      <a href="/#how">How it works</a>
+      <a href="/#questions">Questions</a>
+    </nav>
+    <a class="btn btn-small" href="/#download">Get the app</a>
+  </div>
+</header>
+
+<main id="main">
+  <article class="legal wrap" aria-labelledby="legal-title">
+    <p class="kicker">The short version</p>
+    <h1 id="legal-title">Privacy policy</h1>
+    <p class="legal-meta">Last updated: 7 November 2026</p>
+
+    <p class="legal-lede">Take the shot is a photo-sharing app you can run yourself. This
+    policy covers the hosted landing site and the hosted web app at
+    <strong>take-the-shot-api.vercel.app</strong>. If you deploy your own copy, the
+    operator of that copy decides what it stores and is responsible for it.</p>
+
+    <h2>The landing site</h2>
+    <p>The landing site is plain HTML, CSS and one small script served from your own
+    origin. It has no analytics, no tracking pixels, no advertising cookies and no
+    third-party fonts or scripts. Fonts and images come from the same domain.</p>
+
+    <h2>What the web app stores</h2>
+    <ul>
+      <li><strong>Account:</strong> your name, email address and a bcrypt password hash. Passwords are never stored in plain text.</li>
+      <li><strong>Photos and collections:</strong> the files you upload, generated thumbnails, dimensions, filenames, collection names, prices and expiry dates.</li>
+      <li><strong>Sessions:</strong> a random session token in an HTTP-only cookie, plus its creation time.</li>
+      <li><strong>Purchases:</strong> buyer email, amount, currency, status and Stripe identifiers. Card details go directly to Stripe and never reach the app server.</li>
+      <li><strong>Feedback:</strong> the message you send through the feedback box, the page it came from and basic display settings.</li>
+      <li><strong>Errors:</strong> if the operator configures Sentry or an alert webhook, error details may be sent there.</li>
+    </ul>
+
+    <h2>What is never collected</h2>
+    <ul>
+      <li>No advertising identifiers, tracking pixels or third-party analytics by default.</li>
+      <li>No precise location, contacts or device advertising ID.</li>
+      <li>No card numbers or bank details.</li>
+    </ul>
+
+    <h2>Cookies and local storage</h2>
+    <p>After login the app sets one HTTP-only session cookie. The browser may also store
+    theme, view, onboarding and background preferences in local storage. There are no
+    advertising or cross-site cookies.</p>
+
+    <h2>Third parties</h2>
+    <p>Depending on how the service is deployed, data may be processed by:</p>
+    <ul>
+      <li><strong>Supabase</strong> for the database and private object storage.</li>
+      <li><strong>Stripe</strong> for checkout, receipts and seller payouts.</li>
+      <li><strong>Vercel</strong> or another host for serving the app.</li>
+      <li><strong>Sentry</strong> or an alert webhook, only when configured.</li>
+    </ul>
+    <p>Each provider processes data under its own terms.</p>
+
+    <h2>Retention and deletion</h2>
+    <ul>
+      <li>Collections can be set to auto-delete after 1 to 3650 days. The sweeper removes the photos, members and purchase records.</li>
+      <li>You can delete individual photos or a whole collection at any time.</li>
+      <li>To delete an account, contact the operator through the project issue tracker.</li>
+      <li>Some purchase records may be kept where tax or accounting rules require it.</li>
+    </ul>
+
+    <h2>Security</h2>
+    <p>Photos live in a private storage bucket and every image byte is streamed through an
+    access check. Passwords are hashed with bcrypt, sessions are HTTP-only, and production
+    traffic uses HTTPS. No system is perfect; please report a problem through the issue
+    tracker instead of testing it against other people&rsquo;s collections.</p>
+
+    <h2>Children</h2>
+    <p>The service is not intended for children under 13.</p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, the date at the top changes with it.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or deletion requests:
+    <a href="https://github.com/Jayhub27/photo-sharing-app/issues" rel="noopener noreferrer">open an issue on GitHub</a>.</p>
+  </article>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-top">
+      <p class="foot-word">Take<br>the shot.</p>
+      <nav class="foot-cols" aria-label="Footer">
+        <div>
+          <h2>App</h2>
+          <a data-link="apk" href="https://github.com/Jayhub27/photo-sharing-app/releases/latest/download/take-the-shot-android.apk">Android APK</a>
+          <a data-link="ios" href="https://docs.expo.dev/build/introduction/">iOS build</a>
+          <a href="https://take-the-shot-api.vercel.app" target="_blank" rel="noopener noreferrer">Web app</a>
+        </div>
+        <div>
+          <h2>Project</h2>
+          <a data-link="repo" href="https://github.com/Jayhub27/photo-sharing-app">GitHub</a>
+          <a data-link="releases" href="https://github.com/Jayhub27/photo-sharing-app/releases">Releases</a>
+          <a href="/privacy">Privacy policy</a>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <a href="/#questions">Questions</a>
+          <a href="https://github.com/Jayhub27/photo-sharing-app/issues" rel="noopener noreferrer">Report a bug</a>
+          <a data-link="guide" href="https://github.com/Jayhub27/photo-sharing-app/blob/main/docs/GETTING_STARTED.md">Setup guide</a>
+        </div>
+      </nav>
+    </div>
+    <div class="foot-bar">
+      <span>&copy; <span data-year>2026</span> Take the shot</span>
+      <span>Expo, Express, Supabase, Stripe</span>
+      <span>No analytics on this page</span>
+    </div>
+  </div>
+</footer>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

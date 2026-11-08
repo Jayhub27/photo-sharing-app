@@ -1,6 +1,6 @@
-import { layout } from './ui.js'
+import { layout, type PageMeta } from './ui.js'
 
-export function homePage(apiBase: string): string {
+export function homePage(apiBase: string, meta: PageMeta): string {
   const body = `
 <a class="skip-link" href="#main">Skip to content</a>
 <div id="toast-container" aria-live="polite" role="status"></div>
@@ -15,6 +15,10 @@ export function homePage(apiBase: string): string {
   </div>
 </div>
 <div class="wrap" id="main">
+  <div id="boot" class="empty" style="padding-top:80px" aria-live="polite">
+    <span class="spinner dark"></span>
+    <div class="empty-text" style="margin-top:12px">Loading your collections&hellip;</div>
+  </div>
   <div id="authed" class="hidden">
     <div class="hero">
       <h1>Collections</h1>
@@ -72,17 +76,20 @@ export function homePage(apiBase: string): string {
 const BASE = ${JSON.stringify(apiBase)};
 let currentUser = null;
 async function checkAuth() {
+  const boot = document.getElementById('boot');
   try {
     const res = await fetch(BASE + '/api/auth/me', { credentials: 'include' });
     if (res.ok) {
       const { user } = await res.json();
       currentUser = user;
+      if (boot) boot.classList.add('hidden');
       document.getElementById('authed').classList.remove('hidden');
       document.getElementById('navRight').innerHTML =
         '<span class="nav-user">Hi, <strong>' + esc(user.name) + '</strong></span>' +
         '<button class="btn small outline" onclick="logout()">Log out</button>';
       load();
     } else {
+      if (boot) boot.classList.add('hidden');
       document.getElementById('guest').classList.remove('hidden');
       document.getElementById('ambientToggle').classList.add('hidden');
       document.getElementById('navRight').innerHTML =
@@ -90,6 +97,7 @@ async function checkAuth() {
         '<a class="btn small" href="/signup">Sign up</a>';
     }
   } catch {
+    if (boot) boot.classList.add('hidden');
     document.getElementById('guest').classList.remove('hidden');
     document.getElementById('ambientToggle').classList.add('hidden');
   }
@@ -112,10 +120,11 @@ function applyView() {
 }
 async function load(append) {
   const el = document.getElementById('list');
+  el.setAttribute('aria-busy', 'true');
   if (!append) { offset = 0; el.className = ''; el.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>'; }
   try {
     const res = await fetch(BASE + '/api/collections?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + offset + '&sort=' + sort + '&filter=' + filter, { credentials: 'include' });
-    if (res.status === 401) { window.location.href = '/login'; return; }
+    if (res.status === 401) { el.setAttribute('aria-busy', 'false'); window.location.href = '/login'; return; }
     const data = await res.json();
     const collections = data.collections;
     total = data.total;
@@ -138,13 +147,14 @@ async function load(append) {
       document.getElementById('loadMore').classList.add('hidden');
       const msg = q ? 'No collections match that search.' : filter === 'shared' ? 'Nothing has been shared with you yet.' : filter === 'owned' ? 'You have not made a collection yet.' : 'No collections yet. Create one above.';
       el.innerHTML = '<div class="empty"><i class="ico ico-folder"></i><div class="empty-text">' + msg + '</div></div>';
+      el.setAttribute('aria-busy', 'false');
       return;
     }
     applyView();
     const html = collections.map((c, i) =>
       '<a class="card" href="/c/' + c.id + '" style="animation-delay:' + (i * 40) + 'ms">' +
         '<div class="card-left">' +
-          '<div class="card-thumb">' + (c.cover_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_filename + '?thumb=1" alt="" loading="lazy">' : '<i class="ico ico-image"></i>') + '</div>' +
+          '<div class="card-thumb">' + (c.cover_filename ? '<img src="' + BASE + '/api/photos/' + c.cover_filename + '?thumb=1" alt="Cover of ' + esc(c.name) + '" loading="lazy">' : '<i class="ico ico-image"></i>') + '</div>' +
           '<div class="card-info">' +
             '<div class="card-title"><span class="nm">' + esc(c.name) + '</span>' +
               (c.price_cents ? '<span class="badge price">' + esc(money(c.price_cents, c.currency)) + '</span>' : '') +
@@ -158,12 +168,14 @@ async function load(append) {
       '</a>'
     ).join('');
     if (append) el.insertAdjacentHTML('beforeend', html); else el.innerHTML = html;
+    el.setAttribute('aria-busy', 'false');
     offset += collections.length;
     const lm = document.getElementById('loadMore');
     lm.classList.toggle('hidden', !data.hasMore);
     lm.textContent = 'Load more (' + offset + ' of ' + total + ')';
   } catch {
     el.innerHTML = '<div class="empty"><i class="ico ico-alert"></i><div class="empty-text">Could not reach the server.<br><button class="btn small outline" style="margin-top:14px" onclick="load()">Try again</button></div></div>';
+    el.setAttribute('aria-busy', 'false');
   }
 }
 document.getElementById('createForm').addEventListener('submit', async (e) => {
@@ -172,8 +184,9 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
   const name = input.value.trim();
   if (!name) { toast('Give the collection a name', 'error'); return; }
   const btn = e.target.querySelector('button');
-  btn.innerHTML = '<span class="spinner"></span>';
+  btn.innerHTML = '<span class="spinner"></span><span class="sr-only">Creating collection</span>';
   btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
   try {
     const res = await fetch(BASE + '/api/collections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name }) });
     if (res.status === 401) { window.location.href = '/login'; return; }
@@ -182,7 +195,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     setTimeout(() => window.location.href = '/c/' + id, 350);
   } catch {
     toast('Could not create the collection', 'error');
-    btn.innerHTML = '<i class="ico ico-plus"></i>Create'; btn.disabled = false;
+    btn.innerHTML = '<i class="ico ico-plus"></i>Create'; btn.disabled = false; btn.setAttribute('aria-busy', 'false');
   }
 });
 const searchInput = document.getElementById('search');
@@ -298,5 +311,5 @@ document.getElementById('replayTour').addEventListener('click', openTour);
 })();
 `
 
-  return layout('Take the shot', '', body, script)
+  return layout(meta, body, script)
 }

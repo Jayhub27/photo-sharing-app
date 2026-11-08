@@ -1,6 +1,6 @@
-import { layout } from './ui.js'
+import { layout, type PageMeta } from './ui.js'
 
-export function loginPage(_apiBase: string): string {
+export function loginPage(_apiBase: string, meta: PageMeta): string {
   const body = `
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
@@ -20,7 +20,7 @@ export function loginPage(_apiBase: string): string {
       </div>
       <button class="btn auth-btn" type="submit">Log in</button>
     </form>
-    <div class="auth-footer">New here? <a href="/signup">Sign up</a></div>
+    <div class="auth-footer">New here? <a href="/signup">Sign up</a> &middot; <a href="/privacy">Privacy</a></div>
   </div>
 </div>
 `
@@ -31,7 +31,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   const btn = e.target.querySelector('button');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.innerHTML = '<span class="spinner"></span><span class="sr-only">Logging in</span>';
   try {
     const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, password }) });
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Login failed'); }
@@ -40,15 +40,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     setTimeout(() => window.location.href = '/', 400);
   } catch (err) {
     toast(err.message, 'error');
-    btn.disabled = false; btn.innerHTML = 'Log in';
+    btn.disabled = false; btn.setAttribute('aria-busy', 'false'); btn.innerHTML = 'Log in';
   }
 });
 `
 
-  return layout('Log in \u00b7 Take the shot', '', body, script)
+  return layout(meta, body, script)
 }
 
-export function signupPage(_apiBase: string): string {
+export function signupPage(_apiBase: string, meta: PageMeta): string {
   const body = `
 <div id="toast-container" aria-live="polite" role="status"></div>
 <div class="auth-wrap">
@@ -72,7 +72,7 @@ export function signupPage(_apiBase: string): string {
       </div>
       <button class="btn auth-btn" type="submit">Create account</button>
     </form>
-    <div class="auth-footer">Already have an account? <a href="/login">Log in</a></div>
+    <div class="auth-footer">Already have an account? <a href="/login">Log in</a> &middot; <a href="/privacy">Privacy</a></div>
   </div>
 </div>
 `
@@ -84,7 +84,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
   const btn = e.target.querySelector('button');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.innerHTML = '<span class="spinner"></span><span class="sr-only">Creating account</span>';
   try {
     const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name, email, password }) });
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || 'Sign up failed'); }
@@ -93,10 +93,10 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     setTimeout(() => window.location.href = '/', 400);
   } catch (err) {
     toast(err.message, 'error');
-    btn.disabled = false; btn.innerHTML = 'Create account';
+    btn.disabled = false; btn.setAttribute('aria-busy', 'false'); btn.innerHTML = 'Create account';
   }
 });
 `
 
-  return layout('Sign up \u00b7 Take the shot', '', body, script)
+  return layout(meta, body, script)
 }

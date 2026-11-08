@@ -35,3 +35,31 @@ test('security headers are set', async ({ request }) => {
   expect(res.headers()['x-content-type-options']).toBe('nosniff')
   expect(res.headers()['x-frame-options']).toBe('DENY')
 })
+
+test('privacy policy, robots and sitemap are served', async ({ request }) => {
+  const privacy = await request.get('/privacy')
+  expect(privacy.status()).toBe(200)
+  expect(await privacy.text()).toContain('Privacy policy')
+
+  const robots = await request.get('/robots.txt')
+  expect(robots.status()).toBe(200)
+  expect(await robots.text()).toContain('Sitemap:')
+
+  const sitemap = await request.get('/sitemap.xml')
+  expect(sitemap.status()).toBe(200)
+  expect(await sitemap.text()).toContain('<urlset')
+})
+
+test('unknown pages get the branded 404', async ({ page }) => {
+  const res = await page.goto('/this-page-does-not-exist')
+  expect(res?.status()).toBe(404)
+  await expect(page.getByText('This page went missing')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Go to collections' })).toBeVisible()
+})
+
+test('home page has description and Open Graph image', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('meta[name=description]')).toHaveAttribute('content', /.+/)
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /\/og-image\.jpg$/)
+  await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href', /\/$/)
+})

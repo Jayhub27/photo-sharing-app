@@ -2,12 +2,24 @@ export interface PageMeta {
   title: string
   description?: string
   image?: string
+  url?: string
+  noindex?: boolean
+  type?: 'website' | 'article'
 }
+
+export const DEFAULT_DESCRIPTION =
+  'Create a private photo collection, share it with a link or QR code, and sell the originals with Stripe. No subscription, no commission.'
 
 const FONTS = `<link rel="preload" href="/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">`
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Take the shot">
+<meta name="application-name" content="Take the shot">`
 
 /* Inline SVG icons used via mask-image so markup stays tiny: <i class="ico ico-plus"></i> */
 const svg = (paths: string) => {
@@ -601,8 +613,37 @@ body.is-scrolling .ambient-layer{filter:blur(18px) saturate(1.05)}
 body.ambient-off .ambient-layer{opacity:0!important}
 @media(prefers-reduced-motion:reduce){.ambient-layer{transition:none}}
 .photo-wrap.selected{outline-color:var(--accent)}
+.photo-skeleton{aspect-ratio:1;border-radius:var(--r);background:var(--surface-2);animation:pulse 1.4s ease-in-out infinite}
 .lightbox{background:rgba(12,10,8,.94)}
 .lightbox-price{position:absolute;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:3}
+
+/* ------------------------------------------------------------ site footer */
+.site-foot{margin-top:44px;border-top:1px solid var(--border);padding:18px 0 calc(18px + env(safe-area-inset-bottom));color:var(--muted);font-size:13px}
+.site-foot .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.site-foot nav{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.site-foot a{color:var(--muted);text-decoration:none}
+.site-foot a:hover{color:var(--text)}
+body.has-mobile-bar .site-foot{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+
+/* --------------------------------------------------------- legal + 404 */
+.legal{padding:clamp(30px,6vw,64px) 0 8px;max-width:760px}
+.legal h1{margin-bottom:8px}
+.legal .updated{color:var(--muted);font-size:13.5px;margin-bottom:26px}
+.legal h2{font-family:var(--font-display);font-size:22px;font-weight:400;margin:28px 0 8px}
+.legal p,.legal li{color:var(--muted);font-size:15px;line-height:1.7}
+.legal p{margin-bottom:12px}
+.legal ul{padding-left:20px;margin:8px 0 14px}
+.legal li{margin-bottom:5px}
+.legal strong{color:var(--text);font-weight:600}
+.legal a{color:var(--text);font-weight:600;text-decoration:none;border-bottom:1.5px solid var(--accent)}
+.legal .note{margin:22px 0}
+.notfound{padding:clamp(52px,12vw,110px) 0;text-align:center;max-width:620px;margin:0 auto}
+.notfound .code{font-family:var(--font-display);font-size:clamp(76px,18vw,142px);line-height:.9;color:var(--accent-text);margin-bottom:10px}
+.notfound h1{font-size:clamp(28px,6vw,42px);margin-bottom:12px}
+.notfound p{color:var(--muted);font-size:16px;line-height:1.6;max-width:440px;margin:0 auto}
+.notfound .actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:26px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
 @media(max-width:640px){
   h1{font-size:clamp(34px,10vw,46px)}
   .hero{padding-top:30px}
@@ -742,21 +783,64 @@ const FEEDBACK_WIDGET = `<button class="fb-fab" id="fbToggle" type="button" aria
 </div>
 `
 
-export function layout(title: string, head: string, body: string, script: string, bodyClass = ''): string {
+/** Optional, privacy-friendly analytics (Umami/Plausible style). Off by default. */
+function analyticsTag(): string {
+  const src = process.env.ANALYTICS_SCRIPT_URL
+  if (!src) return ''
+  const id = process.env.ANALYTICS_WEBSITE_ID
+  return `<script defer src="${htmlEscape(src)}"${id ? ` data-website-id="${htmlEscape(id)}"` : ''}></script>`
+}
+
+const SITE_FOOTER = `<footer class="site-foot">
+  <div class="wrap">
+    <span>Take the shot &mdash; private photo sharing</span>
+    <nav aria-label="Footer">
+      <a href="/">Collections</a>
+      <a href="/privacy">Privacy</a>
+      <a href="https://github.com/Jayhub27/photo-sharing-app" rel="noopener noreferrer">Source</a>
+    </nav>
+  </div>
+</footer>`
+
+export function layout(meta: PageMeta, body: string, script: string, bodyClass = ''): string {
+  const description = meta.description || DEFAULT_DESCRIPTION
+  const robots = meta.noindex ? 'noindex,nofollow' : 'index,follow'
+  const canonical = meta.url ? `<link rel="canonical" href="${htmlEscape(meta.url)}">` : ''
+  const ogUrl = meta.url ? `<meta property="og:url" content="${htmlEscape(meta.url)}">` : ''
+  const image = meta.image
+    ? `<meta property="og:image" content="${htmlEscape(meta.image)}">
+<meta property="og:image:alt" content="${htmlEscape(meta.title)}">
+<meta name="twitter:image" content="${htmlEscape(meta.image)}">`
+    : ''
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#16110d" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f9f4ec" media="(prefers-color-scheme: light)">
-<title>${htmlEscape(title)}</title>
+<title>${htmlEscape(meta.title)}</title>
+<meta name="description" content="${htmlEscape(description)}">
+<meta name="robots" content="${robots}">
+${canonical}
+<meta property="og:type" content="${meta.type || 'website'}">
+<meta property="og:site_name" content="Take the shot">
+<meta property="og:title" content="${htmlEscape(meta.title)}">
+<meta property="og:description" content="${htmlEscape(description)}">
+${ogUrl}
+${image}
+<meta name="twitter:card" content="${meta.image ? 'summary_large_image' : 'summary'}">
+<meta name="twitter:title" content="${htmlEscape(meta.title)}">
+<meta name="twitter:description" content="${htmlEscape(description)}">
 ${FONTS}
-${head}
 <style>${SHARED_CSS}${WARM_GLASS_CSS}</style>
+${analyticsTag()}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
+${SITE_FOOTER}
 ${FEEDBACK_WIDGET}
 <script>
 ${TOAST_JS()}${THEME_JS()}${AMBIENT_JS()}${FEEDBACK_JS()}${PWA_JS()}

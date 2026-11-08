@@ -13,11 +13,38 @@ import { publicBaseUrl } from './utils.js'
 import { startSweeper } from './maintenance.js'
 import { captureException, flushObservability, initObservability } from './observability.js'
 import { createPendingShare } from './share-store.js'
-import { layout, htmlEscape } from './ui.js'
-import { homePage, collectionPage, loginPage, signupPage, type PageMeta } from './pages.js'
+import { layout, htmlEscape, DEFAULT_DESCRIPTION } from './ui.js'
+import {
+  homePage,
+  collectionPage,
+  loginPage,
+  signupPage,
+  privacyPage,
+  notFoundPage,
+  type PageMeta,
+} from './pages.js'
 
 const PORT = process.env.PORT || 3000
 const publicDir = fileURLToPath(new URL('../public', import.meta.url))
+const DEFAULT_OG_PATH = '/og-image.jpg'
+
+/** Absolute title/description/canonical/OG metadata for a page. */
+function pageMeta(
+  req: express.Request,
+  title: string,
+  description: string,
+  path: string,
+  extra: Partial<PageMeta> = {}
+): PageMeta {
+  const base = publicBaseUrl(req)
+  return {
+    title,
+    description,
+    url: `${base}${path}`,
+    image: `${base}${DEFAULT_OG_PATH}`,
+    ...extra,
+  }
+}
 
 initObservability()
 
@@ -105,7 +132,15 @@ function shareMessagePage(title: string, message: string, cta?: { href: string; 
     ${cta ? `<a class="btn" href="${htmlEscape(cta.href)}">${htmlEscape(cta.label)}</a>` : ''}
   </div>
 </div>`
-  return layout('Share photos · Take the shot', '', body, '')
+  return layout(
+    {
+      title: 'Share photos · Take the shot',
+      description: 'Send photos from your phone to one of your collections.',
+      noindex: true,
+    },
+    body,
+    ''
+  )
 }
 
 async function editableCollections(userId: string): Promise<{ id: string; name: string }[]> {
@@ -188,7 +223,15 @@ document.getElementById('shareList').addEventListener('click', function (e) {
     });
 });
 `
-  return layout('Share photos · Take the shot', '', body, script)
+  return layout(
+    {
+      title: 'Share photos · Take the shot',
+      description: 'Choose the collection that should receive your photos.',
+      noindex: true,
+    },
+    body,
+    script
+  )
 }
 
 app.post('/share', shareUpload.array('photos', 20), async (req, res) => {
@@ -231,34 +274,169 @@ app.post('/share', shareUpload.array('photos', 20), async (req, res) => {
   res.type('html').send(sharePickerPage(token, files.length, collections))
 })
 
-app.get('/login', (_req, res) => {
-  res.type('html').send(loginPage(''))
+app.get('/privacy', (req, res) => {
+  res.type('html').send(
+    privacyPage(
+      pageMeta(
+        req,
+        'Privacy policy · Take the shot',
+        'How Take the shot stores accounts, photos, sessions and Stripe purchase records — and what it never collects.',
+        '/privacy'
+      )
+    )
+  )
 })
 
-app.get('/signup', (_req, res) => {
-  res.type('html').send(signupPage(''))
+app.get('/robots.txt', (req, res) => {
+  const base = publicBaseUrl(req)
+  res.type('text/plain').send(`User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /share
+
+Sitemap: ${base}/sitemap.xml
+`)
 })
 
-app.get('/', (_req, res) => {
-  res.type('html').send(homePage(''))
+app.get('/sitemap.xml', (req, res) => {
+  const base = publicBaseUrl(req)
+  const today = new Date().toISOString().slice(0, 10)
+  const pages = [
+    { path: '/', changefreq: 'weekly', priority: '1.0' },
+    { path: '/privacy', changefreq: 'yearly', priority: '0.3' },
+  ]
+  const urls = pages
+    .map(
+      (page) => `  <url>
+    <loc>${base}${page.path}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`
+    )
+    .join('\n')
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls}
+</urlset>
+`)
+})
+
+app.get('/login', (req, res) => {
+  res.type('html').send(
+    loginPage(
+      '',
+      pageMeta(
+        req,
+        'Log in · Take the shot',
+        'Log in to manage your photo collections, share links and track sales.',
+        '/login',
+        { noindex: true }
+      )
+    )
+  )
+})
+
+app.get('/signup', (req, res) => {
+  res.type('html').send(
+    signupPage(
+      '',
+      pageMeta(
+        req,
+        'Sign up · Take the shot',
+        'Create a free Take the shot account to share photo collections and sell originals with Stripe.',
+        '/signup',
+        { noindex: true }
+      )
+    )
+  )
+})
+
+app.get('/', (req, res) => {
+  res.type('html').send(
+    homePage(
+      '',
+      pageMeta(
+        req,
+        'Take the shot — share photos, sell the originals',
+        DEFAULT_DESCRIPTION,
+        '/'
+      )
+    )
+  )
 })
 
 app.get('/c/:id', async (req, res) => {
-  let meta: PageMeta | undefined
+  let col: { name: string; is_public: boolean | null; cover_filename: string | null } | null = null
+  let lookupFailed = false
   try {
-    const { data: col } = await supabase
+    const { data } = await supabase
       .from('collections')
       .select('name, is_public, cover_filename')
       .eq('id', req.params.id)
       .maybeSingle()
-    if (col && col.is_public !== false) {
-      const image = col.cover_filename
-        ? `${publicBaseUrl(req)}/api/photos/${col.cover_filename}`
-        : undefined
-      meta = { title: col.name, description: `View "${col.name}" on Take the shot.`, image }
+    col = data
+  } catch {
+    lookupFailed = true
+  }
+
+  if (!col) {
+    if (lookupFailed) {
+      res.type('html').send(
+        collectionPage(req.params.id, '', pageMeta(
+          req,
+          'Shared photo collection',
+          'View a shared photo collection on Take the shot.',
+          `/c/${req.params.id}`,
+          { noindex: true }
+        ))
+      )
+      return
     }
-  } catch {}
+    res.status(404).type('html').send(
+      notFoundPage({
+        title: 'Collection not found · Take the shot',
+        description: 'This collection does not exist, was deleted, or has expired.',
+        image: `${publicBaseUrl(req)}${DEFAULT_OG_PATH}`,
+        noindex: true,
+      })
+    )
+    return
+  }
+
+  const base = publicBaseUrl(req)
+  const isPublic = col.is_public !== false
+  const image = isPublic && col.cover_filename
+    ? `${base}/api/photos/${col.cover_filename}`
+    : `${base}${DEFAULT_OG_PATH}`
+  const meta = pageMeta(
+    req,
+    col.name,
+    isPublic
+      ? `View "${col.name}" on Take the shot — share the link or buy the originals.`
+      : 'This photo collection is private.',
+    `/c/${req.params.id}`,
+    { image, noindex: !isPublic }
+  )
   res.type('html').send(collectionPage(req.params.id, '', meta))
+})
+
+// Unknown API routes answer JSON; every other miss gets the branded 404 page.
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'Not found' })
+    return
+  }
+  res.status(404).type('html').send(
+    notFoundPage({
+      title: 'Page not found · Take the shot',
+      description: 'That page does not exist. Head back to your collections.',
+      image: `${publicBaseUrl(req)}${DEFAULT_OG_PATH}`,
+      noindex: true,
+    })
+  )
 })
 
 // Last line of defence: log, report, and answer without leaking internals.

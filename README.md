@@ -65,9 +65,11 @@ on your own infrastructure.
 
 ## Privacy
 
-- **No analytics, no tracking pixels, no ads, no third-party scripts.** CSS, JS
-  and the PWA assets are served from your own origin — including fonts, so a
-  gallery load does not leak visitors to anyone.
+- **No analytics, no tracking pixels, no ads, no third-party scripts by default.**
+  CSS, JS and the PWA assets are served from your own origin — including fonts, so a
+  gallery load does not leak visitors to anyone. Operators who want page counts can
+  opt into cookieless Umami/Plausible with `ANALYTICS_SCRIPT_URL`; the hosted demo
+  leaves it off.
 - **Private storage.** The bucket is never public; every image byte is streamed
   through an authenticated endpoint after an access check on the collection.
 - **Buyers don't need accounts.** Their email is only passed to Stripe for the
@@ -246,6 +248,14 @@ release.
 The 15-minute synthetic check needs no secrets: it opens a GitHub issue on
 failure and closes it on the next green run, so GitHub's own notifications are
 the always-on channel. Set `DISCORD_WEBHOOK` to add a chat ping.
+
+### Optional analytics
+
+The default is no analytics. If an operator wants page counts without cookies or
+cross-site tracking, point `ANALYTICS_SCRIPT_URL` at a self-hosted Umami or
+Plausible script and set `ANALYTICS_WEBSITE_ID` if the provider needs it. The tag
+is injected into server-rendered pages; leave both variables empty to keep the
+no-tracker promise. The static landing site stays analytics-free by design.
 
 ### Environment contract
 
