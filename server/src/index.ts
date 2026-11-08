@@ -105,7 +105,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     // Keep in sync with app/app.json — the release people install.
-    version: process.env.npm_package_version || '0.4.3',
+    version: process.env.npm_package_version || '0.4.4',
     commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'dev',
   })
 })
