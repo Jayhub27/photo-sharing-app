@@ -10,6 +10,7 @@ const publicDir = join(here, '..', 'public')
 const icons = join(publicDir, 'icons')
 const siteDir = join(here, '..', '..', 'website-v3')
 const icon = join(icons, 'icon.svg')
+const faviconSource = join(icons, 'favicon-source.svg')
 const maskable = join(icons, 'icon-maskable.svg')
 
 const jobs = [
@@ -34,15 +35,15 @@ async function render(input, size) {
     .toBuffer()
 }
 
-const favicon16 = await render(icon, 16)
-const favicon32 = await render(icon, 32)
-const favicon48 = await render(icon, 48)
+const favicon16 = await render(faviconSource, 16)
+const favicon32 = await render(faviconSource, 32)
+const favicon48 = await render(faviconSource, 48)
 const appleTouch = await render(icon, 180)
 
 await writeFile(join(publicDir, 'favicon-16.png'), favicon16)
 await writeFile(join(publicDir, 'favicon-32.png'), favicon32)
 await writeFile(join(publicDir, 'apple-touch-icon.png'), appleTouch)
-await copyFile(icon, join(publicDir, 'favicon.svg'))
+await copyFile(faviconSource, join(publicDir, 'favicon.svg'))
 
 /** Build a multi-size ICO from PNG payloads (ICO supports embedded PNG). */
 function buildIco(images) {
@@ -81,5 +82,5 @@ console.log('wrote favicon.ico')
 await writeFile(join(siteDir, 'favicon.ico'), ico)
 await writeFile(join(siteDir, 'favicon-32.png'), favicon32)
 await writeFile(join(siteDir, 'apple-touch-icon.png'), appleTouch)
-await copyFile(icon, join(siteDir, 'favicon.svg'))
+await copyFile(faviconSource, join(siteDir, 'favicon.svg'))
 console.log('wrote website-v3 favicon set')
